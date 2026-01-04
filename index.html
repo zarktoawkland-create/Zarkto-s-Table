@@ -127,6 +127,92 @@
         /* Safe Area Support */
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
         .safe-pt { padding-top: env(safe-area-inset-top); }
+
+        /* CoT Styles */
+        .cot-wrapper {
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: rgba(2, 6, 23, 0.3);
+            margin-bottom: 1rem;
+        }
+        .cot-header {
+            padding: 0.5rem 0.75rem;
+            background: rgba(30, 41, 59, 0.4);
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .cot-header:hover {
+            background: rgba(30, 41, 59, 0.6);
+            color: #94a3b8;
+        }
+        .cot-header.active {
+            border-bottom-color: rgba(148, 163, 184, 0.1);
+        }
+        .cot-content {
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-family: 'Noto Serif SC', serif;
+            line-height: 1.6;
+        }
+        
+        /* CoT Tree View Optimization */
+        .cot-content ul {
+            list-style: none;
+            padding-left: 1rem;
+            margin: 0;
+            position: relative;
+        }
+        .cot-content ul li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .cot-content ul li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.7em;
+            width: 1rem;
+            height: 1px;
+            background-color: #475569;
+            opacity: 0.5;
+        }
+        .cot-content ul li::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: -0.6em;
+            bottom: 0;
+            width: 1px;
+            background-color: #475569;
+            opacity: 0.5;
+        }
+        .cot-content ul li:last-child::after {
+            height: 1.3em;
+        }
+        /* Root level ul shouldn't have line from top if it's the start */
+        .cot-content > ul > li:first-child::after {
+            top: 0.7em;
+            height: calc(100% - 0.7em);
+        }
+        .cot-content code {
+            background: rgba(0,0,0,0.3);
+            color: #e2e8f0;
+            padding: 0.1em 0.3em;
+            border-radius: 0.2em;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body class="selection:bg-teal-900 selection:text-teal-100">
@@ -146,6 +232,58 @@
                     <span class="flex-1">{{ toast.message }}</span>
                 </div>
             </transition-group>
+        </div>
+
+        <!-- Custom Confirm Modal -->
+        <div v-if="confirmState.show" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in safe-pt safe-pb">
+            <div class="bg-dark-900 border border-mystic-gold/50 rounded-lg shadow-[0_0_30px_rgba(212,175,55,0.15)] max-w-sm w-full flex flex-col relative overflow-hidden transform transition-all scale-100">
+                <!-- Header Decoration -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-mystic-gold to-transparent opacity-50"></div>
+                
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-mystic-gold font-serif mb-3 flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        {{ confirmState.title || '确认操作' }}
+                    </h3>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-6 font-serif">
+                        {{ confirmState.message }}
+                    </p>
+                    <div class="flex justify-end gap-3">
+                        <button @click="confirmState.resolve(false); confirmState.show = false" class="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm font-bold transition-colors">
+                            {{ confirmState.cancelText || '取消' }}
+                        </button>
+                        <button @click="confirmState.resolve(true); confirmState.show = false" class="px-6 py-2 bg-mystic-gold text-dark-950 font-bold rounded shadow-lg hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide">
+                            {{ confirmState.confirmText || '确定' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Confirm Modal -->
+        <div v-if="confirmState.show" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in safe-pt safe-pb">
+            <div class="bg-dark-900 border border-mystic-gold/50 rounded-lg shadow-[0_0_30px_rgba(212,175,55,0.15)] max-w-sm w-full flex flex-col relative overflow-hidden transform transition-all scale-100">
+                <!-- Header Decoration -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-mystic-gold to-transparent opacity-50"></div>
+                
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-mystic-gold font-serif mb-3 flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        {{ confirmState.title || '确认操作' }}
+                    </h3>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-6 font-serif">
+                        {{ confirmState.message }}
+                    </p>
+                    <div class="flex justify-end gap-3">
+                        <button @click="confirmState.resolve(false); confirmState.show = false" class="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm font-bold transition-colors">
+                            {{ confirmState.cancelText || '取消' }}
+                        </button>
+                        <button @click="confirmState.resolve(true); confirmState.show = false" class="px-6 py-2 bg-mystic-gold text-dark-950 font-bold rounded shadow-lg hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide">
+                            {{ confirmState.confirmText || '确定' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Mobile Sidebar Overlay -->
@@ -277,7 +415,7 @@
                 <button @click="showMobileMenu = !showMobileMenu" class="text-slate-400">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
-                <div class="font-bold text-mystic-gold">The Call</div>
+                <div class="font-bold text-mystic-gold font-serif tracking-wider">The Call of Cthulhu</div>
                 <div class="w-6"></div> <!-- Spacer -->
             </div>
 
@@ -322,6 +460,13 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 relative z-10">
+                                <!-- Room ID Display (Multiplayer Only) -->
+                                <div v-if="cocState.mode === 'multi'" class="hidden md:flex items-center gap-2 mr-2 px-3 py-1.5 rounded border border-dark-700 bg-dark-900/50 cursor-pointer hover:bg-dark-800 hover:border-mystic-gold/30 transition-all group" @click="copyToClipboard(multiplayerState.roomId)" title="点击复制房间号">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">房间号</span>
+                                    <span class="text-xs text-mystic-gold font-mono font-bold">{{ multiplayerState.roomId }}</span>
+                                    <svg class="w-3 h-3 text-slate-600 group-hover:text-mystic-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                </div>
+
                                 <button @click="showMobileRightSidebar = !showMobileRightSidebar" class="md:hidden p-2 text-slate-400 hover:text-mystic-gold transition-colors rounded-lg border border-transparent hover:border-dark-700 hover:bg-dark-800">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                 </button>
@@ -378,7 +523,20 @@
                                             </div>
                                             <div class="p-4 md:p-6 rounded-2xl rounded-tl-none bg-dark-900/80 border border-mystic-gold/20 text-slate-300 shadow-2xl relative overflow-hidden backdrop-blur-sm">
                                                 <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-mystic-gold/40 to-transparent"></div>
-                                                <div class="markdown-body relative z-10 font-serif leading-loose" v-html="renderMarkdown(msg.content)"></div>
+                                                
+                                                <!-- CoT Rendering -->
+                                                <div v-if="hasCot(msg.content)" class="cot-wrapper">
+                                                    <div class="cot-header" @click="toggleCot(index)" :class="{ active: msg.showCot }">
+                                                        <span class="flex items-center gap-2">
+                                                            <svg class="w-3.5 h-3.5" :class="msg.showCot ? 'rotate-90' : ''" style="transition: transform 0.2s" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                            阿撒托斯的低语 (Whispers of Azathoth)
+                                                        </span>
+                                                        <span class="text-[10px] opacity-50 font-mono">Forbidden Knowledge</span>
+                                                    </div>
+                                                    <div v-show="msg.showCot" class="cot-content markdown-body" v-html="renderMarkdown(getCotContent(msg.content))"></div>
+                                                </div>
+
+                                                <div class="markdown-body relative z-10 font-serif leading-loose" v-html="renderMarkdown(removeCot(msg.content))"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -616,9 +774,6 @@
                                         当前轮次：等待 {{ multiplayerState.members[multiplayerState.turnIndex]?.name || 'Unknown' }} 选择...
                                     </span>
                                 </div>
-                                <button v-if="multiplayerState.members[multiplayerState.turnIndex]?.id === user.uuid" @click="skipTurn" class="px-2 py-1 text-[10px] border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 rounded transition-colors">
-                                    不扮演 (跳过)
-                                </button>
                             </div>
 
                             <label v-if="cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)" class="text-xs px-4 py-2 bg-dark-800 hover:bg-mystic-green hover:text-dark-900 border border-dark-600 hover:border-mystic-green rounded cursor-pointer transition-all text-slate-300 font-bold uppercase tracking-wide shadow-lg">
@@ -1216,6 +1371,25 @@
                 const showMobileMenu = ref(false);
                 const showMobileRightSidebar = ref(false);
                 const toasts = ref([]);
+                // Confirm Modal State
+                const confirmState = reactive({
+                    show: false,
+                    title: '',
+                    message: '',
+                    confirmText: '确定',
+                    cancelText: '取消',
+                    resolve: null
+                });
+
+                const showConfirm = (message, title = '确认操作') => {
+                    return new Promise((resolve) => {
+                        confirmState.message = message;
+                        confirmState.title = title;
+                        confirmState.show = true;
+                        confirmState.resolve = resolve;
+                    });
+                };
+
                 const user = reactive({ name: '游客', avatar: '', uuid: generateUUID() });
                 const settings = reactive({
                     apiUrl: 'https://opis.zeabur.app',
@@ -1238,6 +1412,29 @@
                     systemPrompt: '',
                     canRoll: false // 增加 flag 控制是否允许掷骰
                 });
+
+                // CoT Helpers
+                const hasCot = (text) => text && text.includes('<cot>');
+                const getCotContent = (text) => {
+                    if (!text) return '';
+                    const match = text.match(/<cot>([\s\S]*?)<cot>/);
+                    return match ? match[1] : '';
+                };
+                const removeCot = (text) => {
+                    if (!text) return '';
+                    return text.replace(/<cot>[\s\S]*?<cot>/g, '').trim();
+                };
+                const toggleCot = (index) => {
+                    // Multiplayer: Only host can expand? User request: "多人模式下只有房主有权限展开"
+                    if (cocState.mode === 'multi' && !multiplayerState.isHost) {
+                        return showToast('仅房主可查看思维链', 'warning');
+                    }
+                    const msg = cocState.log[index];
+                    if (msg) {
+                        msg.showCot = !msg.showCot;
+                    }
+                };
+
                 const cocInput = ref('');
                 const cocInputRef = ref(null); // Ref for textarea
                 const cocChatContainer = ref(null);
@@ -1368,7 +1565,7 @@
                 };
 
                 const openCocCard = () => {
-                    window.open('https://zarktoawkland-create.github.io/Zarkto-s-Table/Workshop', '_blank');
+                    window.open('Workshop/index.html', '_blank');
                     showMobileMenu.value = false;
                 };
                 
@@ -1474,7 +1671,9 @@
 
                 const exitCocMode = () => {
                     if (cocState.mode === 'multi') {
-                        currentView.value = 'multiplayer';
+                        // 多人模式下，准备阶段的返回应当视为退出游戏/房间
+                        // 避免用户返回到 multiplayer 界面导致状态不一致
+                        exitCocGame();
                     } else {
                         cocState.mode = null;
                         cocState.gameState = 'idle';
@@ -1484,15 +1683,18 @@
                 
                 const exitCocGame = async () => {
                     if (cocState.mode === 'multi' && multiplayerState.isHost) {
-                        if (confirm('您是房主，退出将解散房间。是否先保存当前游戏进度？')) {
+                        if (await showConfirm('您是房主，退出将解散房间。是否先保存当前游戏进度？', '保存进度')) {
                             saveGame();
+                        } else {
+                            return; // 如果取消保存，则视为取消退出操作，不再弹出解散提示
                         }
-                        if (!confirm('确定要解散房间并退出吗？所有玩家将被强制退出。')) return;
+                        
+                        if (!await showConfirm('确定要解散房间并退出吗？所有玩家将被强制退出。', '解散房间')) return;
 
                         // Broadcast room closed signal
                         await broadcastMessage({ type: 'room_closed' });
                     } else {
-                        if(!confirm('确定退出吗？未保存的进度将丢失。')) return;
+                        if(!await showConfirm('确定退出吗？未保存的进度将丢失。', '退出确认')) return;
                     }
 
                     cocState.gameState = 'idle';
@@ -1533,14 +1735,14 @@
                     showToast('游戏进度已保存至记忆回廊', 'success');
                 };
 
-                const deleteSave = (index) => {
-                    if(confirm('确定要遗忘这段记忆吗？')) {
+                const deleteSave = async (index) => {
+                    if(await showConfirm('确定要遗忘这段记忆吗？', '删除存档')) {
                         savedGames.value.splice(index, 1);
                         localStorage.setItem('coc_saves', JSON.stringify(savedGames.value));
                     }
                 };
 
-                const loadSave = (index) => {
+                const loadSave = async (index) => {
                     const save = savedGames.value[index];
                     if (!save) return;
 
@@ -1562,7 +1764,7 @@
                              return showToast('无法读取：存档中的关键玩家不在当前房间', 'error');
                         }
 
-                        if (!confirm('检测到当前正在游戏中。是否进行回档（覆盖当前进度）？')) return;
+                        if (!await showConfirm('检测到当前正在游戏中。是否进行回档（覆盖当前进度）？', '覆盖确认')) return;
 
                         // Execute Rollback
                         cocState.log = save.log;
@@ -1668,6 +1870,9 @@
                                 .then((result) => {
                                     cocState.module = { name: file.name.replace(/\.[^/.]+$/, ""), content: result.value };
                                     showToast('模组导入成功', 'success');
+                                    if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                                        broadcastMessage({ type: 'sync_module', moduleName: cocState.module.name });
+                                    }
                                 })
                                 .catch((err) => {
                                     console.error(err);
@@ -1753,8 +1958,8 @@
                     e.target.value = '';
                 };
 
-                const deleteInvestigator = (index) => {
-                    if(confirm('删除此调查员？')) {
+                const deleteInvestigator = async (index) => {
+                    if(await showConfirm('删除此调查员？', '删除角色')) {
                         cocState.investigators.splice(index, 1);
                         if(cocState.activeInvestigatorIndex >= index) cocState.activeInvestigatorIndex = -1;
                         
@@ -1893,6 +2098,16 @@ ${cocState.module.content.slice(0, 15000)}
 确保每位参与本轮行动的调查员都能得到回应。`;
                     }
 
+                    // CoT Instruction
+                    systemPrompt += `\n\n【思维链 (CoT) 要求】
+请在正文输出前，使用markdown格式，以 <cot>...思考内容...<cot> 的方式严密，详细地分析coc跑团游戏的系统规则，调查员和模组设定，历史对话，用户输入等信息，确保符合设定且符合逻辑后再进行正文的输出。
+规范格式为 <cot>... <cot>，确保开头结尾都有<cot>标签。
+在思考中，你需要：
+1. 分析当前场景和玩家行动。
+2. 检查规则书，判定是否需要检定。
+3. 如果需要检定，构思引导语。
+4. 规划剧情走向，确保逻辑自洽。`;
+
                     // Check if we are resuming a game (log already has content)
                     if (cocState.log.length > 0) {
                         systemPrompt += `\n\n【游戏继续】
@@ -1954,21 +2169,49 @@ ${cocState.module.content.slice(0, 15000)}
                         }
 
                         // Normal Selection Logic (New Game)
+                        // 1. Check if occupied by others
+                        if (multiplayerState.assignments[index] && multiplayerState.assignments[index] !== user.uuid) {
+                            showToast('该角色已被占用', 'warning');
+                            return;
+                        }
+
                         if (multiplayerState.isHost) {
-                            cocState.activeInvestigatorIndex = index;
+                            // Host Logic
                             // Only allow picking if NOT loading a save with bindings (or if bindings are cleared)
-                            // For now, if assignmentDetails exists, we assume "Resume Mode" where you only claim.
-                            // But if it's a new game, assignmentDetails is empty.
                             if (!multiplayerState.assignmentDetails || Object.keys(multiplayerState.assignmentDetails).length === 0) {
+                                // Check turn
+                                if (multiplayerState.members[multiplayerState.turnIndex]?.id !== user.uuid) {
+                                    // If host tries to click during others' turn
+                                    // Allow clicking own assigned character to potentially unassign?
+                                    // Or if clicking an unassigned character, warn "Not your turn"
+                                    if (multiplayerState.assignments[index] === user.uuid) {
+                                         // Allowed to click own (maybe to view details), but re-assign logic below handles toggle
+                                    } else {
+                                        showToast(`还没轮到你！请等待 ${multiplayerState.members[multiplayerState.turnIndex]?.name} 选择`, 'warning');
+                                        return;
+                                    }
+                                }
+
+                                cocState.activeInvestigatorIndex = index;
+
                                 if (multiplayerState.members[multiplayerState.turnIndex]?.id === user.uuid) {
-                                    for (const key in multiplayerState.assignments) {
-                                        if (multiplayerState.assignments[key] === user.uuid) delete multiplayerState.assignments[key];
+                                    // If clicking already assigned (self), do nothing (prevent unassign)
+                                    if (multiplayerState.assignments[index] === user.uuid) {
+                                        // Still update active view just in case
+                                        cocState.activeInvestigatorIndex = index;
+                                        return;
+                                    } else {
+                                        // Clear previous assignment for this user
+                                        for (const key in multiplayerState.assignments) {
+                                            if (multiplayerState.assignments[key] === user.uuid) delete multiplayerState.assignments[key];
+                                        }
+                                        multiplayerState.assignments[index] = user.uuid;
+                                        // Advance turn
+                                        if (multiplayerState.turnIndex < multiplayerState.members.length - 1) {
+                                            multiplayerState.turnIndex++;
+                                        }
+                                        broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments, turnIndex: multiplayerState.turnIndex });
                                     }
-                                    multiplayerState.assignments[index] = user.uuid;
-                                    if (multiplayerState.turnIndex < multiplayerState.members.length - 1) {
-                                        multiplayerState.turnIndex++;
-                                    }
-                                    broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments, turnIndex: multiplayerState.turnIndex });
                                 }
                             }
                         } else {
@@ -1980,32 +2223,14 @@ ${cocState.module.content.slice(0, 15000)}
                                     return;
                                 }
                                 const currentOwner = multiplayerState.assignments[index];
-                                if (currentOwner && currentOwner !== user.uuid) {
+                                if (currentOwner === user.uuid) return;
+                                if (currentOwner) {
                                     showToast('该角色已被其他玩家选择', 'warning');
                                     return;
                                 }
                                 broadcastMessage({ type: 'request_assignment', index, userId: user.uuid });
                             }
                         }
-                    }
-                };
-
-                const skipTurn = () => {
-                    // Only for current turn player
-                    if (multiplayerState.members[multiplayerState.turnIndex]?.id !== user.uuid) return;
-                    
-                    if (multiplayerState.isHost) {
-                        // Host skips
-                        if (multiplayerState.turnIndex < multiplayerState.members.length - 1) {
-                            multiplayerState.turnIndex++;
-                        }
-                        broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments, turnIndex: multiplayerState.turnIndex });
-                    } else {
-                        // Client requests skip (using special assignment index or just passing turn? Logic handled by host)
-                        // Reuse request_assignment but with special flag or just handle turn passing
-                        // Actually, client can't directly change turnIndex. Must ask host.
-                        // Let's use request_assignment with index = -1 to signal skip
-                        broadcastMessage({ type: 'request_assignment', index: -1, userId: user.uuid });
                     }
                 };
 
@@ -2251,17 +2476,23 @@ ${cocState.module.content.slice(0, 15000)}
                     if (multiplayerState.inRoom) {
                         broadcastMessage({ type: 'coc_chat', role: 'user', name: inv.name, avatar: inv.avatar, content, senderId: multiplayerState.myId });
                         
-                        // Mark self as acted (prevent duplicates)
-                        if (!multiplayerState.roundActionIds.includes(user.uuid)) {
-                            multiplayerState.roundActionIds.push(user.uuid);
-                        }
-                        broadcastMessage({ type: 'action_taken', userId: user.uuid });
+                        // 只有在【不需要检定】或者【当前已经是检定结果(但这部分逻辑在上面if块)】时，才算行动结束
+                        // 如果当前 Keeper 要求检定 (canRoll=true)，则普通对话不算作“完成行动”，不触发下一轮
+                        if (!cocState.canRoll) {
+                            if (!multiplayerState.roundActionIds.includes(user.uuid)) {
+                                multiplayerState.roundActionIds.push(user.uuid);
+                            }
+                            broadcastMessage({ type: 'action_taken', userId: user.uuid });
 
-                        if (multiplayerState.isHost) {
-                            checkAndTriggerRound();
+                            if (multiplayerState.isHost) {
+                                checkAndTriggerRound();
+                            }
                         }
                     } else {
-                        generateResponse();
+                        // 单人模式同理，如果需要检定，普通对话不触发 AI 回复
+                        if (!cocState.canRoll) {
+                            generateResponse();
+                        }
                     }
                 };
 
@@ -2382,9 +2613,9 @@ ${cocState.module.content.slice(0, 15000)}
                             if (status === 'SUBSCRIBED') await globalChannel.track({ user_id: user.uuid, online_at: new Date() });
                         });
 
-                        supabaseClient.channel(`personal:${user.uuid}`).on('broadcast', { event: 'message' }, ({ payload }) => {
+                        supabaseClient.channel(`personal:${user.uuid}`).on('broadcast', { event: 'message' }, async ({ payload }) => {
                             if (payload.type === 'invite_room') {
-                                if(confirm(`${payload.sender.name} 邀请你加入房间 ${payload.roomId}`)) {
+                                if(await showConfirm(`${payload.sender.name} 邀请你加入房间 ${payload.roomId}`, '收到邀请')) {
                                     joinRoomId.value = payload.roomId;
                                     currentView.value = 'multiplayer';
                                     joinRoom();
@@ -2464,6 +2695,20 @@ ${cocState.module.content.slice(0, 15000)}
                             multiplayerState.assignments = payload.assignments;
                             if (payload.turnIndex !== undefined) multiplayerState.turnIndex = payload.turnIndex;
                             updateMyAssignment();
+                        } else if (payload.type === 'request_sync' && multiplayerState.isHost) {
+                            // 响应新加入/重连玩家的同步请求
+                            console.log('Received sync request from:', payload.userId);
+                            broadcastMessage({
+                                type: 'sync_state',
+                                log: cocState.log,
+                                moduleName: cocState.module?.name,
+                                gameState: cocState.gameState,
+                                investigators: cocState.investigators,
+                                assignments: multiplayerState.assignments,
+                                assignmentDetails: multiplayerState.assignmentDetails,
+                                turnIndex: multiplayerState.turnIndex,
+                                roundActionIds: multiplayerState.roundActionIds
+                            });
                         } else if (payload.type === 'claim_role' && multiplayerState.isHost) {
                             // Handle claim request from client (Resume Mode)
                             const { index, userId } = payload;
@@ -2498,8 +2743,15 @@ ${cocState.module.content.slice(0, 15000)}
                             // Check if taken by someone else
                             const currentOwner = multiplayerState.assignments[index];
                             
+                            // If already owned by requestor, do nothing (prevent re-assignment logic)
+                            if (currentOwner === userId) {
+                                // Just sync back to confirm (or do nothing)
+                                broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments, turnIndex: multiplayerState.turnIndex });
+                                return;
+                            }
+
                             // Ensure one character per player:
-                            if (!currentOwner || currentOwner === userId) {
+                            if (!currentOwner) {
                                 // Clear previous assignment for this user
                                 for (const key in multiplayerState.assignments) {
                                     if (multiplayerState.assignments[key] === userId) delete multiplayerState.assignments[key];
@@ -2567,6 +2819,15 @@ ${cocState.module.content.slice(0, 15000)}
                                 online_at: new Date() // For sorting
                             });
                             showToast(`已进入房间 ${roomId}`, 'success');
+                            
+                            // 主动请求同步状态 (用于断线重连)
+                            if (!asHost) {
+                                await roomChannel.send({
+                                    type: 'broadcast',
+                                    event: 'message',
+                                    payload: { type: 'request_sync', userId: user.uuid }
+                                });
+                            }
                         }
                     });
                 };
@@ -2807,7 +3068,7 @@ $$ language plpgsql;`;
                 });
 
                 return {
-                    currentView, showMobileMenu, showMobileRightSidebar, user, settings, toasts,
+                    currentView, showMobileMenu, showMobileRightSidebar, user, settings, toasts, confirmState,
                     showBroadcast, dontShowBroadcast, closeBroadcast,
                     cocState, cocInput, cocInputRef, cocChatContainer, isGenerating,
                     multiplayerState, showJoinInput, joinRoomId, friends, friendRequests, friendInput,
@@ -2816,10 +3077,11 @@ $$ language plpgsql;`;
                     importCocModule, saveManualModule, importInvestigator, deleteInvestigator,
                     initSupabase, createRoom, joinRoom, leaveRoom, addFriend, acceptFriend, inviteFriend,
                     handleUserAvatarUpload, saveData, renderMarkdown, copyToClipboard,
-                    toggleReady, allPlayersReady, handleInvestigatorClick, skipTurn,
+                    toggleReady, allPlayersReady, handleInvestigatorClick,
                     libraryState, fetchLibraryModules, uploadToLibrary, handleLibraryFileUpload, useLibraryModule,
                     showSqlModal, sqlToRun,
-                    openCocCard
+                    openCocCard,
+                    hasCot, getCotContent, removeCot, toggleCot
                 };
             }
         }).mount('#app');
