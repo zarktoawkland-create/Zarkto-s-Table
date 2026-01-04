@@ -581,6 +581,15 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <!-- Regenerate Button (Host/Single Only) -->
+                                <div v-if="(cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)) && cocState.log.length > 0 && cocState.log[cocState.log.length-1].role === 'assistant' && !isGenerating"
+                                     class="flex justify-center mb-4 animate-fade-in">
+                                    <button @click="regenerateLastResponse" class="flex items-center gap-2 px-4 py-1.5 bg-dark-800/80 border border-mystic-gold/30 rounded-full text-xs text-mystic-gold hover:bg-mystic-gold hover:text-dark-900 transition-all shadow-lg backdrop-blur-sm group">
+                                        <svg class="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                        重新生成
+                                    </button>
+                                </div>
                             </div>
     
                             <!-- Mobile Right Sidebar Overlay -->
@@ -1472,15 +1481,58 @@
                     }
                     return clean;
                 };
-                const toggleCot = (index) => {
-                    // Multiplayer: Only host can expand? User request: "多人模式下只有房主有权限展开"
+                const toggleCot = async (index) => {
+                    // Multiplayer Permission Check
                     if (cocState.mode === 'multi' && !multiplayerState.isHost) {
-                        return showToast('仅房主可查看思维链', 'warning');
+                        if (!multiplayerState.cotAuthorizedUsers.includes(user.uuid)) {
+                            if (await showConfirm('您没有权限查看思维链 (CoT)。是否向房主申请权限？', '申请权限')) {
+                                requestCotAccess();
+                            }
+                            return;
+                        }
                     }
                     const msg = cocState.log[index];
                     if (msg) {
                         msg.showCot = !msg.showCot;
                     }
+                };
+
+                const requestCotAccess = () => {
+                    if (!multiplayerState.inRoom) return;
+                    broadcastMessage({ type: 'request_cot_access', userId: user.uuid, userName: user.name });
+                    showToast('已发送权限申请', 'info');
+                };
+
+                const grantCotAccess = (targetUserId) => {
+                    if (!multiplayerState.cotAuthorizedUsers.includes(targetUserId)) {
+                        multiplayerState.cotAuthorizedUsers.push(targetUserId);
+                        broadcastMessage({ type: 'grant_cot_access', userId: targetUserId, authorizedUsers: multiplayerState.cotAuthorizedUsers });
+                        showToast('已授权查看 CoT', 'success');
+                    }
+                };
+
+                const regenerateLastResponse = async () => {
+                    // Check permissions
+                    if (cocState.mode === 'multi' && !multiplayerState.isHost) {
+                        return showToast('仅房主可以重新生成', 'warning');
+                    }
+                    
+                    // Check if last message is assistant
+                    const lastMsg = cocState.log[cocState.log.length - 1];
+                    if (!lastMsg || lastMsg.role !== 'assistant') return;
+
+                    if (!await showConfirm('确定要重新生成上一条回复吗？', '重新生成')) return;
+
+                    // Remove last message
+                    cocState.log.pop();
+
+                    // Multiplayer Sync
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                        broadcastMessage({ type: 'regenerate_start' });
+                    }
+
+                    // Trigger generation
+                    generateResponse();
                 };
 
                 const cocInput = ref('');
@@ -1560,7 +1612,8 @@
                     isReady: false, // Local player ready status
                     assignments: {}, // { investigatorIndex: userId }
                     turnIndex: 0, // Who is picking now? 0 = Host, 1 = First Guest...
-                    roundActionIds: [] // Track who has acted in the current round
+                    roundActionIds: [], // Track who has acted in the current round
+                    cotAuthorizedUsers: [] // List of user IDs authorized to view CoT
                 });
                 const friends = ref([]);
                 const friendRequests = ref([]);
@@ -1650,6 +1703,91 @@
                 const copyToClipboard = (text) => {
                     if (!text) return;
                     navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => showToast('复制失败', 'error'));
+                };
+
+                // Helper: Execute ST command (Modify Stats)
+                const executeStCommand = (inv, prop, valExpr) => {
+                    if (!inv || !prop || !valExpr) return null;
+                    
+                    const lowerProp = prop.toLowerCase();
+                    let targetKey = '';
+                    let isStat = false;
+
+                    // Map prop to inv key
+                    if (['hp', 'mp', 'san'].includes(lowerProp)) {
+                        targetKey = lowerProp;
+                    } else {
+                        // Check stats
+                        const statMap = {
+                            '力量': 'STR', 'STR': 'STR',
+                            '体质': 'CON', 'CON': 'CON',
+                            '体型': 'SIZ', 'SIZ': 'SIZ',
+                            '敏捷': 'DEX', 'DEX': 'DEX',
+                            '外貌': 'APP', 'APP': 'APP',
+                            '智力': 'INT', 'INT': 'INT', '灵感': 'INT',
+                            '意志': 'POW', 'POW': 'POW',
+                            '教育': 'EDU', 'EDU': 'EDU', '知识': 'EDU',
+                            '幸运': 'LUCK', 'LUCK': 'LUCK'
+                        };
+                        const key = statMap[prop] || statMap[prop.toUpperCase()];
+                        if (key) {
+                            targetKey = key;
+                            isStat = true;
+                        }
+                    }
+
+                    if (!targetKey) return { success: false, msg: `未找到属性: ${prop}` };
+
+                    let currentVal = isStat ? inv.stats[targetKey] : inv[targetKey];
+                    let newVal = currentVal;
+                    let change = 0;
+
+                    // Parse expression (+10, -5, 50, 1d6)
+                    // Simple regex for + / -
+                    const match = valExpr.match(/^([+-]?)(\d+|d\d+|\d+d\d+)(.*)$/);
+                    let op = '';
+                    
+                    if (match) {
+                        op = match[1]; // + or - or empty
+                        const valPart = match[2]; // number or dice
+                        
+                        let valNum = 0;
+                        if (valPart.includes('d')) {
+                            const [n, d] = valPart.split('d').map(v => parseInt(v) || 1);
+                            for(let i=0; i<n; i++) valNum += Math.floor(Math.random() * d) + 1;
+                        } else {
+                            valNum = parseInt(valPart);
+                        }
+
+                        if (op === '+') {
+                            newVal += valNum;
+                            change = valNum;
+                        } else if (op === '-') {
+                            newVal -= valNum;
+                            change = -valNum;
+                        } else {
+                            newVal = valNum; // Set directly
+                            change = newVal - currentVal;
+                        }
+                    } else {
+                         return { success: false, msg: `数值格式错误: ${valExpr}` };
+                    }
+
+                    // Apply
+                    if (isStat) inv.stats[targetKey] = newVal;
+                    else inv[targetKey] = newVal;
+
+                    // Bounds check (optional, but good for SAN/HP)
+                    if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(99, inv[targetKey]));
+                    if (targetKey === 'hp') inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey]));
+                    if (targetKey === 'mp') inv[targetKey] = Math.max(0, Math.min(inv.maxMp || 99, inv[targetKey]));
+
+                    saveData();
+                    return {
+                        success: true,
+                        msg: `${prop.toUpperCase()} ${op==='+'?'+':''}${change} => ${inv[targetKey]}`,
+                        log: `🔧 **属性变更** ${inv.name} 的 ${prop.toUpperCase()}: ${currentVal} ➔ ${inv[targetKey]}`
+                    };
                 };
 
                 const renderMarkdown = (text) => {
@@ -2133,31 +2271,48 @@ ${cocState.module.content.slice(0, 15000)}
 【指令与检定系统说明】
 玩家只有在你要求时才能进行检定。
 *   **引导检定**：当你认为玩家的行动需要检定时，必须在回复的最后，以**独立行**的形式输出检定指令。
-*   **指令格式**：\`@玩家角色名 .ra 技能名\` 或 \`@玩家角色名 .sc 成功扣除/失败扣除\`
-*   **多人游戏必须指定目标**：在多人游戏中，**必须**使用 \`@角色名\` 指定是谁进行检定。
-    *   例如：\`@张三 .ra 侦查\` (仅允许张三进行侦查检定)
-    *   例如：\`@李四 .sc 1/1d3\` (仅允许李四进行San Check)
-    *   如果是群体检定，请分行输出多个指令：
-        \`@张三 .ra 聆听\`
-        \`@李四 .ra 聆听\`
-*   系统会自动解析这些指令并赋予相应玩家掷骰权限。除此以外玩家无法主动检定。
-*   **检定结果响应**：当玩家掷骰后，系统会自动显示结果（如 "🎲 侦查 成功"）。你必须紧接着根据这个结果描述后果。
+*   **指令格式**：
+    *   技能检定：\`@角色名 .ra 技能名\` (例如: \`@张三 .ra 侦查\`)
+    *   明牌 San Check (需玩家投骰)：\`@角色名 .sc 成功/失败\` (例如: \`@李四 .sc 1/1d3\`)
+    *   **暗骰 San Check / 属性调整 (推荐)**：当你需要直接扣除数值或进行不需要玩家操作的暗骰时，使用 \`.st\` 指令。
+        *   格式：\`@角色名 .st 属性 变更值\`
+        *   例如：\`@王五 .st san -1d6\` (直接扣除王五 1d6 点 san 值)
+        *   例如：\`@赵六 .st hp -2\` (扣除 2 点 HP)
+        *   **注意**：对于 San Check，建议你自己先暗骰判定结果，然后直接用 \`.st\` 指令扣除对应数值，并描述恐惧反应，而不要让玩家自己掷骰，以增加恐怖沉浸感。
+*   **技能替代原则**：如果玩家没有特定技能，请尽量寻找合理的相近技能或基础属性进行检定（例如用【力量】代替【攀爬】，用【智力】代替【图书馆】），不要直接拒绝。
+*   **多人游戏**：必须使用 \`@角色名\` 指定目标。群体检定请分行输出。
+*   系统会自动解析指令。
+*   **检定结果响应**：当玩家掷骰后，系统会自动显示结果。你必须紧接着根据这个结果描述后果。
     *   **成功**：描述成功的后果，给予线索或推进剧情。
     *   **失败**：描述失败的后果（"失败向前"），切勿让剧情停滞。
-    *   **SAN Check**：描述精神状态变化。
 
 【Keeper 行为准则】
-1.  **沉浸式叙事**：使用富有画面感、文学性、克苏鲁风格（恐怖、悬疑、不可名状）的语言。
-2.  **严格限制**：不要让玩家随意掷骰。只有在充满风险或结果不确定的情况下才要求检定。
+1.  **极度沉浸**：正文中不要出现"请进行侦查检定"这种出戏的提示语。直接通过环境描述暗示，然后在文末附上指令即可。
+2.  **恐怖氛围**：使用富有画面感、文学性、克苏鲁风格（恐怖、悬疑、不可名状）的语言。
 3.  **中立裁定**：不要偏袒玩家，也不要刻意刁难。
-4.  **禁止代入玩家**：你永远是 Keeper，只描述外界反馈，不扮演玩家角色。`;
+4.  **禁止代入玩家**：你永远是 Keeper，只描述外界反馈，不扮演玩家角色。
+
+【状态感知叙事】
+请时刻关注调查员的当前状态（HP, SAN），并将其反映在叙事风格中：
+*   **HP 低下**：描述疼痛、虚弱、视线模糊、行动迟缓、濒死的恐惧。
+*   **SAN 低下**：描述幻觉、耳鸣、偏执、理智崩坏的疯狂感、不可名状的恐惧。
+*   **MP 低下**：描述精神萎靡、注意力涣散、施法后的虚脱。
+请根据这些数值的变化，动态调整你的描写色调。`;
 
                     if (cocState.mode === 'multi') {
-                        systemPrompt += `\n\n【多人游戏特别指令】
+                        systemPrompt += `\n\n【多人游戏分镜叙事】
 当前为多人联机模式。你必须等待所有玩家行动完毕后才会收到汇总信息。
-在叙述时，请**分别**描述每位调查员的行动结果和遭遇，切勿只聚焦于其中一人。
-使用“对于[调查员名]...”或直接点名的方式来区分不同角色的反馈。
-确保每位参与本轮行动的调查员都能得到回应。`;
+为了保证每位玩家的体验，请采用**电影分镜**式的叙事手法，清晰地切换不同角色的视角。
+请使用 **Markdown 二级或三级标题** (如 \`### 角色名\`) 来作为分镜的开始，分别描述他们的遭遇。
+
+格式示例：
+### 张三
+你推开门，发现屋内漆黑一片...
+
+### 李四
+你在门外负责把风，突然听到楼道里传来了脚步声...
+
+确保每位参与本轮行动的调查员都能得到独立且丰满的回应。`;
                     }
 
                     // CoT Instruction
@@ -2453,12 +2608,33 @@ ${cocState.module.content.slice(0, 15000)}
                              showToast('当前规则下仅允许响应 Keeper 的特定检定要求', 'warning');
                              return;
                         }
+                        // .st / .set 属性修改 (.st hp -1 / .st san +5 / .st str 60)
+                        else if (content.match(/^\.(st|set)(\s|$)/i)) {
+                            // .st 指令通常由 KP (AI) 触发，或者玩家在被允许时触发
+                            // 解析: .st 属性 值
+                            const parts = content.split(/\s+/);
+                            if (parts.length < 3) {
+                                showToast('格式错误: .st 属性 值', 'warning');
+                                return;
+                            }
+                            const prop = parts[1];
+                            const valExpr = parts[2];
+                            
+                            const res = executeStCommand(inv, prop, valExpr);
+                            if (res && res.success) {
+                                systemMsg = `[系统] ${res.msg}`;
+                                logContent = res.log;
+                            } else {
+                                showToast(res ? res.msg : '执行失败', 'error');
+                                return;
+                            }
+                        }
                         // .sc / .san SAN Check (.sc 1/1d6)
                         else if (content.match(/^\.(sc|san)(\s|$)/i)) {
                             // 使用 Keeper 指定的参数，或者玩家输入的参数？
                             // 应该优先使用 Keeper 指定的参数，防止玩家作弊
                             const pendingReq = cocState.pendingRolls[myPendingRollIndex];
-                            const args = pendingReq.args || content.split(/\s+/)[1] || ''; // 优先用 Keeper 的
+                            const args = (pendingReq && pendingReq.args) || content.split(/\s+/)[1] || ''; // 优先用 Keeper 的
                             
                             const [successLoss, failLoss] = args.split('/').map(s => s || '0');
                             
@@ -2486,7 +2662,7 @@ ${cocState.module.content.slice(0, 15000)}
                         // .ra / .rc 技能检定 (.ra 侦查)
                         else if (content.match(/^\.(ra|rc)(\s|$)/i)) {
                             const pendingReq = cocState.pendingRolls[myPendingRollIndex];
-                            const skillName = pendingReq.args || content.split(/\s+/)[1]; // 优先用 Keeper 的
+                            const skillName = (pendingReq && pendingReq.args) || content.split(/\s+/)[1]; // 优先用 Keeper 的
                             
                             let skillVal = 0;
                             let skillLabel = skillName || '属性/技能';
@@ -2506,9 +2682,13 @@ ${cocState.module.content.slice(0, 15000)}
 
                             // 查找技能或属性
                             if (skillName) {
-                                const s = inv.skills.find(k => k.name === skillName);
+                                // 模糊匹配技能: 精确匹配 -> 包含匹配
+                                const s = inv.skills.find(k => k.name === skillName) ||
+                                          inv.skills.find(k => k.name.includes(skillName) || skillName.includes(k.name));
+                                          
                                 if (s) {
                                     skillVal = s.value;
+                                    skillLabel = s.name; // 使用找到的实际技能名
                                 } else {
                                     // 尝试查找基础属性
                                     const statKey = statMap[skillName] || statMap[skillName.toUpperCase()];
@@ -2609,6 +2789,29 @@ ${cocState.module.content.slice(0, 15000)}
                     cocState.log.push(assistantMsg);
                     
                     try {
+                        // 构建当前状态快照
+                        let statusSnapshot = "【当前调查员实时状态监控】\n";
+                        if (cocState.mode === 'multi') {
+                            for (const [idx, uid] of Object.entries(multiplayerState.assignments)) {
+                                const inv = cocState.investigators[idx];
+                                if (inv) {
+                                    statusSnapshot += `- ${inv.name}: HP ${inv.hp}/${inv.maxHp} | MP ${inv.mp}/${inv.maxMp} | SAN ${inv.san}/${inv.maxSan}`;
+                                    if (inv.hp < inv.maxHp * 0.3) statusSnapshot += " [重伤/濒死]";
+                                    if (inv.san < 30) statusSnapshot += " [精神恍惚/疯狂]";
+                                    statusSnapshot += "\n";
+                                }
+                            }
+                        } else {
+                            const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                            if (inv) {
+                                statusSnapshot += `- ${inv.name}: HP ${inv.hp}/${inv.maxHp} | MP ${inv.mp}/${inv.maxMp} | SAN ${inv.san}/${inv.maxSan}`;
+                                if (inv.hp < inv.maxHp * 0.3) statusSnapshot += " [重伤/濒死]";
+                                if (inv.san < 30) statusSnapshot += " [精神恍惚/疯狂]";
+                                statusSnapshot += "\n";
+                            }
+                        }
+                        statusSnapshot += "请根据以上状态调整你的叙事语气和描述细节。";
+
                         const msgs = [
                             { role: 'system', content: cocState.systemPrompt },
                             ...cocState.log.slice(0, -1).map(m => { // Exclude the empty assistant msg we just added
@@ -2616,7 +2819,9 @@ ${cocState.module.content.slice(0, 15000)}
                                 if (m.role === 'assistant') return { role: 'assistant', content: m.content };
                                 if (m.role === 'system') return { role: 'system', content: `[系统提示] ${m.content}` };
                                 return null;
-                            }).filter(Boolean)
+                            }).filter(Boolean),
+                            // 将状态快照作为最新的 System Hint 插入，确保 LLM 能看到最新的数值
+                            { role: 'system', content: statusSnapshot }
                         ];
 
                         const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
@@ -2665,8 +2870,7 @@ ${cocState.module.content.slice(0, 15000)}
                             }
                         }
                         
-                        // 生成完成后，解析检定指令
-                        // 改进：支持一行多个 @Name 和多个指令，支持笛卡尔积组合
+                        // 生成完成后，解析指令 (.ra/.sc/.st)
                         const pending = [];
                         const lines = assistantMsg.content.split('\n');
                         
@@ -2681,27 +2885,52 @@ ${cocState.module.content.slice(0, 15000)}
 
                             if (names.length === 0) continue;
 
-                            // 2. 提取该行所有指令 (.ra/.sc)
-                            // 排除常见标点和括号，确保提取纯净的技能名/表达式
-                            const cmdRegex = /(\.(?:ra|rc|sc|san))\s+([^\s\n,，.。!！?？;；:：\(\)（）]+)/gi;
+                            // 2. 提取该行所有指令
+                            const cmdRegex = /(\.(?:ra|rc|sc|san|st|set))\s+([^\s\n,，.。!！?？;；:：\(\)（）]+)(?:\s+([^\s\n,，.。!！?？;；:：\(\)（）]+))?/gi;
                             const cmds = [];
                             let cmdMatch;
                             while ((cmdMatch = cmdRegex.exec(line)) !== null) {
                                 cmds.push({
                                     command: cmdMatch[1].toLowerCase(),
-                                    args: cmdMatch[2]
+                                    args: cmdMatch[2],
+                                    args2: cmdMatch[3] // For .st prop val
                                 });
                             }
 
-                            // 3. 组合 (笛卡尔积)
+                            // 3. 处理指令
                             if (cmds.length > 0) {
                                 for (const name of names) {
+                                    // Find investigator by name (fuzzy match)
+                                    let targetInv = null;
+                                    
+                                    // Try to match name in cocState.investigators
+                                    cocState.investigators.forEach((inv) => {
+                                        if (inv.name.includes(name) || name.includes(inv.name)) {
+                                            targetInv = inv;
+                                        }
+                                    });
+
                                     for (const cmd of cmds) {
-                                        pending.push({
-                                            targetName: name,
-                                            command: cmd.command,
-                                            args: cmd.args
-                                        });
+                                        // Auto-execute .st (Secret Roll / Stat Mod)
+                                        if (cmd.command === '.st' || cmd.command === '.set') {
+                                            if (targetInv && cmd.args && cmd.args2) {
+                                                const res = executeStCommand(targetInv, cmd.args, cmd.args2);
+                                                if (res && res.success) {
+                                                    // Add system log for the change
+                                                    cocState.log.push({ role: 'system', content: res.log });
+                                                    if (multiplayerState.inRoom && multiplayerState.isHost) {
+                                                        broadcastMessage({ type: 'coc_chat', role: 'system', content: res.log });
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            // .ra / .sc go to pending
+                                            pending.push({
+                                                targetName: name, // Keep original name from text for display
+                                                command: cmd.command,
+                                                args: cmd.args
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -2710,9 +2939,11 @@ ${cocState.module.content.slice(0, 15000)}
                         cocState.pendingRolls = pending;
                         if (pending.length > 0) {
                             const myInv = cocState.investigators[cocState.activeInvestigatorIndex];
-                            const isMyRoll = myInv && pending.some(p => p.targetName === myInv.name);
+                            // Check fuzzy match for my name
+                            const isMyRoll = myInv && pending.some(p => p.targetName.includes(myInv.name) || myInv.name.includes(p.targetName));
+                            
                             if (isMyRoll) showToast('Keeper 要求你进行检定', 'info');
-                            else showToast(`Keeper 要求 ${pending.map(p=>p.targetName).join(', ')} 进行检定`, 'info');
+                            else showToast(`Keeper 要求 ${[...new Set(pending.map(p=>p.targetName))].join(', ')} 进行检定`, 'info');
                         }
 
                         if (multiplayerState.inRoom && multiplayerState.isHost) {
@@ -2731,9 +2962,31 @@ ${cocState.module.content.slice(0, 15000)}
                         }
 
                     } catch(e) {
-                        cocState.log.pop(); // Remove failed message
+                        // cocState.log.pop(); // Remove failed message -> 改为显示错误状态
                         console.error('Generation Error:', e);
                         showToast('生成失败: '+e.message, 'error');
+                        
+                        // Update the last message to show error state
+                        if (cocState.log.length > 0 && cocState.log[cocState.log.length - 1].role === 'assistant') {
+                            const errorMsg = cocState.log[cocState.log.length - 1];
+                            if (!errorMsg.content) {
+                                errorMsg.content = `**[通讯中断]**\n\n*守密人的声音被一阵刺耳的静电噪音淹没...*\n\n(错误信息: ${e.message})`;
+                            } else {
+                                errorMsg.content += `\n\n**[信号丢失]**\n(错误信息: ${e.message})`;
+                            }
+                            
+                            // Broadcast error state to clients
+                            if (multiplayerState.inRoom && multiplayerState.isHost) {
+                                broadcastMessage({
+                                    type: 'coc_chat',
+                                    role: 'assistant',
+                                    name: '守密人',
+                                    content: errorMsg.content,
+                                    senderId: multiplayerState.myId,
+                                    isError: true
+                                });
+                            }
+                        }
                     } finally {
                         isGenerating.value = false;
                         if (multiplayerState.inRoom && multiplayerState.isHost) {
@@ -2814,7 +3067,7 @@ ${cocState.module.content.slice(0, 15000)}
 
                     // Ensure presence key is unique (UUID) not Name
                     roomChannel = supabaseClient.channel(`room:${roomId}`, { config: { broadcast: { self: false }, presence: { key: user.uuid } } });
-                    roomChannel.on('broadcast', { event: 'message' }, ({ payload }) => {
+                    roomChannel.on('broadcast', { event: 'message' }, async ({ payload }) => {
                         if (payload.type === 'member_status') {
                             // Update local member list immediately from broadcast
                             const idx = multiplayerState.members.findIndex(m => m.id === payload.status.user_id);
@@ -2855,6 +3108,18 @@ ${cocState.module.content.slice(0, 15000)}
                         } else if (payload.type === 'round_reset') {
                             multiplayerState.roundActionIds = [];
                             showToast('新的一轮开始了', 'info');
+                        } else if (payload.type === 'request_cot_access' && multiplayerState.isHost) {
+                            if (await showConfirm(`${payload.userName} 申请查看思维链 (CoT) 权限`, '权限申请')) {
+                                grantCotAccess(payload.userId);
+                            }
+                        } else if (payload.type === 'grant_cot_access') {
+                            multiplayerState.cotAuthorizedUsers = payload.authorizedUsers;
+                            if (payload.userId === user.uuid) {
+                                showToast('房主已批准您的 CoT 查看权限', 'success');
+                            }
+                        } else if (payload.type === 'regenerate_start' && !multiplayerState.isHost) {
+                            cocState.log.pop(); // Remove last message
+                            showToast('房主正在重新生成回复...', 'info');
                         } else if (payload.type === 'sync_state' && !multiplayerState.isHost) {
                             cocState.log = payload.log;
                             if (payload.moduleName) cocState.module = { name: payload.moduleName, content: 'Synced' };
@@ -2866,6 +3131,7 @@ ${cocState.module.content.slice(0, 15000)}
                             if (payload.assignmentDetails) multiplayerState.assignmentDetails = payload.assignmentDetails;
                             if (payload.turnIndex !== undefined) multiplayerState.turnIndex = payload.turnIndex;
                             if (payload.roundActionIds) multiplayerState.roundActionIds = payload.roundActionIds;
+                            if (payload.cotAuthorizedUsers) multiplayerState.cotAuthorizedUsers = payload.cotAuthorizedUsers;
                             // If game is playing, ensure we are in chat view
                             if (payload.gameState === 'playing') {
                                 cocState.gameState = 'playing';
@@ -2893,7 +3159,8 @@ ${cocState.module.content.slice(0, 15000)}
                                 assignments: multiplayerState.assignments,
                                 assignmentDetails: multiplayerState.assignmentDetails,
                                 turnIndex: multiplayerState.turnIndex,
-                                roundActionIds: multiplayerState.roundActionIds
+                                roundActionIds: multiplayerState.roundActionIds,
+                                cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers
                             });
                         } else if (payload.type === 'claim_role' && multiplayerState.isHost) {
                             // Handle claim request from client (Resume Mode)
@@ -2978,9 +3245,50 @@ ${cocState.module.content.slice(0, 15000)}
                         // Sort by online_at to ensure consistent order across clients
                         flatMembers.sort((a, b) => new Date(a.online_at) - new Date(b.online_at));
                         
+                        // Check if host is missing
+                        const oldHost = multiplayerState.members.find(m => m.isHost);
+                        const currentHost = flatMembers.find(m => m.is_host);
+                        
                         multiplayerState.members = flatMembers.map(p => ({
                             name: p.name, id: p.user_id, avatar: p.avatar, isHost: p.is_host, isReady: p.isReady, online_at: p.online_at
                         }));
+
+                        // Host Migration Logic
+                        if (oldHost && !currentHost && multiplayerState.members.length > 0) {
+                            // Host left, the oldest member becomes the new host
+                            const newHostCandidate = multiplayerState.members[0];
+                            if (newHostCandidate.id === user.uuid) {
+                                // I am the new host
+                                multiplayerState.isHost = true;
+                                showToast('原房主已断开连接，你已自动继任为房主', 'info');
+                                
+                                // Update my status in presence
+                                roomChannel.track({
+                                    user_id: user.uuid,
+                                    name: user.name,
+                                    avatar: user.avatar,
+                                    is_host: true,
+                                    isReady: multiplayerState.isReady,
+                                    online_at: newHostCandidate.online_at // Keep original time
+                                });
+                                
+                                // Broadcast self as new host (redundant with track but safe)
+                                // Note: We don't need to explicitly broadcast 'I am host', presence update handles it for others.
+                                // But we should sync state immediately to ensure consistency
+                                broadcastMessage({
+                                    type: 'sync_state',
+                                    log: cocState.log,
+                                    moduleName: cocState.module?.name,
+                                    gameState: cocState.gameState,
+                                    investigators: cocState.investigators,
+                                    assignments: multiplayerState.assignments,
+                                    assignmentDetails: multiplayerState.assignmentDetails,
+                                    turnIndex: multiplayerState.turnIndex,
+                                    roundActionIds: multiplayerState.roundActionIds,
+                                    cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers
+                                });
+                            }
+                        }
                         
                         // Host syncs state to new members
                         if (multiplayerState.isHost && multiplayerState.members.length > 1) {
@@ -2992,7 +3300,8 @@ ${cocState.module.content.slice(0, 15000)}
                                 investigators: cocState.investigators,
                                 assignments: multiplayerState.assignments,
                                 turnIndex: multiplayerState.turnIndex,
-                                roundActionIds: multiplayerState.roundActionIds
+                                roundActionIds: multiplayerState.roundActionIds,
+                                cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers
                             });
                         }
                     }).subscribe(async (status) => {
@@ -3270,7 +3579,7 @@ $$ language plpgsql;`;
                     libraryState, fetchLibraryModules, uploadToLibrary, handleLibraryFileUpload, useLibraryModule,
                     showSqlModal, sqlToRun,
                     openCocCard,
-                    hasCot, getCotContent, removeCot, toggleCot,
+                    hasCot, getCotContent, removeCot, toggleCot, regenerateLastResponse,
                     statDisplayMap,
                     getPageTitle: () => {
                         switch(currentView.value) {
