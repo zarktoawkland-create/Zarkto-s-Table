@@ -415,7 +415,7 @@
                 <button @click="showMobileMenu = !showMobileMenu" class="text-slate-400">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
-                <div class="font-bold text-mystic-gold font-serif tracking-wider">The Call of Cthulhu</div>
+                <div class="font-bold text-mystic-gold font-serif tracking-wider truncate mx-2">{{ getPageTitle() }}</div>
                 <div class="w-6"></div> <!-- Spacer -->
             </div>
 
@@ -483,12 +483,12 @@
     
                         <div class="flex-1 flex overflow-hidden relative">
                             <!-- Chat Log -->
-                            <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar scroll-smooth" ref="cocChatContainer">
+                            <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 custom-scrollbar scroll-smooth" ref="cocChatContainer">
                                 <div v-for="(msg, index) in cocState.log" :key="index" class="flex w-full animate-message-in group" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
                                     
                                     <!-- User Message -->
                                     <!-- User Message -->
-                                    <div v-if="msg.role === 'user' || msg.role === 'whisper'" class="flex flex-row-reverse max-w-[90%] md:max-w-[80%] gap-2 md:gap-4 ml-auto">
+                                    <div v-if="msg.role === 'user' || msg.role === 'whisper'" class="flex flex-row-reverse max-w-[90%] md:max-w-[80%] gap-2 md:gap-4 ml-auto mb-2">
                                         <div class="flex-shrink-0 mt-1">
                                             <div class="w-8 h-8 md:w-10 md:h-10 rounded bg-dark-800 overflow-hidden border border-slate-600 shadow-lg group-hover:border-mystic-gold/50 transition-colors">
                                                 <img v-if="msg.avatar" :src="msg.avatar" class="w-full h-full object-cover">
@@ -500,7 +500,7 @@
                                                 {{ msg.name }}
                                                 <span v-if="msg.role === 'whisper'" class="text-purple-400 bg-purple-900/20 px-1 rounded text-[9px] border border-purple-900/30">私语</span>
                                             </div>
-                                            <div class="p-3 md:p-5 rounded-2xl rounded-tr-none border shadow-xl relative overflow-hidden"
+                                            <div class="px-3 py-2 md:px-4 md:py-3 rounded-2xl rounded-tr-none border shadow-xl relative overflow-hidden"
                                                  :class="msg.role === 'whisper' ? 'bg-purple-900/10 border-purple-500/20 text-purple-200' : 'bg-dark-800 border-dark-700 text-slate-200'">
                                                 <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
                                                 <div class="markdown-body relative z-10" v-html="renderMarkdown(msg.content)"></div>
@@ -508,7 +508,7 @@
                                         </div>
                                     </div>
                                     <!-- Keeper Message -->
-                                    <div v-else-if="msg.role === 'assistant'" class="flex max-w-[95%] md:max-w-[85%] gap-2 md:gap-4 mr-auto">
+                                    <div v-else-if="msg.role === 'assistant'" class="flex max-w-[95%] md:max-w-[85%] gap-2 md:gap-4 mr-auto mb-2">
                                         <div class="flex-shrink-0 mt-1">
                                             <div class="w-8 h-8 md:w-10 md:h-10 rounded bg-dark-900 overflow-hidden border border-mystic-gold/30 shadow-[0_0_15px_rgba(204,164,59,0.15)]">
                                                 <div class="w-full h-full flex items-center justify-center bg-dark-950 text-mystic-gold">
@@ -537,6 +537,13 @@
                                                 </div>
 
                                                 <div class="markdown-body relative z-10 font-serif leading-loose" v-html="renderMarkdown(removeCot(msg.content))"></div>
+                                                
+                                                <!-- In-Bubble Loading Indicator -->
+                                                <div v-if="isGenerating && index === cocState.log.length - 1 && !removeCot(msg.content)" class="typing-indicator py-1">
+                                                    <span class="bg-mystic-gold/60"></span>
+                                                    <span class="bg-mystic-gold/60"></span>
+                                                    <span class="bg-mystic-gold/60"></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -551,12 +558,12 @@
 
                                 </div>
                                 
-                                <div v-if="isGenerating" class="flex w-full justify-start animate-message-in pl-14">
-                                    <div class="px-6 py-4 rounded-2xl rounded-tl-none bg-dark-900/50 border border-dark-700/50 shadow-inner">
+                                <div v-if="isGenerating && cocState.log[cocState.log.length-1]?.role !== 'assistant'" class="flex w-full justify-start animate-message-in pl-14">
+                                    <div class="px-6 py-4 rounded-2xl rounded-tl-none bg-dark-900/50 border border-dark-700/50 shadow-inner flex items-center justify-center">
                                         <div class="typing-indicator">
-                                            <span class="bg-mystic-gold/60 w-1.5 h-1.5"></span>
-                                            <span class="bg-mystic-gold/60 w-1.5 h-1.5"></span>
-                                            <span class="bg-mystic-gold/60 w-1.5 h-1.5"></span>
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
                                         </div>
                                     </div>
                                 </div>
@@ -588,7 +595,7 @@
                                             <div v-for="(val, key) in cocState.investigators[cocState.activeInvestigatorIndex].stats" :key="key"
                                                  class="bg-dark-800 p-1.5 rounded text-center cursor-pointer hover:bg-mystic-gold/10 hover:text-mystic-gold transition-colors border border-transparent hover:border-mystic-gold/30"
                                                  @click="cocInput = `.ra ${key}`" title="点击检定">
-                                                <div class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">{{key}}</div>
+                                                <div class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">{{ statDisplayMap[key] || key }}</div>
                                                 <div class="font-bold text-sm text-slate-300 font-mono">{{val}}</div>
                                             </div>
                                         </div>
@@ -1401,6 +1408,12 @@
                 });
 
                 // COC State
+                const statDisplayMap = {
+                    STR: '力量', CON: '体质', SIZ: '体型', DEX: '敏捷',
+                    APP: '外貌', INT: '智力', POW: '意志', EDU: '教育',
+                    LUCK: '幸运'
+                };
+
                 const cocState = reactive({
                     mode: null,
                     module: null,
@@ -1414,15 +1427,27 @@
                 });
 
                 // CoT Helpers
-                const hasCot = (text) => text && text.includes('<cot>');
+                const hasCot = (text) => text && (text.includes('<cot>') || text.includes('<cot'));
                 const getCotContent = (text) => {
                     if (!text) return '';
-                    const match = text.match(/<cot>([\s\S]*?)<cot>/);
-                    return match ? match[1] : '';
+                    // 匹配完整闭合的 <cot>...</cot> 或 <cot>...<cot>
+                    const match = text.match(/<cot>([\s\S]*?)(?:<\/cot>|<cot>|$)/);
+                    if (match) return match[1];
+                    // 处理流式输出中未闭合的情况
+                    if (text.includes('<cot>')) {
+                        return text.split('<cot>')[1];
+                    }
+                    return '';
                 };
                 const removeCot = (text) => {
                     if (!text) return '';
-                    return text.replace(/<cot>[\s\S]*?<cot>/g, '').trim();
+                    // 移除完整闭合的标签
+                    let clean = text.replace(/<cot>[\s\S]*?(?:<\/cot>|<cot>)/g, '').trim();
+                    // 如果还有未闭合的 <cot> (流式输出中)，则移除 <cot> 之后的所有内容
+                    if (clean.includes('<cot>')) {
+                        clean = clean.split('<cot>')[0].trim();
+                    }
+                    return clean;
                 };
                 const toggleCot = (index) => {
                     // Multiplayer: Only host can expand? User request: "多人模式下只有房主有权限展开"
@@ -1714,6 +1739,7 @@
                         investigators: cocState.investigators,
                         log: cocState.log,
                         systemPrompt: cocState.systemPrompt,
+                        canRoll: cocState.canRoll, // Save roll state
                         // Multi specific
                         multiplayer: cocState.mode === 'multi' ? {
                             assignments: multiplayerState.assignments,
@@ -1770,6 +1796,7 @@
                         cocState.log = save.log;
                         cocState.investigators = save.investigators;
                         cocState.systemPrompt = save.systemPrompt;
+                        if (save.canRoll !== undefined) cocState.canRoll = save.canRoll; // Restore roll state
                         
                         multiplayerState.assignments = savedAssignments;
                         multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {};
@@ -1812,6 +1839,7 @@
                             cocState.investigators = save.investigators;
                             cocState.log = save.log;
                             cocState.systemPrompt = save.systemPrompt;
+                            if (save.canRoll !== undefined) cocState.canRoll = save.canRoll; // Restore roll state
                             
                             // Restore assignments logic:
                             // We keep the assignments but mark them as "pending re-connection"
@@ -1846,6 +1874,7 @@
                         cocState.investigators = save.investigators;
                         cocState.log = save.log;
                         cocState.systemPrompt = save.systemPrompt;
+                        if (save.canRoll !== undefined) cocState.canRoll = save.canRoll; // Restore roll state
                         cocState.gameState = 'playing';
                         // Restore active investigator (default to first if not tracked, or maybe track it in save?)
                         // For now default to 0 or last active
@@ -2489,17 +2518,20 @@ ${cocState.module.content.slice(0, 15000)}
                             }
                         }
                     } else {
-                        // 单人模式同理，如果需要检定，普通对话不触发 AI 回复
-                        if (!cocState.canRoll) {
-                            generateResponse();
-                        }
+                        // 单人模式下，无论是否需要检定，普通对话都应触发 AI 回复，避免死锁
+                        generateResponse();
                     }
                 };
 
                 const generateResponse = async () => {
                     isGenerating.value = true;
                     // 如果是流式，先创建一个空的 assistant 消息
-                    const assistantMsg = { role: 'assistant', name: '守密人', content: '' };
+                    const assistantMsg = {
+                        role: 'assistant',
+                        name: '守密人',
+                        content: '',
+                        showCot: false // 默认折叠 CoT
+                    };
                     cocState.log.push(assistantMsg);
                     
                     try {
@@ -3081,7 +3113,20 @@ $$ language plpgsql;`;
                     libraryState, fetchLibraryModules, uploadToLibrary, handleLibraryFileUpload, useLibraryModule,
                     showSqlModal, sqlToRun,
                     openCocCard,
-                    hasCot, getCotContent, removeCot, toggleCot
+                    hasCot, getCotContent, removeCot, toggleCot,
+                    statDisplayMap,
+                    getPageTitle: () => {
+                        switch(currentView.value) {
+                            case 'coc': return '命运选择';
+                            case 'saves': return '记忆回廊';
+                            case 'friends': return '同伴名录';
+                            case 'settings': return '设置中心';
+                            case 'multiplayer': return '多重宇宙';
+                            case 'library': return '密大图书馆';
+                            case 'preparing': return '跑团准备';
+                            default: return 'The Call of Cthulhu';
+                        }
+                    }
                 };
             }
         }).mount('#app');
