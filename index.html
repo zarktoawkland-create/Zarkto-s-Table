@@ -558,12 +558,26 @@
 
                                 </div>
                                 
-                                <div v-if="isGenerating && cocState.log[cocState.log.length-1]?.role !== 'assistant'" class="flex w-full justify-start animate-message-in pl-14">
-                                    <div class="px-6 py-4 rounded-2xl rounded-tl-none bg-dark-900/50 border border-dark-700/50 shadow-inner flex items-center justify-center">
-                                        <div class="typing-indicator">
-                                            <span></span>
-                                            <span></span>
-                                            <span></span>
+                                <div v-if="isGenerating && cocState.log[cocState.log.length-1]?.role !== 'assistant'" class="flex w-full justify-start animate-message-in gap-2 md:gap-4 mr-auto mb-2">
+                                    <!-- Keeper Avatar for Loading State -->
+                                    <div class="flex-shrink-0 mt-1">
+                                        <div class="w-8 h-8 md:w-10 md:h-10 rounded bg-dark-900 overflow-hidden border border-mystic-gold/30 shadow-[0_0_15px_rgba(204,164,59,0.15)]">
+                                            <div class="w-full h-full flex items-center justify-center bg-dark-950 text-mystic-gold">
+                                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-start min-w-0">
+                                        <div class="text-[10px] text-mystic-gold mb-1 ml-1 font-mono tracking-widest uppercase font-bold flex items-center gap-2">
+                                            守密人 (Keeper)
+                                            <span class="w-8 h-[1px] bg-mystic-gold/30"></span>
+                                        </div>
+                                        <div class="px-6 py-4 rounded-2xl rounded-tl-none bg-dark-900/50 border border-dark-700/50 shadow-inner flex items-center justify-center">
+                                            <div class="typing-indicator">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2652,20 +2666,45 @@ ${cocState.module.content.slice(0, 15000)}
                         }
                         
                         // 生成完成后，解析检定指令
-                        // 匹配格式：@Name .ra Skill 或 @Name .sc 1/1d3
+                        // 改进：支持一行多个 @Name 和多个指令，支持笛卡尔积组合
                         const pending = [];
-                        // Regex to match lines like: @Name .ra Skill or @Name .sc 1/1d3
-                        // Supports Chinese names, English names, spaces
-                        const rollRegex = /@([^\s@]+)\s+(\.(?:ra|rc|sc|san))\s+([^\s\n]+)/g;
+                        const lines = assistantMsg.content.split('\n');
                         
-                        // We scan the full content (or maybe just the last few lines? Full content is safer for now)
-                        let match;
-                        while ((match = rollRegex.exec(assistantMsg.content)) !== null) {
-                            pending.push({
-                                targetName: match[1],
-                                command: match[2].toLowerCase(),
-                                args: match[3]
-                            });
+                        for (const line of lines) {
+                            // 1. 提取该行所有 @Name
+                            const nameRegex = /@([^\s@,，.。!！?？;；:：]+)/g;
+                            const names = [];
+                            let nameMatch;
+                            while ((nameMatch = nameRegex.exec(line)) !== null) {
+                                names.push(nameMatch[1]);
+                            }
+
+                            if (names.length === 0) continue;
+
+                            // 2. 提取该行所有指令 (.ra/.sc)
+                            // 排除常见标点和括号，确保提取纯净的技能名/表达式
+                            const cmdRegex = /(\.(?:ra|rc|sc|san))\s+([^\s\n,，.。!！?？;；:：\(\)（）]+)/gi;
+                            const cmds = [];
+                            let cmdMatch;
+                            while ((cmdMatch = cmdRegex.exec(line)) !== null) {
+                                cmds.push({
+                                    command: cmdMatch[1].toLowerCase(),
+                                    args: cmdMatch[2]
+                                });
+                            }
+
+                            // 3. 组合 (笛卡尔积)
+                            if (cmds.length > 0) {
+                                for (const name of names) {
+                                    for (const cmd of cmds) {
+                                        pending.push({
+                                            targetName: name,
+                                            command: cmd.command,
+                                            args: cmd.args
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         cocState.pendingRolls = pending;
