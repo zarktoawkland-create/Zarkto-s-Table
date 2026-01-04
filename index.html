@@ -1423,10 +1423,19 @@
                     gameState: 'idle',
                     log: [],
                     systemPrompt: '',
-                    canRoll: false // 增加 flag 控制是否允许掷骰
+                    pendingRolls: [] // 待处理的检定列表 [{ target: 'Name', command: 'ra', args: '侦查' }]
                 });
 
                 // CoT Helpers
+                // Helper to clear assignments for a specific user
+                const clearUserAssignments = (userId) => {
+                    Object.keys(multiplayerState.assignments).forEach(key => {
+                        if (multiplayerState.assignments[key] === userId) {
+                            delete multiplayerState.assignments[key];
+                        }
+                    });
+                };
+
                 const hasCot = (text) => text && (text.includes('<cot>') || text.includes('<cot'));
                 const getCotContent = (text) => {
                     if (!text) return '';
@@ -1475,13 +1484,6 @@
                     
                     let candidates = [];
                     
-                    // 1. Add Players
-                    multiplayerState.members.forEach(m => {
-                        if (m.id !== user.uuid) { // Don't mention self
-                            candidates.push({ type: 'player', name: m.name, id: m.id, avatar: m.avatar });
-                        }
-                    });
-
                     // 2. Add Characters (if assigned)
                     if (cocState.mode === 'multi') {
                         cocState.investigators.forEach((inv, idx) => {
@@ -1739,7 +1741,7 @@
                         investigators: cocState.investigators,
                         log: cocState.log,
                         systemPrompt: cocState.systemPrompt,
-                        canRoll: cocState.canRoll, // Save roll state
+                        pendingRolls: cocState.pendingRolls, // Save roll state
                         // Multi specific
                         multiplayer: cocState.mode === 'multi' ? {
                             assignments: multiplayerState.assignments,
@@ -1796,7 +1798,8 @@
                         cocState.log = save.log;
                         cocState.investigators = save.investigators;
                         cocState.systemPrompt = save.systemPrompt;
-                        if (save.canRoll !== undefined) cocState.canRoll = save.canRoll; // Restore roll state
+                        if (save.pendingRolls !== undefined) cocState.pendingRolls = save.pendingRolls; // Restore roll state
+                        else if (save.canRoll !== undefined) cocState.pendingRolls = []; // Migration: clear old boolean
                         
                         multiplayerState.assignments = savedAssignments;
                         multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {};
@@ -1831,15 +1834,16 @@
                             return;
                         }
                         
-                        // 2. Create a room automatically
-                        createRoom().then(() => {
+                        // 2. Create a room automatically (isLoadGame = true)
+                        createRoom(true).then(() => {
                             // 3. Restore State (But keep in preparing mode first)
                             cocState.mode = 'multi';
                             cocState.module = { name: save.moduleName, content: save.moduleContent };
                             cocState.investigators = save.investigators;
                             cocState.log = save.log;
                             cocState.systemPrompt = save.systemPrompt;
-                            if (save.canRoll !== undefined) cocState.canRoll = save.canRoll; // Restore roll state
+                            if (save.pendingRolls !== undefined) cocState.pendingRolls = save.pendingRolls;
+                            else if (save.canRoll !== undefined) cocState.pendingRolls = [];
                             
                             // Restore assignments logic:
                             // We keep the assignments but mark them as "pending re-connection"
@@ -1874,7 +1878,8 @@
                         cocState.investigators = save.investigators;
                         cocState.log = save.log;
                         cocState.systemPrompt = save.systemPrompt;
-                        if (save.canRoll !== undefined) cocState.canRoll = save.canRoll; // Restore roll state
+                        if (save.pendingRolls !== undefined) cocState.pendingRolls = save.pendingRolls;
+                        else if (save.canRoll !== undefined) cocState.pendingRolls = [];
                         cocState.gameState = 'playing';
                         // Restore active investigator (default to first if not tracked, or maybe track it in save?)
                         // For now default to 0 or last active
@@ -2005,7 +2010,7 @@
                 };
 
                 const toggleReady = () => {
-                    // Check assignment only if we are in preparation phase
+                    // Check assignment only if we are in preparation phase and trying to get ready
                     if (!multiplayerState.isReady && cocState.gameState === 'preparing') {
                         if (cocState.activeInvestigatorIndex === -1) {
                             return showToast('请先选择一名调查员', 'warning');
@@ -2014,14 +2019,22 @@
 
                     multiplayerState.isReady = !multiplayerState.isReady;
                     if (roomChannel) {
-                        roomChannel.track({
+                        // Find my existing presence to keep original online_at
+                        const myPresence = multiplayerState.members.find(m => m.id === user.uuid);
+                        const onlineAt = myPresence ? myPresence.online_at : new Date();
+
+                        const status = {
                             user_id: user.uuid,
                             name: user.name,
                             avatar: user.avatar,
                             is_host: multiplayerState.isHost,
                             isReady: multiplayerState.isReady,
-                            online_at: new Date() // For sorting
-                        });
+                            online_at: onlineAt
+                        };
+                        roomChannel.track(status);
+                        
+                        // Explicit broadcast for redundancy
+                        broadcastMessage({ type: 'member_status', status });
                     }
                 };
 
@@ -2105,9 +2118,15 @@ ${cocState.module.content.slice(0, 15000)}
 
 【指令与检定系统说明】
 玩家只有在你要求时才能进行检定。
-*   **引导检定**：当你认为玩家的行动需要检定时，请在回复的最后一行**明确输出**检定指令格式，系统会自动解析并允许玩家进行检定。
-*   格式要求：\`(请进行侦查检定：.ra 侦查)\` 或 \`(需要进行SAN Check：.sc 1/1d6)\`
-*   关键词：\`.ra\` 或 \`.sc\` 必须出现在你的引导语中，玩家才能获得掷骰权限。
+*   **引导检定**：当你认为玩家的行动需要检定时，必须在回复的最后，以**独立行**的形式输出检定指令。
+*   **指令格式**：\`@玩家角色名 .ra 技能名\` 或 \`@玩家角色名 .sc 成功扣除/失败扣除\`
+*   **多人游戏必须指定目标**：在多人游戏中，**必须**使用 \`@角色名\` 指定是谁进行检定。
+    *   例如：\`@张三 .ra 侦查\` (仅允许张三进行侦查检定)
+    *   例如：\`@李四 .sc 1/1d3\` (仅允许李四进行San Check)
+    *   如果是群体检定，请分行输出多个指令：
+        \`@张三 .ra 聆听\`
+        \`@李四 .ra 聆听\`
+*   系统会自动解析这些指令并赋予相应玩家掷骰权限。除此以外玩家无法主动检定。
 *   **检定结果响应**：当玩家掷骰后，系统会自动显示结果（如 "🎲 侦查 成功"）。你必须紧接着根据这个结果描述后果。
     *   **成功**：描述成功的后果，给予线索或推进剧情。
     *   **失败**：描述失败的后果（"失败向前"），切勿让剧情停滞。
@@ -2183,6 +2202,7 @@ ${cocState.module.content.slice(0, 15000)}
                             if (isMe) {
                                 if (multiplayerState.isHost) {
                                     // Host claims directly
+                                    clearUserAssignments(user.uuid); // Ensure unique assignment
                                     multiplayerState.assignments[index] = user.uuid;
                                     // Remove from pending details once claimed? No, keep for reference or remove?
                                     // Better to update assignments.
@@ -2231,9 +2251,7 @@ ${cocState.module.content.slice(0, 15000)}
                                         return;
                                     } else {
                                         // Clear previous assignment for this user
-                                        for (const key in multiplayerState.assignments) {
-                                            if (multiplayerState.assignments[key] === user.uuid) delete multiplayerState.assignments[key];
-                                        }
+                                        clearUserAssignments(user.uuid);
                                         multiplayerState.assignments[index] = user.uuid;
                                         // Advance turn
                                         if (multiplayerState.turnIndex < multiplayerState.members.length - 1) {
@@ -2372,24 +2390,62 @@ ${cocState.module.content.slice(0, 15000)}
 
                     // --- 指令系统处理 ---
                     if (content.startsWith('.')) {
-                        // 检查是否允许掷骰
-                        if (!cocState.canRoll) {
-                            showToast('Keeper 未要求检定，无法主动掷骰', 'warning');
+                        const cmdParts = content.trim().split(/\s+/);
+                        const cmdType = cmdParts[0].toLowerCase(); // .ra, .sc, etc.
+                        const cmdArgs = cmdParts.slice(1).join(' '); // 侦查, 1/1d3, etc.
+
+                        // 1. 验证权限
+                        // 必须在 pendingRolls 中找到匹配的 (targetName === inv.name)
+                        // 且 command 类型匹配 (.ra/.rc or .sc/.san)
+                        // 且如果是 .ra，技能名最好也要匹配（或者允许模糊匹配）
+                        
+                        const myPendingRollIndex = cocState.pendingRolls.findIndex(p => {
+                            if (p.targetName !== inv.name) return false;
+                            
+                            // 检查指令类型
+                            if ((cmdType === '.ra' || cmdType === '.rc') && (p.command === '.ra' || p.command === '.rc')) {
+                                // 检查技能名 (如果 Keeper 指定了技能，玩家必须检定该技能)
+                                // 简单包含检查
+                                if (p.args && cmdArgs && !p.args.includes(cmdArgs) && !cmdArgs.includes(p.args)) {
+                                     // 也许可以放宽一点，或者提示用户“Keeper 要求的是 xxx”
+                                     return false;
+                                }
+                                return true;
+                            }
+                            if ((cmdType === '.sc' || cmdType === '.san') && (p.command === '.sc' || p.command === '.san')) {
+                                return true;
+                            }
+                            return false;
+                        });
+
+                        if (myPendingRollIndex === -1) {
+                            // 检查是否有任何针对我的检定
+                            const hasAnyRoll = cocState.pendingRolls.some(p => p.targetName === inv.name);
+                            if (hasAnyRoll) {
+                                const req = cocState.pendingRolls.find(p => p.targetName === inv.name);
+                                showToast(`指令不匹配。Keeper 要求: ${req.command} ${req.args}`, 'warning');
+                            } else {
+                                showToast('Keeper 未要求你进行此检定', 'warning');
+                            }
                             return;
                         }
 
                         let systemMsg = '';
                         let logContent = '';
                         
-                        // .r / .roll 简单掷骰
+                        // .r / .roll 简单掷骰 (暂时禁用，因为 pendingRolls 机制不支持无目标掷骰，除非 Keeper 显式允许)
                         if (content.match(/^\.(r|roll)(\s|$)/i)) {
-                            const val = Math.floor(Math.random() * 100) + 1;
-                            systemMsg = `[系统] ${inv.name} 进行了掷骰: 1d100 = ${val}`;
-                            logContent = `🎲 1d100 = **${val}**`;
+                            // 只有当 Keeper 明确发送 @Name .r 时才允许（当前正则未捕获 .r，需扩展正则或保持禁用）
+                             showToast('当前规则下仅允许响应 Keeper 的特定检定要求', 'warning');
+                             return;
                         }
                         // .sc / .san SAN Check (.sc 1/1d6)
                         else if (content.match(/^\.(sc|san)(\s|$)/i)) {
-                            const args = content.split(/\s+/)[1] || '';
+                            // 使用 Keeper 指定的参数，或者玩家输入的参数？
+                            // 应该优先使用 Keeper 指定的参数，防止玩家作弊
+                            const pendingReq = cocState.pendingRolls[myPendingRollIndex];
+                            const args = pendingReq.args || content.split(/\s+/)[1] || ''; // 优先用 Keeper 的
+                            
                             const [successLoss, failLoss] = args.split('/').map(s => s || '0');
                             
                             const val = Math.floor(Math.random() * 100) + 1;
@@ -2415,7 +2471,9 @@ ${cocState.module.content.slice(0, 15000)}
                         }
                         // .ra / .rc 技能检定 (.ra 侦查)
                         else if (content.match(/^\.(ra|rc)(\s|$)/i)) {
-                            const skillName = content.split(/\s+/)[1];
+                            const pendingReq = cocState.pendingRolls[myPendingRollIndex];
+                            const skillName = pendingReq.args || content.split(/\s+/)[1]; // 优先用 Keeper 的
+                            
                             let skillVal = 0;
                             let skillLabel = skillName || '属性/技能';
 
@@ -2451,9 +2509,6 @@ ${cocState.module.content.slice(0, 15000)}
                                 }
                             }
                             
-                            // 如果没找到技能，默认一个值或者提示？这里暂且按 0 处理，或者提示用户
-                            // 为了流畅性，如果没找到，假设是基础掷骰
-                            
                             const val = Math.floor(Math.random() * 100) + 1;
                             let level = '';
                             if (skillVal > 0) {
@@ -2471,8 +2526,8 @@ ${cocState.module.content.slice(0, 15000)}
                         }
 
                         if (logContent) {
-                            // 检定完成后，关闭掷骰权限
-                            cocState.canRoll = false;
+                            // 检定完成后，从 pendingRolls 中移除该请求
+                            cocState.pendingRolls.splice(myPendingRollIndex, 1);
 
                             cocState.log.push({ role: 'user', name: inv.name, avatar: inv.avatar, content });
                             cocState.log.push({ role: 'system', content: logContent });
@@ -2506,8 +2561,10 @@ ${cocState.module.content.slice(0, 15000)}
                         broadcastMessage({ type: 'coc_chat', role: 'user', name: inv.name, avatar: inv.avatar, content, senderId: multiplayerState.myId });
                         
                         // 只有在【不需要检定】或者【当前已经是检定结果(但这部分逻辑在上面if块)】时，才算行动结束
-                        // 如果当前 Keeper 要求检定 (canRoll=true)，则普通对话不算作“完成行动”，不触发下一轮
-                        if (!cocState.canRoll) {
+                        // 如果当前 Keeper 要求我检定 (pendingRolls has me)，则普通对话不算作“完成行动”，不触发下一轮
+                        const hasPending = cocState.pendingRolls.some(p => p.targetName === inv.name);
+                        
+                        if (!hasPending) {
                             if (!multiplayerState.roundActionIds.includes(user.uuid)) {
                                 multiplayerState.roundActionIds.push(user.uuid);
                             }
@@ -2525,6 +2582,9 @@ ${cocState.module.content.slice(0, 15000)}
 
                 const generateResponse = async () => {
                     isGenerating.value = true;
+                    if (multiplayerState.inRoom && multiplayerState.isHost) {
+                        broadcastMessage({ type: 'keeper_typing', status: true });
+                    }
                     // 如果是流式，先创建一个空的 assistant 消息
                     const assistantMsg = {
                         role: 'assistant',
@@ -2591,14 +2651,29 @@ ${cocState.module.content.slice(0, 15000)}
                             }
                         }
                         
-                        // 生成完成后，分析内容是否包含检定指令，开启/关闭掷骰权限
-                        // 简单的启发式：如果包含 .ra 或 .sc 且不是在引用，则认为 Keeper 要求检定
-                        // 更严格一点：System Prompt 要求 Keeper 在末尾输出指令
-                        if (assistantMsg.content.includes('.ra') || assistantMsg.content.includes('.sc')) {
-                            cocState.canRoll = true;
-                            showToast('Keeper 要求你进行检定', 'info');
-                        } else {
-                            cocState.canRoll = false;
+                        // 生成完成后，解析检定指令
+                        // 匹配格式：@Name .ra Skill 或 @Name .sc 1/1d3
+                        const pending = [];
+                        // Regex to match lines like: @Name .ra Skill or @Name .sc 1/1d3
+                        // Supports Chinese names, English names, spaces
+                        const rollRegex = /@([^\s@]+)\s+(\.(?:ra|rc|sc|san))\s+([^\s\n]+)/g;
+                        
+                        // We scan the full content (or maybe just the last few lines? Full content is safer for now)
+                        let match;
+                        while ((match = rollRegex.exec(assistantMsg.content)) !== null) {
+                            pending.push({
+                                targetName: match[1],
+                                command: match[2].toLowerCase(),
+                                args: match[3]
+                            });
+                        }
+                        
+                        cocState.pendingRolls = pending;
+                        if (pending.length > 0) {
+                            const myInv = cocState.investigators[cocState.activeInvestigatorIndex];
+                            const isMyRoll = myInv && pending.some(p => p.targetName === myInv.name);
+                            if (isMyRoll) showToast('Keeper 要求你进行检定', 'info');
+                            else showToast(`Keeper 要求 ${pending.map(p=>p.targetName).join(', ')} 进行检定`, 'info');
                         }
 
                         if (multiplayerState.inRoom && multiplayerState.isHost) {
@@ -2608,7 +2683,7 @@ ${cocState.module.content.slice(0, 15000)}
                                 name: '守密人',
                                 content: assistantMsg.content,
                                 senderId: multiplayerState.myId,
-                                canRoll: cocState.canRoll
+                                pendingRolls: cocState.pendingRolls
                             });
                             
                             // Reset Round
@@ -2620,8 +2695,12 @@ ${cocState.module.content.slice(0, 15000)}
                         cocState.log.pop(); // Remove failed message
                         console.error('Generation Error:', e);
                         showToast('生成失败: '+e.message, 'error');
+                    } finally {
+                        isGenerating.value = false;
+                        if (multiplayerState.inRoom && multiplayerState.isHost) {
+                            broadcastMessage({ type: 'keeper_typing', status: false });
+                        }
                     }
-                    isGenerating.value = false;
                 };
 
                 // Multiplayer
@@ -2660,8 +2739,24 @@ ${cocState.module.content.slice(0, 15000)}
                     } catch(e) { showToast('连接失败', 'error'); }
                 };
 
-                const createRoom = async () => {
+                const createRoom = async (isLoadGame = false) => {
                     const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    
+                    // Reset game state for new game
+                    if (!isLoadGame) {
+                        cocState.module = null;
+                        cocState.investigators = [];
+                        cocState.log = [];
+                        cocState.systemPrompt = '';
+                        cocState.pendingRolls = [];
+                        cocState.activeInvestigatorIndex = -1;
+                        
+                        multiplayerState.assignments = {};
+                        multiplayerState.assignmentDetails = {};
+                        multiplayerState.turnIndex = 0;
+                        multiplayerState.roundActionIds = [];
+                    }
+
                     await joinRoom(id, true);
                 };
 
@@ -2670,13 +2765,29 @@ ${cocState.module.content.slice(0, 15000)}
                     if (!roomId || !supabaseClient) return;
                     
                     if (roomChannel) await roomChannel.unsubscribe();
+                    
+                    // Reset local ready state when joining/re-joining
+                    multiplayerState.isReady = false;
+                    
                     multiplayerState.roomId = roomId;
                     multiplayerState.isHost = asHost;
                     multiplayerState.myId = user.uuid;
 
-                    roomChannel = supabaseClient.channel(`room:${roomId}`, { config: { broadcast: { self: false }, presence: { key: user.name } } });
+                    // Ensure presence key is unique (UUID) not Name
+                    roomChannel = supabaseClient.channel(`room:${roomId}`, { config: { broadcast: { self: false }, presence: { key: user.uuid } } });
                     roomChannel.on('broadcast', { event: 'message' }, ({ payload }) => {
-                        if (payload.type === 'coc_chat') {
+                        if (payload.type === 'member_status') {
+                            // Update local member list immediately from broadcast
+                            const idx = multiplayerState.members.findIndex(m => m.id === payload.status.user_id);
+                            if (idx !== -1) {
+                                Object.assign(multiplayerState.members[idx], {
+                                    isReady: payload.status.isReady,
+                                    isHost: payload.status.is_host,
+                                    name: payload.status.name,
+                                    avatar: payload.status.avatar
+                                });
+                            }
+                        } else if (payload.type === 'coc_chat') {
                             // Whisper filtering
                             if (payload.role === 'whisper') {
                                 // Only show if I am the target or the sender
@@ -2686,10 +2797,14 @@ ${cocState.module.content.slice(0, 15000)}
                                 }
                             } else {
                                 cocState.log.push({ role: payload.role, name: payload.name, content: payload.content, avatar: payload.avatar });
-                                // Client update canRoll status from Host
-                                if (payload.role === 'assistant' && payload.canRoll !== undefined) {
-                                    cocState.canRoll = payload.canRoll;
-                                    if (cocState.canRoll) showToast('Keeper 要求你进行检定', 'info');
+                                // Client update pendingRolls status from Host
+                                if (payload.role === 'assistant' && payload.pendingRolls !== undefined) {
+                                    cocState.pendingRolls = payload.pendingRolls;
+                                    // Check if I am targeted
+                                    const myInv = cocState.investigators[cocState.activeInvestigatorIndex];
+                                    if (myInv && cocState.pendingRolls.some(p => p.targetName === myInv.name)) {
+                                        showToast('Keeper 要求你进行检定', 'info');
+                                    }
                                 }
                                 scrollToBottom();
                             }
@@ -2749,6 +2864,7 @@ ${cocState.module.content.slice(0, 15000)}
                             // We need to find the member to check name
                             const member = multiplayerState.members.find(m => m.id === userId);
                             if (reserved && (reserved.id === userId || (member && reserved.name === member.name))) {
+                                clearUserAssignments(userId); // Ensure unique assignment
                                 multiplayerState.assignments[index] = userId;
                                 broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments });
                             }
@@ -2785,9 +2901,7 @@ ${cocState.module.content.slice(0, 15000)}
                             // Ensure one character per player:
                             if (!currentOwner) {
                                 // Clear previous assignment for this user
-                                for (const key in multiplayerState.assignments) {
-                                    if (multiplayerState.assignments[key] === userId) delete multiplayerState.assignments[key];
-                                }
+                                clearUserAssignments(userId);
                                 multiplayerState.assignments[index] = userId;
                                 
                                 // Advance turn
@@ -2815,6 +2929,9 @@ ${cocState.module.content.slice(0, 15000)}
                             cocState.gameState = 'idle';
                             cocState.log = [];
                             currentView.value = 'multiplayer';
+                        } else if (payload.type === 'keeper_typing') {
+                            isGenerating.value = payload.status;
+                            scrollToBottom();
                         }
                     }).on('presence', { event: 'sync' }, () => {
                         const state = roomChannel.presenceState();
@@ -2868,6 +2985,7 @@ ${cocState.module.content.slice(0, 15000)}
                     if (roomChannel) await roomChannel.unsubscribe();
                     multiplayerState.inRoom = false;
                     multiplayerState.roomId = null;
+                    multiplayerState.isReady = false; // Reset ready state
                     cocState.mode = null; // Exit multi mode
                 };
 
