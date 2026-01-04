@@ -545,6 +545,14 @@
                                                     <span class="bg-mystic-gold/60"></span>
                                                 </div>
                                             </div>
+                                            
+                                            <!-- Regenerate Button (Attached to Bubble) -->
+                                            <div v-if="index === lastAssistantIndex && (cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)) && !isGenerating" class="mt-2 animate-fade-in">
+                                                <button @click="regenerateLastResponse" class="flex items-center gap-1.5 px-3 py-1 bg-dark-800/80 border border-mystic-gold/30 rounded-full text-[10px] text-mystic-gold hover:bg-mystic-gold hover:text-dark-900 transition-all shadow-lg backdrop-blur-sm group opacity-80 hover:opacity-100">
+                                                    <svg class="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                                    回溯/重新生成
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -582,16 +590,6 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Regenerate Button (Host/Single Only) -->
-                                <div v-if="(cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)) && cocState.log.length > 0 && !isGenerating"
-                                     class="flex justify-center mb-4 animate-fade-in">
-                                    <!-- Only show if last message is assistant OR we want to allow rollback -->
-                                    <!-- Simplified: Just check if we can rollback -->
-                                    <button @click="regenerateLastResponse" class="flex items-center gap-2 px-4 py-1.5 bg-dark-800/80 border border-mystic-gold/30 rounded-full text-xs text-mystic-gold hover:bg-mystic-gold hover:text-dark-900 transition-all shadow-lg backdrop-blur-sm group">
-                                        <svg class="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                        回溯/重新生成
-                                    </button>
-                                </div>
                             </div>
     
                             <!-- Mobile Right Sidebar Overlay -->
@@ -1451,6 +1449,14 @@
                     pendingRolls: [] // 待处理的检定列表 [{ target: 'Name', command: 'ra', args: '侦查' }]
                 });
 
+                const lastAssistantIndex = Vue.computed(() => {
+                    let idx = -1;
+                    for (let i = 0; i < cocState.log.length; i++) {
+                        if (cocState.log[i].role === 'assistant') idx = i;
+                    }
+                    return idx;
+                });
+
                 // CoT Helpers
                 // Helper to clear assignments for a specific user
                 const clearUserAssignments = (userId) => {
@@ -1519,17 +1525,29 @@
                         return showToast('仅房主可以重新生成', 'warning');
                     }
                     
-                    // Check if last message is assistant
-                    const lastMsg = cocState.log[cocState.log.length - 1];
-                    if (!lastMsg || lastMsg.role !== 'assistant') return;
+                    const lastAiIdx = lastAssistantIndex.value;
+                    if (lastAiIdx === -1) return;
 
-                    if (!await showConfirm('确定要重新生成上一条回复吗？', '重新生成')) return;
+                    if (!await showConfirm('确定要回溯到此处并重新生成吗？该消息及之后的所有对话将被清除。', '回溯重生成')) return;
 
-                    // Remove last message
-                    cocState.log.pop();
+                    // Remove from lastAiIdx
+                    // 这里的 splice 会移除从 lastAiIdx 开始的所有元素，包括该 AI 消息和之后的所有用户消息
+                    cocState.log.splice(lastAiIdx);
 
                     // Multiplayer Sync
                     if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                        // 同步整个状态，因为我们可能删除了多条消息
+                        broadcastMessage({
+                            type: 'sync_state',
+                            log: cocState.log,
+                            gameState: cocState.gameState,
+                            investigators: cocState.investigators,
+                            assignments: multiplayerState.assignments,
+                            assignmentDetails: multiplayerState.assignmentDetails,
+                            turnIndex: multiplayerState.turnIndex,
+                            roundActionIds: multiplayerState.roundActionIds,
+                            cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers
+                        });
                         broadcastMessage({ type: 'regenerate_start' });
                     }
 
@@ -3592,7 +3610,7 @@ $$ language plpgsql;`;
                     libraryState, fetchLibraryModules, uploadToLibrary, handleLibraryFileUpload, useLibraryModule,
                     showSqlModal, sqlToRun,
                     openCocCard,
-                    hasCot, getCotContent, removeCot, toggleCot, regenerateLastResponse,
+                    hasCot, getCotContent, removeCot, toggleCot, regenerateLastResponse, lastAssistantIndex,
                     statDisplayMap,
                     getPageTitle: () => {
                         switch(currentView.value) {
