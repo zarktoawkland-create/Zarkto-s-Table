@@ -175,6 +175,15 @@
             margin: 0;
             position: relative;
         }
+        
+        /* Medal Styles */
+        .medal-icon {
+            filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3));
+            transition: transform 0.3s;
+        }
+        .medal-icon:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
         .cot-content ul li {
             position: relative;
             padding-left: 1.5rem;
@@ -282,6 +291,126 @@
                         </button>
                         <button @click="confirmState.resolve(true); confirmState.show = false" class="px-6 py-2 bg-mystic-gold text-dark-950 font-bold rounded shadow-lg hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide">
                             {{ confirmState.confirmText || '确定' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settlement Modal -->
+        <div v-if="settlementState.show" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in safe-pt safe-pb">
+            <div class="bg-dark-900 border border-mystic-gold/50 rounded-xl shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full flex flex-col relative overflow-hidden max-h-[90vh]">
+                <!-- Header -->
+                <div class="p-6 border-b border-dark-800 bg-gradient-to-r from-mystic-gold/10 to-transparent flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-mystic-gold font-serif flex items-center gap-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        结团奖励结算
+                    </h3>
+                    <button @click="settlementState.show = false" class="text-slate-500 hover:text-slate-300"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-8">
+                    <!-- Step 1: Inputs -->
+                    <div v-if="settlementState.step === 1" class="space-y-6 animate-slide-up">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">模组名称</label>
+                            <input v-model="settlementState.moduleName" class="w-full bg-dark-950 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-gold outline-none">
+                        </div>
+                        
+                        <div class="p-4 bg-dark-800/50 rounded border border-dark-700">
+                            <h4 class="text-sm font-bold text-mystic-green mb-4 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                SAN 值回复
+                            </h4>
+                            <div class="flex gap-4 items-center">
+                                <input v-model="settlementState.sanRewardExpr" placeholder="1d6" class="w-24 bg-dark-950 border border-dark-700 rounded px-3 py-2 text-center font-mono text-slate-300 focus:border-mystic-green outline-none">
+                                <button @click="rollSanReward" class="px-4 py-2 bg-mystic-green/20 text-mystic-green border border-mystic-green/30 rounded font-bold text-xs hover:bg-mystic-green/30 transition-all">🎲 投掷</button>
+                                <div class="flex-1 text-right">
+                                    <span class="text-xs text-slate-500 mr-2">回复量:</span>
+                                    <span class="text-2xl font-bold text-mystic-green font-mono">{{ settlementState.sanRewardVal }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-dark-800/50 rounded border border-dark-700">
+                            <h4 class="text-sm font-bold text-mystic-gold mb-4 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                技能成长检定
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-3">请勾选本次模组中成功使用过的技能：</p>
+                            <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar p-1">
+                                <label v-for="skill in cocState.investigators[cocState.activeInvestigatorIndex].skills" :key="skill.name"
+                                       class="cursor-pointer px-3 py-1.5 rounded border text-xs transition-all select-none flex items-center gap-2"
+                                       :class="settlementState.selectedSkills.includes(skill.name) ? 'bg-mystic-gold text-dark-950 border-mystic-gold font-bold' : 'bg-dark-950 text-slate-400 border-dark-700 hover:border-slate-500'">
+                                    <input type="checkbox" v-model="settlementState.selectedSkills" :value="skill.name" class="hidden">
+                                    {{ skill.name }} ({{ skill.value }})
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">特殊奖励 (物品/人脉)</label>
+                                <textarea v-model="settlementState.specialReward" rows="3" class="w-full bg-dark-950 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-gold outline-none resize-none text-sm"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">履历摘要</label>
+                                <textarea v-model="settlementState.historyLog" rows="3" class="w-full bg-dark-950 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-gold outline-none resize-none text-sm"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-dark-800/50 rounded border border-dark-700 flex gap-4 items-center">
+                            <div class="w-12 h-12 bg-dark-950 rounded-full border border-mystic-gold/30 flex items-center justify-center text-2xl cursor-pointer hover:bg-dark-900 relative">
+                                <input v-model="settlementState.badge.icon" class="w-full h-full text-center bg-transparent outline-none cursor-pointer" title="输入Emoji">
+                            </div>
+                            <div class="flex-1 space-y-2">
+                                <input v-model="settlementState.badge.name" placeholder="勋章名称 (如: 幸存者)" class="w-full bg-dark-950 border-b border-dark-700 px-2 py-1 text-sm text-mystic-gold font-bold focus:border-mystic-gold outline-none">
+                                <input v-model="settlementState.badge.desc" placeholder="勋章描述" class="w-full bg-transparent px-2 py-1 text-xs text-slate-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Rolling & Result -->
+                    <div v-if="settlementState.step >= 2" class="space-y-4 animate-fade-in">
+                        <div v-if="settlementState.isRolling" class="text-center py-10">
+                            <div class="typing-indicator justify-center mb-4"><span></span><span></span><span></span></div>
+                            <p class="text-mystic-gold font-serif">命运之轮正在转动...</p>
+                        </div>
+                        <div v-else class="space-y-2">
+                            <div v-for="res in settlementState.skillGrowths" :key="res.name"
+                                 class="flex items-center justify-between p-3 rounded border"
+                                 :class="res.success ? 'bg-mystic-green/10 border-mystic-green/30' : 'bg-dark-950 border-dark-700 opacity-60'">
+                                <div class="font-bold text-slate-200">{{ res.name }}</div>
+                                <div class="flex items-center gap-4 text-sm font-mono">
+                                    <span class="text-slate-500">1d100={{ res.checkVal }} / {{ res.oldVal }}</span>
+                                    <span :class="res.success ? 'text-mystic-green font-bold' : 'text-slate-600'">{{ res.success ? '成长成功' : '成长失败' }}</span>
+                                    <div v-if="res.success" class="flex items-center gap-1 text-mystic-gold font-bold">
+                                        <span>+{{ res.growth }}</span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                                        <span>{{ res.newVal }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="settlementState.skillGrowths.length === 0" class="text-center text-slate-500 italic py-4">
+                                没有选择需要成长的技能
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-6 border-t border-dark-800 bg-dark-900/80 flex justify-between items-center">
+                    <div class="text-xs text-slate-500">
+                        <span v-if="settlementState.step === 1">第一步：输入奖励与选择技能</span>
+                        <span v-if="settlementState.step === 2">第二步：成长检定</span>
+                        <span v-if="settlementState.step === 3">第三步：确认结果</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button v-if="settlementState.step === 1" @click="processSkillGrowth" class="px-6 py-2 bg-mystic-gold text-dark-950 font-bold rounded shadow-lg hover:bg-yellow-600 transition-all text-sm">
+                            开始检定
+                        </button>
+                        <button v-if="settlementState.step === 3" @click="confirmSettlement" class="px-6 py-2 bg-mystic-green text-teal-100 font-bold rounded shadow-lg hover:bg-teal-700 transition-all text-sm">
+                            确认更新角色卡
                         </button>
                     </div>
                 </div>
@@ -636,6 +765,28 @@
                                                 {{ skill.name }} <span class="font-bold text-slate-300 ml-1">{{ skill.value }}</span>
                                             </span>
                                         </div>
+                                    </div>
+
+                                    <!-- Badges & History -->
+                                    <div class="mb-6" v-if="cocState.investigators[cocState.activeInvestigatorIndex].badges && cocState.investigators[cocState.activeInvestigatorIndex].badges.length > 0">
+                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 border-b border-dark-800 pb-1 uppercase tracking-widest">勋章墙</h4>
+                                        <div class="flex flex-wrap gap-2">
+                                            <div v-for="(badge, bIdx) in cocState.investigators[cocState.activeInvestigatorIndex].badges" :key="bIdx"
+                                                 class="group relative w-8 h-8 flex items-center justify-center bg-dark-800 rounded-full border border-mystic-gold/30 cursor-help">
+                                                <span class="text-lg medal-icon">{{ badge.icon || '🏅' }}</span>
+                                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-2 bg-dark-950 border border-mystic-gold/20 rounded text-[10px] text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                                                    <div class="font-bold text-mystic-gold">{{ badge.name }}</div>
+                                                    <div class="text-slate-400 mt-1">{{ badge.desc }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-4 border-t border-dark-800">
+                                        <button @click="openSettlement" class="w-full py-2 bg-gradient-to-r from-mystic-gold/10 to-transparent border border-mystic-gold/30 rounded text-mystic-gold text-xs font-bold uppercase tracking-widest hover:bg-mystic-gold/20 transition-all flex items-center justify-center gap-2 group">
+                                            <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            结团 / 奖励结算
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1421,6 +1572,23 @@
                     resolve: null
                 });
 
+                // Settlement Modal State
+                const settlementState = reactive({
+                    show: false,
+                    moduleName: '',
+                    sanRewardExpr: '1d6',
+                    sanRewardVal: 0,
+                    skillGrowths: [], // { name: '技能名', oldVal: 50, checkVal: 85, success: true, growth: 5, newVal: 55 }
+                    specialReward: '',
+                    badge: { name: '', desc: '', icon: '🏅' },
+                    historyLog: '',
+                    step: 1, // 1: Input Reward, 2: Skill Check, 3: Confirm
+                    selectedSkills: [], // Skills marked for growth check
+                    skillSearch: '', // Search query for skills
+                    customSkillName: '', // For manually adding a skill
+                    isRolling: false
+                });
+
                 const showConfirm = (message, title = '确认操作') => {
                     return new Promise((resolve) => {
                         confirmState.message = message;
@@ -2132,29 +2300,41 @@
                             data = JSON.parse(text);
                         }
                         // Handle PNG
+                        // Handle PNG
                         else if (file.type === 'image/png' || file.name.endsWith('.png')) {
                             data = await extractPngData(file);
                             if (!data) throw new Error('未在 PNG 中找到嵌入的角色数据');
                             
-                            // If PNG has data but no avatar, use the image itself
-                            if (!data.avatar) {
-                                data.avatar = await compressImage(URL.createObjectURL(file), 200, 0.6);
-                            }
+                            // PNG 导入时，图片本身就是头像，即使数据里没存 avatar 字段（通常 exportPNG 会删除）
+                            // 总是使用当前 PNG 文件作为头像，确保最新
+                            data.avatar = await compressImage(URL.createObjectURL(file), 300, 0.8);
                         }
 
                         if (!data) throw new Error('不支持的文件格式');
 
                         // Ensure basic stats & structure
                         if (!data.stats) data.stats = { STR:50, CON:50, SIZ:65, DEX:50, APP:50, INT:60, POW:50, EDU:60 };
-                        if (!data.hp) data.hp = Math.floor((data.stats.CON + data.stats.SIZ)/10);
-                        if (!data.mp) data.mp = Math.floor(data.stats.POW/5);
-                        if (!data.san) data.san = data.stats.POW;
-                        if (!data.maxSan) data.maxSan = 99;
-                        if (!data.maxHp) data.maxHp = data.hp;
+                        
+                        // 确保数值类型正确
+                        for (let k in data.stats) data.stats[k] = Number(data.stats[k]);
+                        
+                        // 衍生属性补全 (如果缺失)
+                        if (data.hp === undefined) data.hp = Math.floor((data.stats.CON + data.stats.SIZ)/10);
+                        if (data.mp === undefined) data.mp = Math.floor(data.stats.POW/5);
+                        if (data.san === undefined) data.san = data.stats.POW;
+                        if (data.maxSan === undefined) data.maxSan = 99;
+                        if (data.maxHp === undefined) data.maxHp = Math.floor((data.stats.CON + data.stats.SIZ)/10);
+                        if (data.maxMp === undefined) data.maxMp = Math.floor(data.stats.POW/5);
+                        
+                        // Ensure history and badges exist
+                        if (!data.history) data.history = [];
+                        if (!data.badges) data.badges = [];
+                        
+                        // 确保 skills 结构完整
+                        if (!data.skills) data.skills = [];
                         
                         // Store full data structure
                         cocState.investigators.push(data);
-                        
                         // Multiplayer Sync
                         if (cocState.mode === 'multi' && multiplayerState.isHost) {
                             broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
@@ -2247,6 +2427,112 @@
                     
                     if (inv.inventory) profile += `随身物品：${inv.inventory}\n`;
                     return profile;
+                };
+
+                const openSettlement = () => {
+                    const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                    if (!inv) return showToast('请选择一名调查员', 'warning');
+                    
+                    // Initialize settlement state
+                    settlementState.moduleName = cocState.module?.name || '未知模组';
+                    settlementState.sanRewardExpr = '1d6';
+                    settlementState.sanRewardVal = 0;
+                    settlementState.specialReward = '';
+                    settlementState.badge = { name: '幸存者', desc: `在《${settlementState.moduleName}》中存活`, icon: '🏅' };
+                    settlementState.historyLog = `完成模组《${settlementState.moduleName}》`;
+                    settlementState.step = 1;
+                    settlementState.selectedSkills = [];
+                    settlementState.skillGrowths = [];
+                    
+                    // Pre-select skills that have been successfully used (value > base? No, we don't track success count yet. Let user pick.)
+                    // Just list all skills > 0 for now
+                    
+                    settlementState.show = true;
+                };
+
+                const rollSanReward = () => {
+                    const expr = settlementState.sanRewardExpr;
+                    let val = 0;
+                    if (expr.includes('d')) {
+                        const [n, d] = expr.split('d').map(Number);
+                        for(let i=0; i<(n||1); i++) val += Math.floor(Math.random()*(d||6))+1;
+                    } else {
+                        val = parseInt(expr) || 0;
+                    }
+                    settlementState.sanRewardVal = val;
+                };
+
+                const processSkillGrowth = async () => {
+                    const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                    settlementState.isRolling = true;
+                    settlementState.skillGrowths = [];
+
+                    for (const skillName of settlementState.selectedSkills) {
+                        const skill = inv.skills.find(s => s.name === skillName);
+                        if (!skill) continue;
+
+                        // Growth Check: Roll 1d100 > current value
+                        const checkVal = Math.floor(Math.random() * 100) + 1;
+                        const success = checkVal > skill.value || checkVal > 95; // > skill or > 95 is growth success
+                        
+                        let growth = 0;
+                        if (success) {
+                            growth = Math.floor(Math.random() * 10) + 1; // 1d10 growth
+                        }
+
+                        settlementState.skillGrowths.push({
+                            name: skill.name,
+                            oldVal: skill.value,
+                            checkVal,
+                            success,
+                            growth,
+                            newVal: skill.value + growth
+                        });
+                        
+                        // Small delay for effect
+                        await new Promise(r => setTimeout(r, 300));
+                    }
+                    settlementState.isRolling = false;
+                    settlementState.step = 3;
+                };
+
+                const confirmSettlement = () => {
+                    const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                    
+                    // Apply SAN Reward
+                    const oldSan = inv.san;
+                    inv.san = Math.min(inv.maxSan || 99, inv.san + settlementState.sanRewardVal);
+                    
+                    // Apply Skill Growth
+                    settlementState.skillGrowths.forEach(g => {
+                        if (g.success) {
+                            const skill = inv.skills.find(s => s.name === g.name);
+                            if (skill) skill.value = g.newVal;
+                        }
+                    });
+
+                    // Add History
+                    if (!inv.history) inv.history = [];
+                    const date = new Date().toLocaleDateString();
+                    let log = `[${date}] ${settlementState.historyLog}\n`;
+                    log += `- SAN回复: ${settlementState.sanRewardVal} (${oldSan} -> ${inv.san})\n`;
+                    if (settlementState.skillGrowths.length > 0) {
+                        log += `- 技能成长: ${settlementState.skillGrowths.filter(g=>g.success).map(g => `${g.name}+${g.growth}`).join(', ') || '无'}\n`;
+                    }
+                    if (settlementState.specialReward) {
+                        log += `- 特殊奖励: ${settlementState.specialReward}`;
+                    }
+                    inv.history.unshift(log);
+
+                    // Add Badge
+                    if (settlementState.badge.name) {
+                        if (!inv.badges) inv.badges = [];
+                        inv.badges.push({ ...settlementState.badge, date });
+                    }
+
+                    saveData();
+                    showToast('结算完成，角色已更新', 'success');
+                    settlementState.show = false;
                 };
 
                 const startCocGame = () => {
@@ -3835,6 +4121,7 @@ $$ language plpgsql;`;
                     openCocCard,
                     hasCot, getCotContent, removeCot, toggleCot, regenerateLastResponse, lastAssistantIndex,
                     statDisplayMap,
+                    settlementState, openSettlement, rollSanReward, processSkillGrowth, confirmSettlement,
                     getPageTitle: () => {
                         switch(currentView.value) {
                             case 'coc': return '命运选择';
