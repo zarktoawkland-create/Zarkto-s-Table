@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -328,10 +330,10 @@
                     <svg class="w-5 h-5 mr-3 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     <span class="relative z-10">调查员雇佣</span>
                 </button>
-                <button disabled class="w-full flex items-center px-4 py-3.5 rounded-lg transition-all duration-300 font-bold tracking-wide border group relative overflow-hidden border-transparent text-slate-600 opacity-50 cursor-not-allowed">
-                    <div class="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-transparent opacity-0 transition-opacity duration-500"></div>
+                <button @click="currentView = 'library'; showMobileMenu = false" :class="['w-full flex items-center px-4 py-3.5 rounded-lg transition-all duration-300 font-bold tracking-wide border group relative overflow-hidden', currentView === 'library' ? 'bg-purple-900/20 border-purple-500/30 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-dark-800 hover:border-dark-700']">
+                    <div class="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <svg class="w-5 h-5 mr-3 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                    <span class="relative z-10">密大图书馆（暂未开馆）</span>
+                    <span class="relative z-10">密大图书馆</span>
                 </button>
             </div>
 
@@ -634,12 +636,6 @@
                                                 {{ skill.name }} <span class="font-bold text-slate-300 ml-1">{{ skill.value }}</span>
                                             </span>
                                         </div>
-                                    </div>
-    
-                                    <div class="text-xs text-slate-600 border-t border-dark-800 pt-3 font-mono leading-relaxed">
-                                        <div class="mb-1 text-dark-500 uppercase text-[10px] font-bold">常用指令:</div>
-                                        <code class="bg-dark-800 px-1 py-0.5 rounded text-slate-400 cursor-pointer hover:text-slate-200" @click="cocInput = '.r 1d100'">.r 1d100</code>
-                                        <code class="bg-dark-800 px-1 py-0.5 rounded text-slate-400 cursor-pointer hover:text-slate-200" @click="cocInput = '.sc 1/1d6'">.sc 1/1d6</code>
                                     </div>
                                 </div>
                             </div>
@@ -1117,6 +1113,7 @@
                                             <div class="flex bg-dark-950 p-1 rounded border border-dark-700">
                                                 <button @click="libraryState.uploadForm.type = 'original'" :class="['flex-1 py-1 text-xs rounded transition-all font-bold', libraryState.uploadForm.type === 'original' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300']">原创</button>
                                                 <button @click="libraryState.uploadForm.type = 'reprint'" :class="['flex-1 py-1 text-xs rounded transition-all font-bold', libraryState.uploadForm.type === 'reprint' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300']">搬运</button>
+                                                <button @click="libraryState.uploadForm.type = 'ai_adapt'" :class="['flex-1 py-1 text-xs rounded transition-all font-bold', libraryState.uploadForm.type === 'ai_adapt' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300']">AI改编</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1131,12 +1128,14 @@
                                         <textarea v-model="libraryState.uploadForm.description" rows="3" :placeholder="libraryState.isSummarizing ? '正在生成摘要...' : '请输入简介或等待自动生成...'" class="w-full bg-dark-950 border border-dark-700 rounded px-3 py-2 text-slate-300 focus:border-purple-500 outline-none resize-none transition-colors focus:ring-1 focus:ring-purple-500/50" :disabled="libraryState.isSummarizing"></textarea>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">模组内容</label>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                                            {{ libraryState.uploadForm.type === 'ai_adapt' ? '小说原文 / 故事大纲' : '模组内容' }}
+                                        </label>
                                         <div class="flex gap-4 mb-2">
                                             <button @click="libraryState.uploadType = 'text'" :class="['px-3 py-1 rounded text-xs border', libraryState.uploadType === 'text' ? 'bg-purple-900/30 border-purple-500 text-purple-300' : 'border-dark-700 text-slate-500']">直接粘贴</button>
                                             <button @click="libraryState.uploadType = 'file'" :class="['px-3 py-1 rounded text-xs border', libraryState.uploadType === 'file' ? 'bg-purple-900/30 border-purple-500 text-purple-300' : 'border-dark-700 text-slate-500']">文件上传</button>
                                         </div>
-                                        <textarea v-if="libraryState.uploadType === 'text'" v-model="libraryState.uploadForm.content" rows="10" placeholder="在此粘贴模组正文..." class="w-full bg-dark-950 border border-dark-700 rounded px-3 py-2 text-slate-300 focus:border-purple-500 outline-none font-mono text-sm"></textarea>
+                                        <textarea v-if="libraryState.uploadType === 'text'" v-model="libraryState.uploadForm.content" rows="10" :placeholder="libraryState.uploadForm.type === 'ai_adapt' ? '在此粘贴小说原文...' : '在此粘贴模组正文...'" class="w-full bg-dark-950 border border-dark-700 rounded px-3 py-2 text-slate-300 focus:border-purple-500 outline-none font-mono text-sm"></textarea>
                                         <div v-else class="h-40 border-2 border-dashed border-dark-700 rounded flex flex-col items-center justify-center text-slate-500 hover:border-purple-500 hover:text-purple-400 transition-colors cursor-pointer relative">
                                             <input type="file" accept=".txt,.md,.json,.docx" @change="handleLibraryFileUpload" class="absolute inset-0 opacity-0 cursor-pointer">
                                             <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
@@ -1147,7 +1146,13 @@
                                 </div>
                                 <div class="p-6 border-t border-dark-800 flex justify-end gap-3">
                                     <button @click="libraryState.showUpload = false" class="px-4 py-2 text-slate-400 hover:text-slate-200">取消</button>
-                                    <button @click="uploadToLibrary" :disabled="!libraryState.uploadForm.title || !libraryState.uploadForm.content || libraryState.isUploading" class="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                    
+                                    <button v-if="libraryState.uploadForm.type === 'ai_adapt'" @click="adaptNovelToModule" :disabled="!libraryState.uploadForm.content || libraryState.isAdapting" class="px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                        <svg v-if="libraryState.isAdapting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        {{ libraryState.isAdapting ? '正在改编...' : '开始AI改编' }}
+                                    </button>
+
+                                    <button v-else @click="uploadToLibrary" :disabled="!libraryState.uploadForm.title || !libraryState.uploadForm.content || libraryState.isUploading" class="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                         <svg v-if="libraryState.isUploading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                         {{ libraryState.isUploading ? '正在入库...' : '确认入库' }}
                                     </button>
@@ -1213,9 +1218,14 @@
                                         {{ mod.author_name || '佚名' }}
                                     </div>
                                     <p class="text-sm text-slate-400 line-clamp-3 mb-4 h-[4.5em] leading-relaxed relative z-10">{{ mod.description || '暂无简介...' }}</p>
-                                    <div class="flex gap-4 text-xs text-slate-600 border-t border-dark-800 pt-3">
-                                        <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> {{ Math.ceil(mod.content.length / 1000) }}k 字</span>
-                                        <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> {{ mod.downloads || 0 }}</span>
+                                    <div class="flex gap-4 text-xs text-slate-600 border-t border-dark-800 pt-3 justify-between">
+                                        <div class="flex gap-4">
+                                            <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> {{ Math.ceil(mod.content.length / 1000) }}k 字</span>
+                                            <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> {{ mod.downloads || 0 }}</span>
+                                        </div>
+                                        <button @click="exportModuleToWord(mod)" class="text-slate-500 hover:text-blue-400 transition-colors" title="导出 Word">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="p-4 border-t border-dark-800 bg-dark-950/30 flex gap-2">
@@ -1652,6 +1662,7 @@
                     loading: false,
                     isSummarizing: false,
                     isUploading: false,
+                    isAdapting: false,
                     searchQuery: '',
                     showUpload: false,
                     uploadType: 'text', // 'text' or 'file'
@@ -2603,19 +2614,22 @@ ${cocState.module.content.slice(0, 15000)}`;
                         const myPendingRollIndex = cocState.pendingRolls.findIndex(p => {
                             if (p.targetName !== inv.name) return false;
                             
-                            // 检查指令类型
-                            if ((cmdType === '.ra' || cmdType === '.rc') && (p.command === '.ra' || p.command === '.rc')) {
-                                // 检查技能名 (如果 Keeper 指定了技能，玩家必须检定该技能)
-                                // 简单包含检查
-                                if (p.args && cmdArgs && !p.args.includes(cmdArgs) && !cmdArgs.includes(p.args)) {
-                                     // 也许可以放宽一点，或者提示用户“Keeper 要求的是 xxx”
-                                     return false;
-                                }
-                                return true;
+                            // 宽松匹配逻辑 (响应用户需求：当 KP 要求 .ra 时，放开所有检定)
+                            
+                            // 1. 玩家输入 .ra / .rc
+                            if (cmdType === '.ra' || cmdType === '.rc') {
+                                // 只要 pending 是 .ra/.rc 即可，不再强制检查技能名匹配
+                                if (p.command === '.ra' || p.command === '.rc') return true;
                             }
-                            if ((cmdType === '.sc' || cmdType === '.san') && (p.command === '.sc' || p.command === '.san')) {
-                                return true;
+                            
+                            // 2. 玩家输入 .sc / .san
+                            if (cmdType === '.sc' || cmdType === '.san') {
+                                // 匹配 .sc 的 pending
+                                if (p.command === '.sc' || p.command === '.san') return true;
+                                // 根据需求：如果 pending 是 .ra，也允许玩家进行 .sc
+                                if (p.command === '.ra' || p.command === '.rc') return true;
                             }
+                            
                             return false;
                         });
 
@@ -2663,10 +2677,13 @@ ${cocState.module.content.slice(0, 15000)}`;
                         }
                         // .sc / .san SAN Check (.sc 1/1d6)
                         else if (content.match(/^\.(sc|san)(\s|$)/i)) {
-                            // 使用 Keeper 指定的参数，或者玩家输入的参数？
-                            // 应该优先使用 Keeper 指定的参数，防止玩家作弊
                             const pendingReq = cocState.pendingRolls[myPendingRollIndex];
-                            const args = (pendingReq && pendingReq.args) || content.split(/\s+/)[1] || ''; // 优先用 Keeper 的
+                            // 如果 pendingReq 是 sc 类型，优先用它的参数；如果是 ra 类型（跨类型允许），则忽略 pending 参数，使用玩家输入的
+                            let args = '';
+                            if (pendingReq && (pendingReq.command === '.sc' || pendingReq.command === '.san')) {
+                                args = pendingReq.args;
+                            }
+                            if (!args) args = content.split(/\s+/)[1] || '';
                             
                             const [successLoss, failLoss] = args.split('/').map(s => s || '0');
                             
@@ -2691,10 +2708,38 @@ ${cocState.module.content.slice(0, 15000)}`;
                             systemMsg = `[系统] ${inv.name} 进行 SAN Check: 1d100=${val}/${oldSan} [${resultStr}]。扣除 SAN 值: ${loss} (当前: ${inv.san})。`;
                             logContent = `👻 **SAN Check ${resultStr}** (1d100=${val}/${oldSan})\n损失 ${loss} 点 SAN (当前: ${inv.san})`;
                         }
-                        // .ra / .rc 技能检定 (.ra 侦查)
-                        else if (content.match(/^\.(ra|rc)(\s|$)/i)) {
+                        // .ra / .rc 技能检定 (.ra 侦查) 以及 .rb (奖励骰) / .rp (惩罚骰)
+                        else if (content.match(/^\.(ra|rc|rb|rp)(\s|$)/i)) {
                             const pendingReq = cocState.pendingRolls[myPendingRollIndex];
-                            const skillName = (pendingReq && pendingReq.args) || content.split(/\s+/)[1]; // 优先用 Keeper 的
+                            const cmdParts = content.split(/\s+/);
+                            const cmdType = cmdParts[0].toLowerCase();
+                            
+                            // 优先使用玩家输入的技能名，如果玩家未输入，则使用 Keeper 指定的
+                            // 对于 .rb/.rp，参数格式通常是 .rb [数量] [技能名] 或 .rb [技能名] (默认1个)
+                            // 简单起见，我们假设 .rb/.rp 后面的第一个非数字参数是技能名，数字是骰子数量
+                            
+                            let skillName = '';
+                            let bonusDice = 0; // 正数奖励，负数惩罚
+                            
+                            if (cmdType === '.rb' || cmdType === '.rp') {
+                                const args = cmdParts.slice(1);
+                                let count = 1;
+                                
+                                // 解析参数
+                                for (const arg of args) {
+                                    if (/^\d+$/.test(arg)) {
+                                        count = parseInt(arg);
+                                    } else {
+                                        skillName = arg;
+                                    }
+                                }
+                                if (cmdType === '.rp') count = -count;
+                                bonusDice = count;
+                            } else {
+                                skillName = cmdParts[1];
+                            }
+                            
+                            if (!skillName && pendingReq) skillName = pendingReq.args;
                             
                             let skillVal = 0;
                             let skillLabel = skillName || '属性/技能';
@@ -2735,20 +2780,68 @@ ${cocState.module.content.slice(0, 15000)}`;
                                 }
                             }
                             
-                            const val = Math.floor(Math.random() * 100) + 1;
+                            // 骰点逻辑 (含奖励/惩罚骰)
+                            // 规则：个位不变，十位多投 N 个，奖励骰取最小十位，惩罚骰取最大十位
+                            const units = Math.floor(Math.random() * 10); // 0-9
+                            const tens = [Math.floor(Math.random() * 10)]; // 初始十位 0-9
+                            
+                            const extraDiceCount = Math.abs(bonusDice);
+                            for(let i=0; i<extraDiceCount; i++) {
+                                tens.push(Math.floor(Math.random() * 10));
+                            }
+                            
+                            let finalTen = tens[0];
+                            if (bonusDice > 0) {
+                                // 奖励骰：取最小
+                                // 注意：0 在 COC 中代表 0 或 100。如果是 00 (100)，十位是 0。
+                                // 这里简化处理：直接比较数字大小，最后组合成 1-100
+                                // 实际上 COC 规则是比较最终结果。
+                                // 例如：个位 5。十位投出 1 和 2。组合成 15 和 25。取 15。
+                                // 如果个位 0。十位投出 0 和 1。组合成 100 (00) 和 10。取 10。
+                                // 让我们构建所有可能的最终值，然后比较
+                                const candidates = tens.map(t => {
+                                    let val = t * 10 + units;
+                                    if (val === 0) val = 100;
+                                    return val;
+                                });
+                                finalTen = -1; // unused
+                                var finalVal = Math.min(...candidates);
+                            } else if (bonusDice < 0) {
+                                // 惩罚骰：取最大
+                                const candidates = tens.map(t => {
+                                    let val = t * 10 + units;
+                                    if (val === 0) val = 100;
+                                    return val;
+                                });
+                                finalTen = -1;
+                                var finalVal = Math.max(...candidates);
+                            } else {
+                                finalVal = tens[0] * 10 + units;
+                                if (finalVal === 0) finalVal = 100;
+                            }
+
                             let level = '';
                             if (skillVal > 0) {
-                                if (val === 1) level = '大成功';
-                                else if (val === 100) level = '大失败';
-                                else if (val <= skillVal / 5) level = '极难成功';
-                                else if (val <= skillVal / 2) level = '困难成功';
-                                else if (val <= skillVal) level = '成功';
+                                if (finalVal === 1) level = '大成功';
+                                else if (finalVal === 100) level = '大失败';
+                                else if (finalVal <= skillVal / 5) level = '极难成功';
+                                else if (finalVal <= skillVal / 2) level = '困难成功';
+                                else if (finalVal <= skillVal) level = '成功';
                                 else level = '失败';
                             }
 
                             const resultStr = skillVal > 0 ? `${level}` : '';
-                            systemMsg = `[系统] ${inv.name} 进行 ${skillLabel} 检定: 1d100=${val}/${skillVal || '?'} [${resultStr}]`;
-                            logContent = `🎲 **${skillLabel} ${resultStr}** (1d100=${val}/${skillVal || '?'})`;
+                            
+                            // 显示逻辑：如果是奖励/惩罚骰，视为暗骰，不显示具体点数，只显示结果状态
+                            const isSecret = bonusDice !== 0;
+                            
+                            if (isSecret) {
+                                systemMsg = `[系统] ${inv.name} 进行 ${skillLabel} 检定 (${bonusDice > 0 ? '奖励' : '惩罚'} ${Math.abs(bonusDice)}): [${resultStr}]`;
+                                logContent = `🎲 **${skillLabel} ${resultStr}** (???/${skillVal || '?'}) ${bonusDice > 0 ? '📈' : '📉'}`;
+                            } else {
+                                systemMsg = `[系统] ${inv.name} 进行 ${skillLabel} 检定: 1d100=${finalVal}/${skillVal || '?'} [${resultStr}]`;
+                                logContent = `🎲 **${skillLabel} ${resultStr}** (1d100=${finalVal}/${skillVal || '?'})`;
+                            }
                         }
 
                         if (logContent) {
@@ -3585,6 +3678,135 @@ $$ language plpgsql;`;
                         if (multiplayerState.isHost) {
                              broadcastMessage({ type: 'sync_module', moduleName: cocState.module.name });
                         }
+                    }
+                };
+
+                const adaptNovelToModule = async () => {
+                    const novelContent = libraryState.uploadForm.content;
+                    if (!novelContent || novelContent.length < 50) return showToast('内容太短，无法改编', 'warning');
+                    
+                    libraryState.isAdapting = true;
+                    showToast('正在召唤灵感之源，请耐心等待...', 'info');
+
+                    try {
+                        const msgs = [
+                            { role: 'system', content: `你是一位资深的 COC (Call of Cthulhu 7th Edition) 跑团模组作者。你的任务是将用户提供的小说内容或故事大纲，改编成一个标准的 COC 模组。
+                            
+请严格按照以下 Markdown 格式输出：
+
+# [模组标题]
+
+## 简介
+[模组简介，包含背景故事摘要和核心谜团]
+
+## 守密人信息 (Keeper Information)
+[只有 KP 需要知道的真相、幕后黑手、时间线]
+
+## 引入 (The Hook)
+[调查员如何卷入事件]
+
+## 场景一：[场景名]
+[描述、NPC、线索、可能发生的事件]
+
+## 场景二：[场景名]
+...
+
+## 结局 (Ending)
+[几种可能的结局]
+
+## NPC 档案
+[主要 NPC 的简要设定]
+
+## 物品与法术
+[相关物品或书籍的设定]
+
+请确保内容逻辑通顺，氛围具有克苏鲁风格，并包含必要的检定建议（如：侦查、聆听、心理学等）。` },
+                            { role: 'user', content: `请将以下小说/大纲改编为 COC 模组：\n\n${novelContent.slice(0, 15000)}` }
+                        ];
+
+                        const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
+                            body: JSON.stringify({
+                                model: settings.model,
+                                messages: msgs,
+                                temperature: 0.8
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (data.choices && data.choices[0]?.message?.content) {
+                            const adaptedContent = data.choices[0].message.content;
+                            
+                            // Update Form
+                            libraryState.uploadForm.content = adaptedContent;
+                            libraryState.uploadForm.type = 'original'; // Reset to original so user can edit and submit
+                            
+                            // Try to extract title
+                            const titleMatch = adaptedContent.match(/^#\s+(.+)$/m);
+                            if (titleMatch) libraryState.uploadForm.title = titleMatch[1].replace(/[\[\]]/g, '');
+                            
+                            // Generate description if missing
+                            if (!libraryState.uploadForm.description) {
+                                generateModuleSummary(adaptedContent);
+                            }
+                            
+                            showToast('改编完成！请校对后入库。', 'success');
+                        } else {
+                            throw new Error('API 返回数据为空');
+                        }
+                    } catch (e) {
+                        console.error('Adaptation Error:', e);
+                        showToast('改编失败: ' + e.message, 'error');
+                    } finally {
+                        libraryState.isAdapting = false;
+                    }
+                };
+
+                const exportModuleToWord = (mod) => {
+                    try {
+                        // 1. Convert Markdown to HTML
+                        const htmlContent = marked.parse(mod.content);
+                        
+                        // 2. Wrap in Word-friendly HTML structure with styles
+                        const docHtml = `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="UTF-8">
+                                <style>
+                                    body { font-family: 'SimSun', 'Times New Roman', serif; line-height: 1.5; }
+                                    h1 { font-size: 24pt; color: #2e74b5; text-align: center; margin-bottom: 20px; }
+                                    h2 { font-size: 18pt; color: #1f4d78; border-bottom: 1px solid #1f4d78; padding-bottom: 5px; margin-top: 20px; }
+                                    h3 { font-size: 14pt; color: #1f4d78; margin-top: 15px; }
+                                    p { font-size: 12pt; margin-bottom: 10px; text-align: justify; }
+                                    ul, ol { margin-bottom: 10px; }
+                                    li { margin-bottom: 5px; }
+                                    strong { color: #b7950b; }
+                                    blockquote { border-left: 4px solid #5e8d83; padding-left: 10px; color: #555; font-style: italic; background-color: #f9f9f9; }
+                                    table { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
+                                    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                                    th { background-color: #e9ecef; }
+                                </style>
+                            </head>
+                            <body>
+                                <h1>${mod.title}</h1>
+                                <p style="text-align: center; color: #666; font-size: 10pt;">作者：${mod.author_name || '佚名'} | 来源：Zarkto's Table</p>
+                                <hr/>
+                                ${htmlContent}
+                            </body>
+                            </html>
+                        `;
+
+                        // 3. Convert to Blob using html-docx-js
+                        const converted = htmlDocx.asBlob(docHtml);
+                        
+                        // 4. Save
+                        saveAs(converted, `${mod.title}.docx`);
+                        showToast('导出成功', 'success');
+                    } catch (e) {
+                        console.error('Export Error:', e);
+                        showToast('导出失败: ' + e.message, 'error');
                     }
                 };
 
