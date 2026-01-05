@@ -98,6 +98,22 @@
         /* Text Effects */
         .text-shadow-gold { text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
         
+        /* Medal Icon Animation */
+        .medal-icon {
+            filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.4));
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: medal-float 4s ease-in-out infinite;
+        }
+        @keyframes medal-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .medal-icon:hover {
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8));
+            transform: scale(1.15) rotate(5deg) translateY(-6px);
+            animation-play-state: paused;
+        }
+
         /* Glass Panel Utility */
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(8px); border: 1px solid rgba(148, 163, 184, 0.1); }
 
@@ -129,6 +145,72 @@
                 height: auto !important;
                 min-height: 80px;
             }
+        }
+
+        /* Ribbon Style - Cthulhu Theme */
+        .ribbon {
+            position: relative;
+            background: linear-gradient(to bottom, #3f1a1a, #1a0505);
+            color: #e2d1a6;
+            text-align: center;
+            padding: 3px 6px;
+            font-size: 9px;
+            min-width: 100%;
+            width: max-content;
+            max-width: 140%;
+            margin-top: -6px;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+            border: 1px solid #5c4033;
+            border-top: none;
+            left: 50%;
+            transform: translateX(-50%);
+            text-shadow: 0 1px 2px #000;
+            font-family: serif;
+            letter-spacing: 0.5px;
+        }
+        .ribbon::before, .ribbon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            z-index: -1;
+        }
+        .ribbon::before {
+            left: -4px;
+            border-width: 0 4px 8px 0;
+            border-color: transparent #0f0000 transparent transparent;
+        }
+        .ribbon::after {
+            right: -4px;
+            border-width: 0 0 8px 4px;
+            border-color: transparent transparent transparent #0f0000;
+        }
+        .ribbon-tail-l {
+            position: absolute;
+            top: 4px;
+            left: -6px;
+            width: 10px;
+            height: 16px;
+            background: #1a0505;
+            z-index: -2;
+            transform: skewY(20deg);
+            border: 1px solid #5c4033;
+            border-right: none;
+        }
+        .ribbon-tail-r {
+            position: absolute;
+            top: 4px;
+            right: -6px;
+            width: 10px;
+            height: 16px;
+            background: #1a0505;
+            z-index: -2;
+            transform: skewY(-20deg);
+            border: 1px solid #5c4033;
+            border-left: none;
         }
     </style>
 </head>
@@ -560,6 +642,7 @@
                                     <th class="text-center w-14">基础</th>
                                     <th class="text-center w-20">本职</th>
                                     <th class="text-center w-20">兴趣</th>
+                                    <th class="text-center w-16 text-mystic-teal">成长</th>
                                     <th class="text-center w-14 text-mystic-gold">总值</th>
                                     <th class="w-10"></th>
                                 </tr>
@@ -594,6 +677,15 @@
                                         <input type="number" v-model.number="skill.interest" class="input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-green focus:ring-1 focus:ring-mystic-green/50 transition-colors"
                                                @input="updateSkillTotal(skill)" placeholder="0" />
                                     </td>
+                                    <td class="p-2">
+                                        <div class="join w-full justify-center">
+                                            <input type="number" v-model.number="skill.growth" class="input input-bordered input-xs w-10 text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-teal focus:ring-1 focus:ring-mystic-teal/50 transition-colors join-item"
+                                                   @input="updateSkillTotal(skill)" placeholder="0" />
+                                            <button @click="skillGrowth(skill)" class="btn btn-xs btn-square join-item border-dark-700 bg-dark-800 hover:bg-mystic-teal hover:text-dark-900 hover:border-mystic-teal transition-all" title="成长检定 (1d100 > 技能值 ? +1d10)">
+                                                🎲
+                                            </button>
+                                        </div>
+                                    </td>
                                     <td class="font-black text-center p-2 text-mystic-gold text-sm font-mono">{{ skill.value }}</td>
                                     <td class="p-2 text-right">
                                         <button @click="removeSkill(skill)" class="btn btn-ghost btn-xs text-slate-600 hover:text-red-500 w-6 h-6 min-h-0 p-0 rounded-full">×</button>
@@ -612,9 +704,20 @@
         <div class="card-body p-4 md:p-8 gap-6 relative z-10">
                 <!-- Inventory & Assets -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-control">
-                        <label class="label font-bold text-xs uppercase text-slate-500 font-serif">随身物品 Inventory</label>
-                        <textarea v-model="coc.inventory" class="textarea textarea-bordered h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed"></textarea>
+                    <div class="form-control flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="label font-bold text-xs uppercase text-slate-500 font-serif p-0">随身物品 Inventory</label>
+                            <div class="tabs tabs-boxed tabs-xs bg-dark-900/50 p-0.5 border border-dark-700">
+                                <a class="tab transition-all duration-200" :class="{ 'tab-active bg-mystic-gold text-dark-900 font-bold': inventoryTab === 'gear' }" @click="inventoryTab = 'gear'">装备</a>
+                                <a class="tab transition-all duration-200" :class="{ 'tab-active bg-mystic-gold text-dark-900 font-bold': inventoryTab === 'key' }" @click="inventoryTab = 'key'">道具</a>
+                                <a class="tab transition-all duration-200" :class="{ 'tab-active bg-mystic-gold text-dark-900 font-bold': inventoryTab === 'normal' }" @click="inventoryTab = 'normal'">杂物</a>
+                            </div>
+                        </div>
+                        <div class="relative flex-1">
+                            <textarea v-show="inventoryTab === 'gear'" v-model="coc.inventory_gear" class="textarea textarea-bordered w-full h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="武器、防具、工具..."></textarea>
+                            <textarea v-show="inventoryTab === 'key'" v-model="coc.inventory_key" class="textarea textarea-bordered w-full h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="关键道具、信件、古籍..."></textarea>
+                            <textarea v-show="inventoryTab === 'normal'" v-model="coc.inventory" class="textarea textarea-bordered w-full h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="一般随身物品..."></textarea>
+                        </div>
                     </div>
                     <div class="form-control">
                         <label class="label font-bold text-xs uppercase text-slate-500 font-serif">资产 & 现金 Assets</label>
@@ -650,6 +753,90 @@
                 </div>
         </div>
     </div>
+
+    <!-- History & Badges Card -->
+    <div class="card glass-panel shadow-2xl rounded-2xl relative">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-900 to-mystic-gold opacity-50 rounded-t-2xl"></div>
+        <div class="card-body p-4 md:p-8 gap-6 relative z-10">
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Badges -->
+                <div class="flex-1">
+                    <div class="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-3 font-serif flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                        勋章墙 Badges
+                    </div>
+                    <div class="flex flex-wrap gap-x-6 gap-y-6 min-h-[6rem] content-start items-start pt-4 pl-4 pb-4 rounded-xl bg-dark-900/30 border border-white/5 relative shadow-inner">
+                        <!-- Subtle Background Pattern -->
+                        <div class="absolute inset-0 opacity-[0.03] pointer-events-none rounded-xl overflow-hidden" style="background-image: radial-gradient(circle at 50% 50%, #d4af37 1px, transparent 1px); background-size: 24px 24px;"></div>
+                        
+                        <div v-for="(badge, idx) in coc.badges" :key="idx"
+                             class="flex flex-col items-center group w-14 animate-fade-in relative z-10">
+                            <div class="relative w-12 h-12 flex items-center justify-center bg-gradient-to-b from-dark-800 to-dark-900 rounded-full border border-mystic-gold/40 cursor-help shadow-lg hover:bg-dark-700 transition-colors shrink-0 z-20">
+                                <div class="w-7 h-7 text-mystic-gold/90 drop-shadow-[0_0_5px_rgba(212,175,55,0.6)] medal-icon">
+                                    <svg v-if="badge.icon && badge.icon.startsWith('<svg')" v-html="badge.icon" class="w-full h-full" viewBox="0 0 24 24" fill="currentColor"></svg>
+                                    <span v-else class="text-xl select-none">{{ badge.icon || '🏅' }}</span>
+                                </div>
+                                <!-- Tooltip -->
+                                <div class="absolute bottom-[120%] left-1/2 -translate-x-1/2 mb-2 w-40 p-3 bg-dark-950 border border-mystic-gold/20 rounded-lg text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl backdrop-blur-md">
+                                    <div class="font-bold text-mystic-gold text-xs mb-1">{{ badge.name }}</div>
+                                    <div class="text-[10px] text-slate-400 leading-tight">{{ badge.desc }}</div>
+                                    <div class="text-[9px] text-slate-600 mt-2 pt-1 border-t border-dark-800 font-mono">{{ badge.date }}</div>
+                                </div>
+                                <!-- Actions Overlay -->
+                                <div class="absolute inset-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-black/70 rounded-full backdrop-blur-[1px]">
+                                    <button @click.stop="editBadge(idx)" class="btn btn-xs btn-circle btn-ghost text-white hover:text-mystic-gold scale-90" title="编辑">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                                    </button>
+                                    <button @click.stop="coc.badges.splice(idx, 1)" class="btn btn-xs btn-circle btn-ghost text-white hover:text-red-500 scale-90" title="删除">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Ribbon Name -->
+                            <div class="ribbon font-serif font-bold tracking-wider leading-tight">
+                                <div class="whitespace-nowrap overflow-hidden text-ellipsis px-0.5 max-w-[6rem]">{{ badge.name }}</div>
+                                <div class="ribbon-tail-l"></div>
+                                <div class="ribbon-tail-r"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add Badge Button (Always Visible) -->
+                        <div class="flex flex-col items-center gap-1.5 w-14">
+                            <button @click="addBadge" class="w-12 h-12 flex items-center justify-center rounded-full border border-dashed border-dark-600 text-dark-500 hover:text-mystic-gold hover:border-mystic-gold/50 transition-colors group relative shrink-0 z-10" title="添加勋章">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                            </button>
+                            <span v-if="!coc.badges || coc.badges.length === 0" class="text-[10px] text-slate-600 text-center font-serif whitespace-nowrap absolute left-20 top-4 pointer-events-none">点击添加首枚勋章</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="flex-1">
+                    <div class="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-3 font-serif flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                        调查员履历 History
+                    </div>
+                    <div class="bg-dark-900/50 border border-dark-700 rounded-xl p-4 h-48 overflow-y-auto custom-scrollbar font-serif text-sm leading-relaxed text-slate-300 shadow-inner relative group">
+                        <div v-if="!coc.history || coc.history.length === 0" class="text-center text-slate-600 text-xs italic mt-16">
+                            尚无冒险记录...
+                        </div>
+                        <div v-else class="space-y-3">
+                            <div v-for="(log, idx) in coc.history" :key="idx" class="relative pl-4 border-l border-dark-700 hover:border-mystic-gold/30 transition-colors group/item cursor-pointer" @click="editHistory(idx)">
+                                <div class="whitespace-pre-wrap text-xs">{{ log }}</div>
+                                <button @click.stop="coc.history.splice(idx, 1)" class="absolute right-0 top-0 text-slate-600 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button @click="addHistoryLog" class="absolute bottom-2 right-2 btn btn-xs btn-circle btn-ghost bg-dark-800 border border-dark-600 text-slate-400 hover:text-mystic-gold hover:border-mystic-gold shadow-lg opacity-0 group-hover:opacity-100 transition-all" title="添加记录">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     </div> <!-- Close Main COC Card Content Wrapper -->
 
     <!-- Bottom Floating Input Bar -->
@@ -850,6 +1037,69 @@
         </form>
     </dialog>
 
+    <!-- Badge Modal -->
+    <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': showBadgeModal }">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl">
+            <h3 class="font-bold text-lg text-mystic-gold flex items-center gap-2 font-serif mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                {{ editingBadgeIndex > -1 ? '编辑勋章' : '添加勋章' }}
+            </h3>
+            <div class="flex flex-col gap-3">
+                <div class="form-control">
+                    <label class="label text-xs font-bold text-slate-500">名称</label>
+                    <input type="text" v-model="badgeForm.name" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold" placeholder="勋章名称" />
+                </div>
+                <div class="form-control">
+                    <label class="label text-xs font-bold text-slate-500">描述</label>
+                    <textarea v-model="badgeForm.desc" class="textarea textarea-bordered bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold text-sm h-20" placeholder="勋章描述..."></textarea>
+                </div>
+                <div class="form-control">
+                    <label class="label text-xs font-bold text-slate-500">图标样式</label>
+                    <div class="grid grid-cols-5 gap-2 bg-dark-800/50 p-2 rounded-lg border border-dark-600 max-h-32 overflow-y-auto custom-scrollbar">
+                        <button v-for="(icon, key) in cthulhuIcons" :key="key"
+                                @click="badgeForm.icon = icon"
+                                class="btn btn-sm btn-square p-1 hover:bg-mystic-gold/20 hover:border-mystic-gold transition-all"
+                                :class="badgeForm.icon === icon ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold shadow-[0_0_10px_rgba(212,175,55,0.3)]' : 'btn-ghost border-transparent text-slate-500'">
+                            <div class="w-5 h-5" v-html="icon"></div>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label class="label text-xs font-bold text-slate-500">日期</label>
+                    <input type="text" v-model="badgeForm.date" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold" placeholder="YYYY-MM-DD" />
+                </div>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost text-slate-400 hover:text-slate-200" @click="showBadgeModal = false">取消</button>
+                <button class="btn bg-mystic-gold text-dark-900 border-none hover:bg-yellow-600" @click="saveBadge">保存</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="showBadgeModal = false">close</button>
+        </form>
+    </dialog>
+
+    <!-- History Modal -->
+    <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': showHistoryModal }">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl">
+            <h3 class="font-bold text-lg text-mystic-gold flex items-center gap-2 font-serif mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                {{ editingHistoryIndex > -1 ? '编辑记录' : '添加记录' }}
+            </h3>
+            <div class="form-control">
+                <label class="label text-xs font-bold text-slate-500">内容</label>
+                <textarea v-model="historyForm.content" class="textarea textarea-bordered bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold text-sm h-40 font-serif leading-relaxed" placeholder="发生了什么..."></textarea>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost text-slate-400 hover:text-slate-200" @click="showHistoryModal = false">取消</button>
+                <button class="btn bg-mystic-gold text-dark-900 border-none hover:bg-yellow-600" @click="saveHistory">保存</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="showHistoryModal = false">close</button>
+        </form>
+    </dialog>
+
     <!-- Settings Modal -->
     <dialog class="modal modal-bottom sm:modal-middle" :class="{ 'modal-open': showSettings }">
         <div class="modal-box bg-base-100">
@@ -989,6 +1239,29 @@
             const limitBreak = ref(false);
             const isAvatarLoading = ref(false);
             const abortController = ref(null);
+            const inventoryTab = ref('gear'); // gear | key | normal
+
+            // Modal States
+            const showBadgeModal = ref(false);
+            const editingBadgeIndex = ref(-1);
+            const badgeForm = reactive({ name: '', desc: '', icon: '', date: '' });
+
+            const cthulhuIcons = {
+                'cthulhu': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8 c0-4.41,3.59-8,8-8s8,3.59,8,8C20,16.41,16.41,20,12,20z M12,6c-3.31,0-6,2.69-6,6c0,1.36,0.46,2.61,1.23,3.62l1.46-1.46 C8.26,13.61,8,12.84,8,12c0-2.21,1.79-4,4-4s4,1.79,4,4c0,0.84-0.26,1.61-0.69,2.16l1.46,1.46C17.54,14.61,18,13.36,18,12 C18,8.69,15.31,6,12,6z M12,10c-1.1,0-2,0.9-2,2c0,0.55,0.22,1.05,0.59,1.41l2.83-2.83C13.05,10.22,12.55,10,12,10z"/></svg>',
+                'eye': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>',
+                'skull': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7.58 2 4 5.58 4 10c0 2.62 1.27 4.97 3.23 6.42L7 22h2l.71-2h4.58l.71 2h2l-.23-5.58C18.73 14.97 20 12.62 20 10c0-4.42-3.58-8-8-8zm0 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm4-5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-8 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>',
+                'book': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>',
+                'star': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
+                'moon': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-1-5 5-1-5-1 1-5 1 5 5 1-5 1 1 5z"/></svg>',
+                'tentacle': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C9 2 7 4 7 7c0 2 2 3 2 5s-2 3-2 5c0 2 2 3 5 3 3 0 5-1 5-3 0-2-2-3-2-5s2-3 2-5c0-3-2-5-5-5z"/></svg>',
+                'key': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 10h-8.35C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H13l2 2 2-2 2 2 4-4.04L21 10zM7 15c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>',
+                'potion': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3h-2v2h2V3zm4 4h-2v2h2V7zm-8 0H7v2h2V7zm10 4h-2v2h2v-2zm-8 0H9v2h2v-2zm4-2h-2v2h2V9zm-2 4h-2v2h2v-2zm6 2h-2v2h2v-2zm-8 0H9v2h2v-2zm4 2h-2v2h2v-2zm4 4H7v-2h10v2z"/></svg>', // Simplified pattern
+                'dagger': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 21.5L6 20l9-9 1.41 1.41L7.5 21.5zm9.9-12.02l3.54-3.54-4.95-4.95-3.54 3.54 4.95 4.95zM4 11v2h9.17l-1-1L11 11H4z"/></svg>' // Simplified
+            };
+
+            const showHistoryModal = ref(false);
+            const editingHistoryIndex = ref(-1);
+            const historyForm = reactive({ content: '' });
 
             // Options logic
             const savedOptions = localStorage.getItem('ai_chargen_options_coc');
@@ -1063,7 +1336,9 @@
                 avatar_prompt: '',
                 skills: [], // Will be initialized
                 jobSkillsCustom: [], // Selected custom job skills
-                inventory: '',
+                inventory: '', // Keep for backward compatibility or general items
+                inventory_gear: '',
+                inventory_key: '',
                 assets: '',
                 cash: '',
                 creditRating: 0,
@@ -1082,7 +1357,9 @@
                     spells: '',
                     encounters: ''
                 },
-                weapons: []
+                weapons: [],
+                history: [], // [{ date: '2023-01-01', content: '...' }]
+                badges: []   // [{ name: '...', desc: '...', icon: '🏅', date: '...' }]
             });
 
             // Data Persistence Logic
@@ -1136,19 +1413,24 @@
                         // Deep copy to avoid reference issues
                         const loadedCoc = JSON.parse(JSON.stringify(char.coc));
                         
-                        // Migration: Ensure skills have base/occ/int structure
+                        // Migration: Ensure skills have base/occ/int/growth structure
                         if (loadedCoc.skills) {
                             loadedCoc.skills = loadedCoc.skills.map(s => {
-                                if (s.occupation === undefined) {
-                                    return {
-                                        name: s.name,
-                                        value: s.value,
-                                        base: 0,
-                                        occupation: 0,
-                                        interest: 0
-                                    };
+                                let modified = false;
+                                const newSkill = { ...s };
+                                
+                                if (newSkill.occupation === undefined) {
+                                    newSkill.base = 0;
+                                    newSkill.occupation = 0;
+                                    newSkill.interest = 0;
+                                    modified = true;
                                 }
-                                return s;
+                                if (newSkill.growth === undefined) {
+                                    newSkill.growth = 0;
+                                    modified = true;
+                                }
+                                
+                                return modified ? newSkill : s;
                             });
                         }
                         
@@ -1189,11 +1471,15 @@
                             stats: { STR: 50, CON: 50, SIZ: 65, DEX: 50, APP: 50, INT: 65, POW: 50, EDU: 60, LUCK: 50 },
                             hp: 10, maxHp: 10, mp: 10, maxMp: 10, san: 50, maxSan: 99,
                             status: { majorWound: false, unconscious: false, dead: false, tempInsanity: false, indefInsanity: false, permInsanity: false },
+                            avatar: null,
+                            avatar_prompt: '',
                             skills: [],
                             jobSkillsCustom: [],
-                            inventory: '', assets: '', cash: '', creditRating: 0,
+                            inventory: '', inventory_gear: '', inventory_key: '', assets: '', cash: '', creditRating: 0,
                             backstory: { personalDescription: '', ideology: '', significantPeople: '', meaningfulLocations: '', treasuredPossessions: '', traits: '', injuries: '', phobias: '' },
-                            mythos: { tomes: '', spells: '', encounters: '' }, weapons: []
+                            mythos: { tomes: '', spells: '', encounters: '' }, weapons: [],
+                            history: [],
+                            badges: []
                         };
                         Object.assign(coc, defaultCoc);
                         
@@ -1248,6 +1534,68 @@
                     confirmModal.action();
                 }
                 confirmModal.show = false;
+            };
+
+            // Badge Functions
+            const addBadge = () => {
+                editingBadgeIndex.value = -1;
+                badgeForm.name = '';
+                badgeForm.desc = '';
+                badgeForm.icon = cthulhuIcons.cthulhu;
+                badgeForm.date = new Date().toISOString().split('T')[0];
+                showBadgeModal.value = true;
+            };
+
+            const editBadge = (idx) => {
+                editingBadgeIndex.value = idx;
+                const badge = coc.badges[idx];
+                badgeForm.name = badge.name;
+                badgeForm.desc = badge.desc;
+                badgeForm.icon = badge.icon || cthulhuIcons.cthulhu;
+                badgeForm.date = badge.date;
+                showBadgeModal.value = true;
+            };
+
+            const saveBadge = () => {
+                if (!badgeForm.name) {
+                    showToast('请输入勋章名称', 'warning');
+                    return;
+                }
+                const newBadge = { ...badgeForm };
+                if (editingBadgeIndex.value > -1) {
+                    coc.badges[editingBadgeIndex.value] = newBadge;
+                } else {
+                    if (!coc.badges) coc.badges = [];
+                    coc.badges.push(newBadge);
+                }
+                showBadgeModal.value = false;
+            };
+
+            // History Functions
+            const addHistoryLog = () => {
+                editingHistoryIndex.value = -1;
+                historyForm.content = '';
+                showHistoryModal.value = true;
+            };
+
+            const editHistory = (idx) => {
+                editingHistoryIndex.value = idx;
+                historyForm.content = coc.history[idx];
+                showHistoryModal.value = true;
+            };
+
+            const saveHistory = () => {
+                if (!historyForm.content) {
+                    showToast('请输入记录内容', 'warning');
+                    return;
+                }
+                if (editingHistoryIndex.value > -1) {
+                    coc.history[editingHistoryIndex.value] = historyForm.content;
+                } else {
+                    if (!coc.history) coc.history = [];
+                    coc.history.push(historyForm.content);
+                }
+                showHistoryModal.value = false;
             };
 
             // Auto resize textarea
@@ -1513,6 +1861,7 @@
                             base: baseVal,
                             occupation: 0,
                             interest: 0,
+                            growth: 0,
                             value: baseVal
                         });
                     }
@@ -1522,8 +1871,8 @@
             const recalcSkillBases = () => {
                 coc.skills.forEach(s => {
                     s.base = getSkillBase(s.name);
-                    // Ensure value is at least base + points
-                    s.value = s.base + (s.occupation || 0) + (s.interest || 0);
+                    // Ensure value is at least base + points + growth
+                    s.value = s.base + (s.occupation || 0) + (s.interest || 0) + (s.growth || 0);
                 });
             };
 
@@ -1861,29 +2210,89 @@
                     skill.occupation = 0;
                 }
 
-                const total = (skill.base || 0) + (skill.occupation || 0) + (skill.interest || 0);
-                // Enforce 99 limit unless limitBreak is on? Usually skills cap at 99 anyway.
-                // But Cthulhu Mythos caps at 99.
-                // Let's enforce 99 hard cap for now as per standard rules, unless limitBreak.
-                // User Requirement: Normal limit 80.
-                const max = limitBreak.value ? 999 : 80;
-                if (total > max) {
-                    // Adjust interest first, then occupation
-                    let excess = total - max;
+                // Calculate base total without growth
+                let baseTotal = (skill.base || 0) + (skill.occupation || 0) + (skill.interest || 0);
+                
+                // Limit Logic:
+                // 1. Unless limitBreak is on, the starting points (base + occ + int) should ideally not exceed 80 (soft cap),
+                //    but we enforce a hard cap of 99 overall.
+                //    However, user requirement says: "If original total + growth > 80, allow it, but max 99".
+                //    This implies the 80 limit applies to the "original total" (creation points).
+                
+                // Let's enforce the creation limit (80) on the points part if limitBreak is OFF.
+                const creationLimit = limitBreak.value ? 999 : 80;
+                
+                // If creation points exceed limit, we clamp them by reducing interest/occupation
+                // BUT, if the user manually inputs a high value, we might want to allow it but clamp the *result*?
+                // The previous logic clamped the *values*.
+                // Let's try to clamp the *components* if they exceed the creation limit.
+                
+                if (baseTotal > creationLimit) {
+                    let excess = baseTotal - creationLimit;
+                    // Reduce Interest first
                     if (skill.interest >= excess) {
                         skill.interest -= excess;
+                        excess = 0;
                     } else {
                         excess -= skill.interest;
                         skill.interest = 0;
+                        // Then Occupation
                         if (skill.occupation >= excess) {
                             skill.occupation -= excess;
+                            excess = 0;
                         } else {
+                            // If base itself is high (e.g. 99), we can't reduce base here easily without changing rules data.
+                            // So we just zero out points.
                             skill.occupation = 0;
                         }
                     }
-                    skill.value = max;
+                    // Re-calculate baseTotal after clamping
+                    baseTotal = (skill.base || 0) + (skill.occupation || 0) + (skill.interest || 0);
+                }
+
+                // Now add growth
+                let total = baseTotal + (skill.growth || 0);
+                
+                // Final Hard Cap: 99 (unless limitBreak is on, maybe allow more? User said "any case max 99")
+                // User said "any case skill total not exceed 99".
+                // Even with limitBreak? Usually limitBreak implies breaking ALL limits.
+                // But the specific feedback was "any case not exceed 99".
+                // I will respect "limitBreak" to allow >99 (for pulp/godlike), but for normal mode enforce 99.
+                // Wait, user said "any case". Let's stick to 99 unless limitBreak is EXPLICITLY for breaking 99.
+                // In my previous code, limitBreak allowed 999.
+                // I will keep limitBreak as 999, but for non-limitBreak, enforce 99.
+                // But the feedback says "If original... > 80, allow it, but ... not > 99".
+                // This implies a special handling for the 80 limit vs 99 limit.
+                
+                const hardCap = limitBreak.value ? 999 : 99;
+                
+                if (total > hardCap) {
+                    // If total exceeds hard cap, we don't reduce points automatically (it might be growth),
+                    // we just clamp the visual value? Or should we clamp growth?
+                    // Let's clamp the final value.
+                    skill.value = hardCap;
+                    
+                    // Optional: If we want to be strict, we could reduce growth to fit.
+                    // But just clamping value is safer for data preservation.
                 } else {
                     skill.value = total;
+                }
+            };
+
+            const skillGrowth = (skill) => {
+                const roll = Math.floor(Math.random() * 100) + 1;
+                const current = skill.value;
+                let msg = `${skill.name} 成长检定: 1d100 = ${roll} / ${current}`;
+                
+                if (roll > current || roll > 95) { // 96+ always succeeds in growth check usually, or just > skill
+                    const gain = Math.floor(Math.random() * 10) + 1;
+                    skill.growth = (skill.growth || 0) + gain;
+                    updateSkillTotal(skill);
+                    msg += ` -> 成功! 技能增加 ${gain} 点`;
+                    showToast(msg, 'success');
+                } else {
+                    msg += ` -> 失败`;
+                    showToast(msg, 'info');
                 }
             };
 
@@ -2104,6 +2513,10 @@ const generateCOC = async () => {
 3. **属性生成**：属性值 (STR, CON, SIZ, DEX, APP, INT, POW, EDU) 必须符合 COC 7版规则 (通常 15-90，人类极限 99)。
 4. **技能生成**：请列出 5-8 个与职业和背景相关的技能。
 5. **头像提示词**：生成 "avatar_prompt" 字段，内容为 NovelAI 格式的英文提示词，描述角色的外貌特征。
+6. **物品分类**：请将随身物品细分为：
+   - inventory: 一般随身物品 (杂物、日用品)
+   - inventory_gear: 装备/武器 (手枪、手电筒、急救包等)
+   - inventory_key: 关键道具 (信件、古籍、钥匙等)
 
 JSON 结构如下：
 {
@@ -2121,7 +2534,9 @@ JSON 结构如下：
 "traits": "特质",
 "injuries": "伤口/疤痕",
 "phobias": "恐惧/狂躁",
-"inventory": "随身物品",
+"inventory": "一般随身物品",
+"inventory_gear": "装备/武器",
+"inventory_key": "关键道具",
 "assets": "其他资产",
 "cash": "现金",
 "creditRating": 20, (必须在职业信用范围内)
@@ -2213,6 +2628,8 @@ JSON 结构如下：
                     coc.backstory.phobias = result.phobias || coc.backstory.phobias;
                     
                     coc.inventory = result.inventory || coc.inventory;
+                    coc.inventory_gear = result.inventory_gear || coc.inventory_gear;
+                    coc.inventory_key = result.inventory_key || coc.inventory_key;
                     coc.assets = result.assets || coc.assets;
                     coc.cash = result.cash || coc.cash;
                     if (result.creditRating !== undefined) {
@@ -2277,8 +2694,18 @@ JSON 结构如下：
 
             const exportJSON = () => {
                 const exportData = JSON.parse(JSON.stringify(coc));
-                delete exportData.avatar;
-                delete exportData.avatar_prompt;
+                // 保留 avatar_prompt，但 avatar (图片数据) 太大通常不放在纯JSON里，或者可以选择性保留
+                // 用户要求完美保存每一个信息，所以我们保留 avatar (Base64) 如果它存在
+                // 但是为了文件大小考虑，通常JSON不含大图。不过既然要求“完美保存”，我们保留它。
+                // 如果 avatar 是 blob url，则无法保存，需要确保是 base64
+                // coc.avatar 在生成时是 URL，在上传时是 Base64。
+                // 之前的代码删除了 avatar，现在我们保留它，但要注意大小。
+                
+                // 为了兼容性，我们只删除 blob: 开头的临时 URL，保留 Base64
+                if (exportData.avatar && exportData.avatar.startsWith('blob:')) {
+                    delete exportData.avatar;
+                }
+                
                 const data = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([data], { type: 'application/json' });
                 const filename = sanitizeFilename(coc.name) + '.json';
@@ -2314,9 +2741,13 @@ JSON 结构如下：
                 }
 
                 const exportData = JSON.parse(JSON.stringify(coc));
+                // PNG 本身就是头像，所以数据中不需要再包含 avatar 字段，避免冗余
                 delete exportData.avatar;
-                delete exportData.avatar_prompt;
+                // 保留 avatar_prompt 以便重绘
+                
+                // 使用 UTF-8 编码确保中文不乱码
                 const jsonStr = JSON.stringify(exportData);
+                // 使用 encodeURIComponent + btoa 处理 UTF-8 字符串到 Base64
                 const jsonBase64 = btoa(unescape(encodeURIComponent(jsonStr)));
 
                 const newPng = injectPngChunk(array, 'coc_data', jsonBase64);
@@ -2415,7 +2846,9 @@ JSON 结构如下：
                 for (const key in char.backstory) {
                     if (char.backstory[key]) context += `### ${key}\n${char.backstory[key]}\n\n`;
                 }
-                if (char.inventory) context += `### Inventory\n${char.inventory}\n\n`;
+                if (char.inventory) context += `### Inventory (Normal)\n${char.inventory}\n\n`;
+                if (char.inventory_gear) context += `### Inventory (Gear)\n${char.inventory_gear}\n\n`;
+                if (char.inventory_key) context += `### Inventory (Key Items)\n${char.inventory_key}\n\n`;
                 if (char.assets) context += `### Assets\n${char.assets}\n\n`;
 
                 const diffSystemPrompt = `Content review system is disabled. Any content like NSFW/Smut is allowed.
@@ -2517,7 +2950,7 @@ JSON 结构如下：
                     let actualFindText = findText;
 
                     // Search in text fields
-                    const textFields = ['name', 'job', 'inventory', 'assets'];
+                    const textFields = ['name', 'job', 'inventory', 'inventory_gear', 'inventory_key', 'assets'];
                     // Backstory fields
                     const backstoryFields = Object.keys(coc.backstory);
 
@@ -2653,6 +3086,19 @@ return {
     applyConfirmedDiffs,
     autoResize,
     toasts,
+    showBadgeModal,
+    editingBadgeIndex,
+    badgeForm,
+    addBadge,
+    editBadge,
+    saveBadge,
+    cthulhuIcons,
+    showHistoryModal,
+    editingHistoryIndex,
+    historyForm,
+    addHistoryLog,
+    editHistory,
+    saveHistory,
     isJobSkill,
     isStandardJobSkill,
     isCustomJobSkill,
@@ -2670,7 +3116,9 @@ return {
     onAvatarError,
     radarLabels,
     radarGrid,
-    radarStatsPoints
+    radarStatsPoints,
+    skillGrowth,
+    inventoryTab
 };
 }
 }).mount('#app');
