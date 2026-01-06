@@ -598,9 +598,17 @@
 
             <!-- 3. Preparing View (Shared for Single/Multi) -->
             <div v-if="currentView === 'preparing'" class="flex-1 overflow-y-auto p-4 md:p-6 animate-fade-in">
-                <div class="flex items-center mb-8 border-b border-dark-800 pb-4">
-                    <button @click="exitCocMode" class="mr-4 p-2 bg-dark-800 border border-dark-700 rounded text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
-                    <h2 class="text-2xl font-bold text-mystic-gold font-serif">跑团准备</h2>
+                <div class="flex items-center justify-between mb-8 border-b border-dark-800 pb-4">
+                    <div class="flex items-center">
+                        <button @click="exitCocMode" class="mr-4 p-2 bg-dark-800 border border-dark-700 rounded text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
+                        <h2 class="text-2xl font-bold text-mystic-gold font-serif">跑团准备</h2>
+                    </div>
+                    <!-- Room ID Display in Preparing View -->
+                    <div v-if="cocState.mode === 'multi' && multiplayerState.inRoom" class="flex items-center gap-2 px-4 py-2 bg-dark-800/80 border border-mystic-green/30 rounded-lg shadow-lg cursor-pointer hover:bg-dark-800 hover:border-mystic-green/50 transition-all group" @click="copyToClipboard(multiplayerState.roomId)" title="点击复制房间号">
+                        <span class="text-xs text-slate-500 uppercase font-bold tracking-wider">房间号</span>
+                        <span class="text-lg font-mono font-bold text-mystic-green tracking-widest">{{ multiplayerState.roomId }}</span>
+                        <svg class="w-4 h-4 text-slate-500 group-hover:text-mystic-green transition-colors ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    </div>
                 </div>
 
                 <div class="max-w-4xl mx-auto space-y-8">
@@ -1215,7 +1223,56 @@ ${buildInvestigatorProfile(inv)}
 
                     // 场景2: 从大厅读取存档
                     if (save.mode === 'multi') {
-                        showToast('多人存档请先创建房间，并在房间内由房主加载', 'warning');
+                        if (!await showConfirm('这是一个多人团存档。是否创建新房间并作为房主加载此进度？\n(其他玩家需使用新房间号重新加入)', '加载多人存档')) return;
+
+                        // 1. 创建房间
+                        await createRoom();
+                        
+                        // 2. 加载数据
+                        cocState.mode = 'multi';
+                        cocState.module = { name: save.moduleName, content: save.moduleContent || '' };
+                        cocState.investigators = save.investigators;
+                        cocState.log = save.log;
+                        cocState.systemPrompt = save.systemPrompt;
+                        cocState.pendingRolls = save.pendingRolls || [];
+                        
+                        // 3. 恢复多人状态
+                        // 重要：清空 assignments，只保留 assignmentDetails 供参考，让玩家重新认领
+                        if (save.multiplayer) {
+                            multiplayerState.assignments = {}; // 重置分配，等待玩家重新加入
+                            // 保留历史分配详情，可以在界面上显示“原操作者：XXX”
+                            multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {};
+                            multiplayerState.turnIndex = save.multiplayer.turnIndex || 0;
+                            multiplayerState.roundActionIds = []; // 重置回合行动状态
+                            
+                            // 尝试恢复 AI 托管的角色
+                            const oldAssignments = save.multiplayer.assignments || {};
+                            Object.keys(oldAssignments).forEach(key => {
+                                if (oldAssignments[key] && oldAssignments[key].startsWith('ai_')) {
+                                    multiplayerState.assignments[key] = oldAssignments[key];
+                                }
+                            });
+                        }
+
+                        // 4. 更新自身状态
+                        cocState.activeInvestigatorIndex = -1; // 重置当前选择
+
+                        // 5. 进入准备界面，而不是直接开始游戏
+                        cocState.gameState = 'preparing';
+                        currentView.value = 'preparing';
+                        
+                        showToast('房间已创建，请邀请玩家加入并分配角色', 'success');
+                        
+                        // 6. 广播初始状态
+                        broadcastMessage({
+                            type: 'sync_state',
+                            gameState: 'preparing',
+                            moduleName: cocState.module.name,
+                            investigators: cocState.investigators,
+                            assignments: multiplayerState.assignments,
+                            assignmentDetails: multiplayerState.assignmentDetails
+                        });
+
                     } else {
                         // 单人模式读取
                         cocState.mode = 'single';
