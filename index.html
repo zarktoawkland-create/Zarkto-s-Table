@@ -67,7 +67,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; border-color: #d4af37; }
         .text-shadow-gold { text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
         .text-shadow-red { text-shadow: 0 0 10px rgba(138, 28, 28, 0.4); }
-        .markdown-body { font-size: 0.95rem; line-height: 1.7; color: #e2e8f0; font-family: 'Noto Serif SC', serif; }
+        .markdown-body { font-size: 0.95rem; line-height: 1.7; color: #e2e8f0; font-family: 'Noto Serif SC', serif; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; }
         .markdown-body p { margin-bottom: 0.8em; }
         .markdown-body strong { font-weight: 700; color: #c0a062; }
         .markdown-body blockquote { border-left: 2px solid #2d6a4f; padding-left: 1em; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.2); padding: 0.5em 1em; }
@@ -428,8 +428,8 @@
                                             <div class="text-[10px] text-mystic-gold mb-1 ml-1 font-mono tracking-widest uppercase font-bold flex items-center gap-2">
                                                 守密人 (Keeper) <span class="w-8 h-[1px] bg-mystic-gold/30"></span>
                                             </div>
-                                            <div class="p-4 md:p-6 rounded-2xl rounded-tl-none bg-dark-900/80 border border-mystic-gold/20 text-slate-300 shadow-2xl relative overflow-hidden backdrop-blur-sm">
-                                                <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-mystic-gold/40 to-transparent"></div>
+                                            <div class="p-4 md:p-6 rounded-2xl rounded-tl-none bg-dark-900/80 border border-mystic-gold/20 text-slate-300 shadow-2xl relative backdrop-blur-sm">
+                                                <div class="absolute inset-0 rounded-2xl rounded-tl-none overflow-hidden pointer-events-none"><div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-mystic-gold/40 to-transparent"></div></div>
                                                 <!-- CoT Rendering -->
                                                 <div v-if="hasCot(msg.content)" class="cot-wrapper">
                                                     <div class="cot-header" @click="toggleCot(index)" :class="{ active: msg.showCot }">
@@ -967,9 +967,18 @@
                 const lastAssistantIndex = Vue.computed(() => { let idx = -1; for (let i = 0; i < cocState.log.length; i++) { if (cocState.log[i].role === 'assistant') idx = i; } return idx; });
 
                 const clearUserAssignments = (userId) => { Object.keys(multiplayerState.assignments).forEach(key => { if (multiplayerState.assignments[key] === userId) delete multiplayerState.assignments[key]; }); };
-                const hasCot = (text) => text && (text.includes('<cot>') || text.includes('<cot'));
-                const getCotContent = (text) => { if (!text) return ''; const match = text.match(/<cot>([\s\S]*?)(?:<\/cot>|<cot>|$)/); return match ? match[1] : (text.includes('<cot>') ? text.split('<cot>')[1] : ''); };
-                const removeCot = (text) => { if (!text) return ''; let clean = text.replace(/<cot>[\s\S]*?(?:<\/cot>|<cot>)/g, '').trim(); if (clean.includes('<cot>')) clean = clean.split('<cot>')[0].trim(); return clean; };
+                // 类型安全的字符串转换函数
+                const ensureString = (val) => {
+                    if (val === null || val === undefined) return '';
+                    if (typeof val === 'string') return val;
+                    if (typeof val === 'object') {
+                        try { return JSON.stringify(val); } catch(e) { return String(val); }
+                    }
+                    return String(val);
+                };
+                const hasCot = (text) => { const s = ensureString(text); return s && (s.includes('<cot>') || s.includes('<cot')); };
+                const getCotContent = (text) => { const s = ensureString(text); if (!s) return ''; const match = s.match(/<cot>([\s\S]*?)(?:<\/cot>|<cot>|$)/); return match ? match[1] : (s.includes('<cot>') ? s.split('<cot>')[1] || '' : ''); };
+                const removeCot = (text) => { const s = ensureString(text); if (!s) return ''; let clean = s.replace(/<cot>[\s\S]*?(?:<\/cot>|<cot>)/g, '').trim(); if (clean.includes('<cot>')) clean = clean.split('<cot>')[0].trim(); return clean; };
                 const toggleCot = async (index) => { if (cocState.mode === 'multi' && !multiplayerState.isHost && !multiplayerState.cotAuthorizedUsers.includes(user.uuid)) { if (await showConfirm('您没有权限查看思维链 (CoT)。是否向房主申请权限？', '申请权限')) requestCotAccess(); return; } const msg = cocState.log[index]; if (msg) msg.showCot = !msg.showCot; };
                 const requestCotAccess = () => { if (!multiplayerState.inRoom) return; broadcastMessage({ type: 'request_cot_access', userId: user.uuid, userName: user.name }); showToast('已发送权限申请', 'info'); };
                 const grantCotAccess = (targetUserId) => { if (!multiplayerState.cotAuthorizedUsers.includes(targetUserId)) { multiplayerState.cotAuthorizedUsers.push(targetUserId); broadcastMessage({ type: 'grant_cot_access', userId: targetUserId, authorizedUsers: multiplayerState.cotAuthorizedUsers }); showToast('已授权查看 CoT', 'success'); } };
@@ -1050,7 +1059,20 @@
                     if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(99, inv[targetKey])); if (targetKey === 'hp') inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey])); if (targetKey === 'mp') inv[targetKey] = Math.max(0, Math.min(inv.maxMp || 99, inv[targetKey]));
                     saveData(); return { success: true, msg: `${prop.toUpperCase()} ${op==='+'?'+':''}${change} => ${inv[targetKey]}`, log: `🔧 **属性变更** ${inv.name} 的 ${prop.toUpperCase()}: ${currentVal} ➔ ${inv[targetKey]}` };
                 };
-                const renderMarkdown = (text) => { if (!text) return ''; let processed = text.replace(/(^|[\s\n>])(\.(?:ra|rc|sc|san|r|roll|st|set)(?:\s+[^\s\n<。，！\?]+)?)(?=$|[\s\n<。，！\?])/gi, '$1<span class="cursor-pointer text-mystic-gold font-bold hover:underline decoration-mystic-gold/30" onclick="event.stopPropagation(); window.triggerCocCommand(\'$2\')">$2</span>'); return DOMPurify.sanitize(marked.parse(processed)); };
+                
+                const renderMarkdown = (text) => {
+                    // 确保输入是字符串类型
+                    const str = ensureString(text);
+                    if (!str) return '';
+                    try {
+                        let processed = str.replace(/(^|[\s\n>])(\.(?:ra|rc|sc|san|r|roll|st|set)(?:\s+[^\s\n<。，！\?]+)?)(?=$|[\s\n<。，！\?])/gi, '$1<span class="cursor-pointer text-mystic-gold font-bold hover:underline decoration-mystic-gold/30" onclick="event.stopPropagation(); window.triggerCocCommand(\'$2\')">$2</span>');
+                        return DOMPurify.sanitize(marked.parse(processed));
+                    } catch (e) {
+                        console.error('Markdown Render Error:', e);
+                        return str;
+                    }
+                };
+
                 const allPlayersReady = Vue.computed(() => { if (multiplayerState.members.length < 2) return false; const hostPresent = multiplayerState.members.some(m => m.isHost); if (!hostPresent) return false; return multiplayerState.members.every(m => m.isReady || m.isHost); });
                 
                 const toggleAiPlayer = (index) => {
@@ -1176,6 +1198,9 @@ ${buildInvestigatorProfile(inv)}
                 const loadSave = async (index) => {
                     const save = savedGames.value[index];
                     if (!save) return;
+
+                    // Fix: 强制折叠 CoT，防止加载存档时默认展开
+                    if (save.log) save.log.forEach(m => m.showCot = false);
 
                     // 场景1: 在多人游戏中回档 (仅房主)
                     if (cocState.gameState === 'playing' && cocState.mode === 'multi') {
@@ -1431,8 +1456,12 @@ ${logContent.slice(0, 50000)}
                 const updateMyAssignment = () => { /* ... */ };
                 const scrollToBottom = () => { nextTick(() => { if (cocChatContainer.value) cocChatContainer.value.scrollTop = cocChatContainer.value.scrollHeight; }); };
                 const sendCocMessage = async (manualContent = null) => {
-                    const content = manualContent || cocInput.value.trim();
-                    if (!content && !manualContent) return;
+                    // 修复：确保 manualContent 是字符串，否则使用输入框的值
+                    // 当通过 @click 或 @keydown 触发时，manualContent 可能是事件对象
+                    const content = (typeof manualContent === 'string' && manualContent)
+                        ? manualContent
+                        : cocInput.value.trim();
+                    if (!content) return;
                     
                     const inv = cocState.investigators[cocState.activeInvestigatorIndex];
                     const msg = { role: 'user', content, timestamp: Date.now() };
@@ -1473,11 +1502,29 @@ ${logContent.slice(0, 50000)}
                     const assistantMsg = { role: 'assistant', name: '守密人', content: '', showCot: false };
                     cocState.log.push(assistantMsg);
                     try {
+                        // 清洗消息记录，确保符合 API 规范
+                        const validMessages = cocState.log.slice(0, -1)
+                            .filter(m => m.content && typeof m.content === 'string' && m.content.trim() !== '')
+                            .map(m => ({ role: m.role, content: m.content }));
+
+                        if (validMessages.length === 0 && !cocState.systemPrompt) {
+                            throw new Error('没有有效的对话历史');
+                        }
+
                         const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
-                            body: JSON.stringify({ model: settings.model, messages: [{role:'system', content: cocState.systemPrompt}, ...cocState.log.slice(0,-1).map(m => ({ role: m.role, content: m.content }))], stream: true })
+                            body: JSON.stringify({
+                                model: settings.model,
+                                messages: [{role:'system', content: cocState.systemPrompt || 'You are a Keeper.'}, ...validMessages],
+                                stream: true
+                            })
                         });
+                        
+                        if (!res.ok) {
+                            throw new Error(`API Error: ${res.status} ${res.statusText}`);
+                        }
+
                         const reader = res.body.getReader();
                         const decoder = new TextDecoder();
                         while (true) {
