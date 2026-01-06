@@ -1166,16 +1166,69 @@ ${buildInvestigatorProfile(inv)}
                     reader.readAsText(file); 
                 };
                 const loadSave = async (index) => {
-                    const save = savedGames.value[index]; if (!save) return;
+                    const save = savedGames.value[index];
+                    if (!save) return;
+
+                    // 场景1: 在多人游戏中回档 (仅房主)
                     if (cocState.gameState === 'playing' && cocState.mode === 'multi') {
-                        if (save.mode !== 'multi') return showToast('无法在多人游戏中读取单人存档', 'error'); if (save.moduleName !== cocState.module?.name) return showToast('无法读取：存档属于不同的模组 (' + save.moduleName + ')', 'error');
-                        const savedAssignments = save.multiplayer?.assignments || {}; const currentMemberIds = multiplayerState.members.map(m => m.id); const missingPlayers = Object.values(savedAssignments).filter(uid => !currentMemberIds.includes(uid)); if (missingPlayers.length > 0) return showToast('无法读取：存档中的关键玩家不在当前房间', 'error');
+                        if (save.mode !== 'multi') return showToast('无法在多人游戏中读取单人存档', 'error');
+                        if (save.moduleName !== cocState.module?.name) return showToast('无法读取：存档属于不同的模组 (' + save.moduleName + ')', 'error');
+                        
+                        const savedAssignments = save.multiplayer?.assignments || {};
+                        const currentMemberIds = multiplayerState.members.map(m => m.id);
+                        // 过滤掉 AI 和已在房间的玩家
+                        const missingPlayers = Object.values(savedAssignments).filter(uid => !uid.startsWith('ai_') && !currentMemberIds.includes(uid));
+                        
+                        if (missingPlayers.length > 0) {
+                             // 提示但不阻止，允许房主强行回档
+                             showToast('注意：存档中的部分玩家不在当前房间', 'warning');
+                        }
+                        
                         if (!await showConfirm('检测到当前正在游戏中。是否进行回档（覆盖当前进度）？', '覆盖确认')) return;
-                        cocState.log = save.log; cocState.investigators = save.investigators; cocState.systemPrompt = save.systemPrompt; if (save.pendingRolls !== undefined) cocState.pendingRolls = save.pendingRolls; else if (save.canRoll !== undefined) cocState.pendingRolls = [];
-                        multiplayerState.assignments = savedAssignments; multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {}; multiplayerState.turnIndex = save.multiplayer.turnIndex || 0; multiplayerState.roundActionIds = save.multiplayer.roundActionIds || [];
-                        updateMyAssignment(); broadcastMessage({ type: 'sync_state', log: cocState.log, investigators: cocState.investigators, assignments: multiplayerState.assignments, assignmentDetails: multiplayerState.assignmentDetails, turnIndex: multiplayerState.turnIndex, roundActionIds: multiplayerState.roundActionIds, gameState: 'playing' }); showToast('已成功回档', 'success'); currentView.value = 'chat'; return;
+                        
+                        cocState.log = save.log;
+                        cocState.investigators = save.investigators;
+                        cocState.systemPrompt = save.systemPrompt;
+                        cocState.pendingRolls = save.pendingRolls || [];
+                        
+                        multiplayerState.assignments = savedAssignments;
+                        multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {};
+                        multiplayerState.turnIndex = save.multiplayer.turnIndex || 0;
+                        multiplayerState.roundActionIds = save.multiplayer.roundActionIds || [];
+                        
+                        updateMyAssignment();
+                        broadcastMessage({
+                            type: 'sync_state',
+                            log: cocState.log,
+                            investigators: cocState.investigators,
+                            assignments: multiplayerState.assignments,
+                            assignmentDetails: multiplayerState.assignmentDetails,
+                            turnIndex: multiplayerState.turnIndex,
+                            roundActionIds: multiplayerState.roundActionIds,
+                            gameState: 'playing'
+                        });
+                        
+                        showToast('已成功回档', 'success');
+                        currentView.value = 'chat';
+                        return;
                     }
-                    if (save.mode === 'multi') { /* ... (Keep existing multi load logic or simplify) ... */ } else { cocState.mode = 'single'; cocState.module = { name: save.moduleName, content: save.moduleContent }; cocState.investigators = save.investigators; cocState.log = save.log; cocState.systemPrompt = save.systemPrompt; if (save.pendingRolls !== undefined) cocState.pendingRolls = save.pendingRolls; else if (save.canRoll !== undefined) cocState.pendingRolls = []; cocState.gameState = 'playing'; cocState.activeInvestigatorIndex = 0; currentView.value = 'chat'; showToast('记忆已唤醒', 'success'); }
+
+                    // 场景2: 从大厅读取存档
+                    if (save.mode === 'multi') {
+                        showToast('多人存档请先创建房间，并在房间内由房主加载', 'warning');
+                    } else {
+                        // 单人模式读取
+                        cocState.mode = 'single';
+                        cocState.module = { name: save.moduleName, content: save.moduleContent || '' };
+                        cocState.investigators = save.investigators;
+                        cocState.log = save.log;
+                        cocState.systemPrompt = save.systemPrompt;
+                        cocState.pendingRolls = save.pendingRolls || [];
+                        cocState.gameState = 'playing';
+                        cocState.activeInvestigatorIndex = 0;
+                        currentView.value = 'chat';
+                        showToast('记忆已唤醒', 'success');
+                    }
                 };
 
                 const importCocModule = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); if (file.name.endsWith('.docx')) { reader.onload = (ev) => { mammoth.extractRawText({ arrayBuffer: ev.target.result }).then((result) => { cocState.module = { name: file.name.replace(/\.[^/.]+$/, ""), content: result.value }; showToast('模组导入成功', 'success'); if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_module', moduleName: cocState.module.name }); }).catch((err) => { showToast('Docx 解析失败', 'error'); }); }; reader.readAsArrayBuffer(file); } else { reader.onload = (ev) => { cocState.module = { name: file.name.replace(/\.[^/.]+$/, ""), content: ev.target.result }; showToast('模组导入成功', 'success'); if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_module', moduleName: cocState.module.name }); }; reader.readAsText(file); } };
