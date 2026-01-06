@@ -67,7 +67,8 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; border-color: #d4af37; }
         .text-shadow-gold { text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
         .text-shadow-red { text-shadow: 0 0 10px rgba(138, 28, 28, 0.4); }
-        .markdown-body { font-size: 0.95rem; line-height: 1.7; color: #e2e8f0; font-family: 'Noto Serif SC', serif; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; }
+        .markdown-body { font-size: 0.875rem; line-height: 1.65; color: #e2e8f0; font-family: 'Noto Serif SC', serif; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; }
+        @media (min-width: 768px) { .markdown-body { font-size: 0.95rem; line-height: 1.7; } }
         .markdown-body p { margin-bottom: 0.8em; }
         .markdown-body strong { font-weight: 700; color: #c0a062; }
         .markdown-body blockquote { border-left: 2px solid #2d6a4f; padding-left: 1em; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.2); padding: 0.5em 1em; }
@@ -395,7 +396,7 @@
                             <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 custom-scrollbar scroll-smooth" ref="cocChatContainer">
                                 <div v-for="(msg, index) in cocState.log" :key="index" class="flex w-full animate-message-in group" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
                                     <!-- User Message -->
-                                    <div v-if="msg.role === 'user' || msg.role === 'whisper'" class="flex flex-row-reverse max-w-[90%] md:max-w-[80%] gap-2 md:gap-4 ml-auto mb-2">
+                                    <div v-if="msg.role === 'user' || msg.role === 'whisper'" class="flex flex-row-reverse max-w-[95%] md:max-w-[80%] gap-2 md:gap-4 ml-auto mb-2">
                                         <div class="flex-shrink-0 mt-1">
                                             <div class="w-8 h-8 md:w-10 md:h-10 rounded bg-dark-800 overflow-hidden border border-slate-600 shadow-lg group-hover:border-mystic-gold/50 transition-colors">
                                                 <img v-if="msg.avatar" :src="msg.avatar" class="w-full h-full object-cover">
@@ -406,7 +407,7 @@
                                             <div class="text-[10px] text-slate-500 mb-1 mr-1 font-mono tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                                                 {{ msg.name }} <span v-if="msg.role === 'whisper'" class="text-purple-400 bg-purple-900/20 px-1 rounded text-[9px] border border-purple-900/30">私语</span>
                                             </div>
-                                            <div class="px-3 py-2 md:px-4 md:py-3 rounded-2xl rounded-tr-none border shadow-xl relative overflow-hidden" :class="msg.role === 'whisper' ? 'bg-purple-900/10 border-purple-500/20 text-purple-200' : 'bg-dark-800 border-dark-700 text-slate-200'">
+                                            <div class="px-2.5 pt-1.5 pb-1 md:px-3 md:pt-2 md:pb-1.5 rounded-2xl rounded-tr-none border shadow-xl relative overflow-hidden" :class="msg.role === 'whisper' ? 'bg-purple-900/10 border-purple-500/20 text-purple-200' : 'bg-dark-800 border-dark-700 text-slate-200'">
                                                 <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
                                                 <div class="markdown-body relative z-10" v-html="renderMarkdown(msg.content)"></div>
                                             </div>
@@ -418,7 +419,7 @@
                                         </div>
                                     </div>
                                     <!-- Keeper Message -->
-                                    <div v-else-if="msg.role === 'assistant'" class="flex max-w-[95%] md:max-w-[85%] gap-2 md:gap-4 mr-auto mb-2">
+                                    <div v-else-if="msg.role === 'assistant'" class="flex max-w-full md:max-w-[85%] gap-2 md:gap-4 mr-auto mb-2">
                                         <div class="flex-shrink-0 mt-1">
                                             <div class="w-8 h-8 md:w-10 md:h-10 rounded bg-dark-900 overflow-hidden border border-mystic-gold/30 shadow-[0_0_15px_rgba(204,164,59,0.15)]">
                                                 <div class="w-full h-full flex items-center justify-center bg-dark-950 text-mystic-gold"><svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div>
@@ -428,7 +429,7 @@
                                             <div class="text-[10px] text-mystic-gold mb-1 ml-1 font-mono tracking-widest uppercase font-bold flex items-center gap-2">
                                                 守密人 (Keeper) <span class="w-8 h-[1px] bg-mystic-gold/30"></span>
                                             </div>
-                                            <div class="p-4 md:p-6 rounded-2xl rounded-tl-none bg-dark-900/80 border border-mystic-gold/20 text-slate-300 shadow-2xl relative backdrop-blur-sm">
+                                            <div class="p-3 md:p-4 rounded-2xl rounded-tl-none bg-dark-900/80 border border-mystic-gold/20 text-slate-300 shadow-2xl relative backdrop-blur-sm">
                                                 <div class="absolute inset-0 rounded-2xl rounded-tl-none overflow-hidden pointer-events-none"><div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-mystic-gold/40 to-transparent"></div></div>
                                                 <!-- CoT Rendering -->
                                                 <div v-if="hasCot(msg.content)" class="cot-wrapper">
@@ -1444,7 +1445,22 @@ ${logContent.slice(0, 50000)}
                     systemPrompt += `\n\n【模组背景】\n${cocState.module.content.slice(0, 5000)}`;
 
                     if (cocState.log.length === 0) {
-                        cocState.log = [{ role: 'assistant', name: '守密人', content: `欢迎来到《${cocState.module.name}》。\n\n游戏开始。` }];
+                        const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                        const invName = inv ? inv.name : '调查员';
+                        const openingContent = `*烛火摇曳，古老的时钟敲响了午夜的钟声...*
+
+欢迎来到 **《${cocState.module.name}》**
+
+---
+
+${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世界里，真相与疯狂往往只有一线之隔。
+
+*愿理智与你同在... 尽管在这里，它往往是最先消逝的。*
+
+---
+
+**准备好直面命运了吗？**`;
+                        cocState.log = [{ role: 'assistant', name: '守密人', content: openingContent }];
                     }
                     cocState.systemPrompt = systemPrompt;
                     cocState.gameState = 'playing';
