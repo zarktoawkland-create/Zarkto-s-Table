@@ -1165,11 +1165,16 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             <span class="truncate tracking-widest text-shadow-gold">角色名册</span>
                         </div>
-                        <button @click="createNewCharacter" class="btn btn-sm bg-mystic-gold text-dark-900 border-none hover:bg-yellow-600 btn-circle shadow-lg shadow-mystic-gold/20 shrink-0">
+                        <button @click="triggerImport" class="btn btn-sm btn-ghost text-mystic-gold hover:bg-mystic-gold/10 btn-circle shrink-0" title="导入角色卡">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        </button>
+                        <button @click="createNewCharacter" class="btn btn-sm bg-mystic-gold text-dark-900 border-none hover:bg-yellow-600 btn-circle shadow-lg shadow-mystic-gold/20 shrink-0" title="新建角色">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
                         </button>
                     </div>
                     
+                    <input type="file" ref="importInput" accept=".json,.png" class="hidden" @change="handleImportCharacter" />
+
                     <ul class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar overflow-x-hidden">
                         <li v-for="(char, index) in characters" :key="index">
                             <a @click="switchCharacter(index)"
@@ -1435,7 +1440,12 @@
                         }
                         
                         Object.assign(coc, loadedCoc);
-                        
+
+                        // Fix: Reset arrays if not present in loaded data to prevent bleeding from previous character
+                        coc.badges = loadedCoc.badges || [];
+                        coc.history = loadedCoc.history || [];
+                        if (!loadedCoc.skills) coc.skills = [];
+
                         // Ensure status object exists (Migration)
                         if (!coc.status) {
                             coc.status = { majorWound: false, unconscious: false, dead: false, tempInsanity: false, indefInsanity: false, permInsanity: false };
@@ -1527,6 +1537,153 @@
                 confirmModal.message = ' 警告：确定要删除所有角色卡吗？此操作将清空本地所有数据且不可撤销！';
                 confirmModal.action = deleteAllCharacters;
                 confirmModal.show = true;
+            };
+
+            // Import Logic
+            const importInput = ref(null);
+
+            const triggerImport = () => {
+                importInput.value.click();
+            };
+
+            const extractPngChunk = (buffer, key) => {
+                const dataView = new DataView(buffer);
+                // Check signature
+                if (dataView.getUint32(0) !== 0x89504E47 || dataView.getUint32(4) !== 0x0D0A1A0A) {
+                    return null;
+                }
+
+                let offset = 8;
+                while (offset < buffer.byteLength) {
+                    const length = dataView.getUint32(offset);
+                    const type = String.fromCharCode(
+                        dataView.getUint8(offset + 4),
+                        dataView.getUint8(offset + 5),
+                        dataView.getUint8(offset + 6),
+                        dataView.getUint8(offset + 7)
+                    );
+
+                    if (type === 'tEXt') {
+                        const chunkDataStart = offset + 8;
+                        // Keyword is null-terminated
+                        let keywordEnd = chunkDataStart;
+                        while (keywordEnd < chunkDataStart + length && dataView.getUint8(keywordEnd) !== 0) {
+                            keywordEnd++;
+                        }
+                        
+                        const keywordBytes = new Uint8Array(buffer, chunkDataStart, keywordEnd - chunkDataStart);
+                        const keyword = new TextDecoder().decode(keywordBytes);
+
+                        if (keyword === key) {
+                            const valueBytes = new Uint8Array(buffer, keywordEnd + 1, length - (keywordEnd - chunkDataStart) - 1);
+                            return new TextDecoder().decode(valueBytes);
+                        }
+                    }
+
+                    offset += 12 + length; // Length (4) + Type (4) + Data (length) + CRC (4)
+                }
+                return null;
+            };
+
+            const handleImportCharacter = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                // Check file type
+                const isPng = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+
+                const reader = new FileReader();
+                
+                reader.onload = async (e) => {
+                    try {
+                        let json;
+                        let avatarUrl = null;
+
+                        if (isPng) {
+                            // Handle PNG Import
+                            const arrayBuffer = e.target.result;
+                            
+                            // 1. Extract JSON from tEXt chunk
+                            const extractedData = extractPngChunk(arrayBuffer, 'coc_data');
+                            if (!extractedData) {
+                                throw new Error('未在 PNG 中找到角色数据');
+                            }
+                            
+                            // Decode Base64 -> UTF-8 String -> JSON
+                            // Using decodeURIComponent(escape(atob(str))) for proper UTF-8 handling matching export
+                            const jsonStr = decodeURIComponent(escape(atob(extractedData)));
+                            json = JSON.parse(jsonStr);
+
+                            // 2. Use the PNG itself as avatar
+                            // We need to convert ArrayBuffer to base64 dataURL for display/storage
+                            // Re-use file object is easier but we have ArrayBuffer here.
+                            // Let's just create a Blob URL or Data URL.
+                            // For persistence, Data URL is better for localforage.
+                            const bytes = new Uint8Array(arrayBuffer);
+                            let binary = '';
+                            const len = bytes.byteLength;
+                            // Chunk processing to avoid stack overflow on large images
+                            for (let i = 0; i < len; i += 1024) {
+                                binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 1024, len)));
+                            }
+                            avatarUrl = 'data:image/png;base64,' + btoa(binary);
+
+                        } else {
+                            // Handle JSON Import
+                            const jsonStr = e.target.result; // For JSON readAsText is used, but we can detect mode
+                            // Wait, if we use readAsArrayBuffer for everything, we need to decode JSON text manually
+                            // Or we split logic. To keep it simple, let's switch reader method based on type.
+                            // But here we are inside onload.
+                            // Let's adjust reader call below.
+                            
+                            // If we read as text (for JSON)
+                            json = JSON.parse(jsonStr);
+                        }
+                        
+                        // Basic validation check
+                        if (!json || typeof json !== 'object') {
+                            throw new Error('无效的数据格式');
+                        }
+
+                        // Construct new character object structure matching internal storage
+                        const charName = json.name || '导入的角色';
+                        
+                        const newChar = {
+                            name: charName,
+                            coc: json,
+                            avatar: avatarUrl || json.avatar || null,
+                            avatar_prompt: json.avatar_prompt || ''
+                        };
+
+                        // Add to list
+                        characters.value.push(newChar);
+                        
+                        // Switch to new character
+                        activeIndex.value = characters.value.length - 1;
+                        await localforage.setItem('ai_chargen_active_index_coc', activeIndex.value);
+                        
+                        // Sync and Save
+                        syncCurrentCharacter();
+                        await localforage.setItem('ai_chargen_characters_coc', JSON.stringify(characters.value));
+                        
+                        // Close drawer on mobile if open
+                        const drawer = document.getElementById('my-drawer');
+                        if (drawer) drawer.checked = false;
+
+                        showToast(`角色 "${charName}" 导入成功`, 'success');
+                    } catch (err) {
+                        console.error(err);
+                        showToast('导入失败: ' + err.message, 'error');
+                    }
+                    // Reset input value to allow re-importing same file
+                    event.target.value = '';
+                };
+
+                if (isPng) {
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    reader.readAsText(file);
+                }
             };
 
             const confirmAction = () => {
@@ -3074,6 +3231,9 @@ return {
     createNewCharacter,
     requestDeleteCharacter,
     requestDeleteAllCharacters,
+    importInput,
+    triggerImport,
+    handleImportCharacter,
     confirmModal,
     confirmAction,
     promptInput,
