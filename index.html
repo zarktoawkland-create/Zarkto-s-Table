@@ -259,7 +259,17 @@
             </div>
 
             <div class="p-4 border-t border-dark-800 bg-dark-950/50 cursor-pointer hover:bg-dark-800 transition-colors group safe-pb" @click="currentView = 'settings'; showMobileMenu = false">
-                <div class="flex items-center">
+                <div class="flex items-center" v-if="cocState.gameState === 'playing' && cocState.activeInvestigatorIndex !== -1 && cocState.investigators[cocState.activeInvestigatorIndex]">
+                    <div class="w-10 h-10 rounded-full overflow-hidden shadow-lg ring-2 ring-mystic-gold/50">
+                        <img v-if="cocState.investigators[cocState.activeInvestigatorIndex].avatar" :src="cocState.investigators[cocState.activeInvestigatorIndex].avatar" class="w-full h-full object-cover">
+                        <div v-else class="w-full h-full bg-dark-800 flex items-center justify-center text-mystic-gold font-bold font-serif">{{ cocState.investigators[cocState.activeInvestigatorIndex].name.charAt(0) }}</div>
+                    </div>
+                    <div class="ml-3 overflow-hidden">
+                        <div class="text-sm font-bold text-mystic-gold truncate font-serif">{{ cocState.investigators[cocState.activeInvestigatorIndex].name }}</div>
+                        <div class="text-xs text-slate-500 truncate font-mono">扮演中...</div>
+                    </div>
+                </div>
+                <div class="flex items-center" v-else>
                     <div class="w-10 h-10 rounded-full overflow-hidden shadow-lg ring-2 ring-dark-700">
                         <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover grayscale-[30%]">
                         <div v-else class="w-full h-full bg-dark-800 flex items-center justify-center text-mystic-gold font-bold border border-dark-700">{{ user.name.charAt(0).toUpperCase() }}</div>
@@ -410,6 +420,24 @@
                                             <div class="px-2.5 pt-1.5 pb-1 md:px-3 md:pt-2 md:pb-1.5 rounded-2xl rounded-tr-none border shadow-xl relative overflow-hidden" :class="msg.role === 'whisper' ? 'bg-purple-900/10 border-purple-500/20 text-purple-200' : 'bg-dark-800 border-dark-700 text-slate-200'">
                                                 <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
                                                 <div class="markdown-body relative z-10" v-html="renderMarkdown(msg.content)"></div>
+                                                <!-- Dice Result Display -->
+                                                <div v-if="msg.diceResult" class="mt-2 mb-1 p-2 rounded bg-dark-950/50 border border-dark-600/50 relative overflow-hidden group/dice">
+                                                    <div class="absolute left-0 top-0 bottom-0 w-1" :class="msg.diceResult.success === true ? 'bg-mystic-green' : (msg.diceResult.success === false ? 'bg-red-500' : 'bg-mystic-gold')"></div>
+                                                    <div class="flex items-center gap-2 text-xs font-mono relative z-10">
+                                                        <span class="text-xl">🎲</span>
+                                                        <div class="flex-1">
+                                                            <div class="flex justify-between items-center">
+                                                                <span class="font-bold text-slate-300">{{ msg.diceResult.label || '掷骰' }}</span>
+                                                                <span :class="msg.diceResult.success === true ? 'text-mystic-green font-bold' : (msg.diceResult.success === false ? 'text-red-400 font-bold' : 'text-mystic-gold')">{{ msg.diceResult.level || (msg.diceResult.success === true ? '成功' : (msg.diceResult.success === false ? '失败' : '')) }}</span>
+                                                            </div>
+                                                            <div class="text-slate-400 mt-0.5">
+                                                                <span class="text-white font-bold">{{ msg.diceResult.roll }}</span>
+                                                                <span v-if="msg.diceResult.target" class="opacity-70"> / {{ msg.diceResult.target }}</span>
+                                                                <span v-if="msg.diceResult.extra" class="ml-2 opacity-80 border-l border-slate-600 pl-2">{{ msg.diceResult.extra }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div v-if="msg.isAiGenerated && (cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)) && !isGenerating" class="mt-1 animate-fade-in flex justify-end">
                                                 <button @click="regenerateAiMessage(index)" class="text-[9px] text-slate-500 hover:text-mystic-gold flex items-center gap-1 transition-colors bg-dark-900/50 px-2 py-0.5 rounded-full border border-transparent hover:border-mystic-gold/30">
@@ -434,8 +462,8 @@
                                                 <!-- CoT Rendering -->
                                                 <div v-if="hasCot(msg.content)" class="cot-wrapper">
                                                     <div class="cot-header" @click="toggleCot(index)" :class="{ active: msg.showCot }">
-                                                        <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5" :class="msg.showCot ? 'rotate-90' : ''" style="transition: transform 0.2s" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg> 阿撒托斯的低语 (Whispers of Azathoth)</span>
-                                                        <span class="text-[10px] opacity-50 font-mono">Forbidden Knowledge</span>
+                                                        <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5" :class="msg.showCot ? 'rotate-90' : ''" style="transition: transform 0.2s" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg> 阿撒托斯的低语 (COT)</span>
+                                                        <span class="text-[10px] opacity-50 font-mono"></span>
                                                     </div>
                                                     <div v-show="msg.showCot" class="cot-content markdown-body" v-html="renderMarkdown(getCotContent(msg.content))"></div>
                                                 </div>
@@ -505,7 +533,7 @@
                                         <h4 class="font-bold text-slate-500 text-[10px] mb-3 border-b border-dark-800 pb-1 uppercase tracking-widest">勋章墙</h4>
                                         <div class="flex flex-wrap gap-2">
                                             <div v-for="(badge, bIdx) in cocState.investigators[cocState.activeInvestigatorIndex].badges" :key="bIdx" class="group relative w-8 h-8 flex items-center justify-center bg-dark-800 rounded-full border border-mystic-gold/30 cursor-help">
-                                                <span class="text-lg medal-icon">{{ badge.icon || '🏅' }}</span>
+                                                <span class="text-lg medal-icon flex items-center justify-center" v-html="badge.icon || '🏅'"></span>
                                                 <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-2 bg-dark-950 border border-mystic-gold/20 rounded text-[10px] text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl"><div class="font-bold text-mystic-gold">{{ badge.name }}</div><div class="text-slate-400 mt-1">{{ badge.desc }}</div></div>
                                             </div>
                                         </div>
@@ -533,8 +561,8 @@
                             </div>
 
                             <div class="max-w-4xl mx-auto flex gap-3">
-                                <textarea v-model="cocInput" ref="cocInputRef" @input="handleInput" @keydown.enter.prevent="sendCocMessage" @keydown.esc="showMentionList = false" :placeholder="cocState.mode === 'multi' && multiplayerState.roundActionIds.includes(user.uuid) ? '本轮已行动，等待其他玩家...' : '你的行动...'" :disabled="cocState.mode === 'multi' && multiplayerState.roundActionIds.includes(user.uuid)" class="flex-1 bg-dark-800 rounded-lg px-4 py-3 resize-none border border-dark-700 focus:ring-1 focus:ring-mystic-gold focus:border-mystic-gold focus:bg-dark-900 text-slate-200 placeholder-slate-600 transition-all h-[56px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"></textarea>
-                                <button @click="sendCocMessage" :disabled="!cocInput.trim() || isGenerating || (cocState.mode === 'multi' && multiplayerState.roundActionIds.includes(user.uuid))" class="w-[56px] h-[56px] bg-dark-800 hover:bg-mystic-gold hover:text-dark-950 text-mystic-gold border border-mystic-gold/50 rounded-lg flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg group"><svg class="w-6 h-6 transform rotate-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+                                <textarea v-model="cocInput" ref="cocInputRef" @input="handleInput" @keydown.enter.prevent="sendCocMessage" @keydown.esc="showMentionList = false" :placeholder="isRoundLocked ? '本轮已行动，等待队友...' : '你的行动...'" :disabled="isRoundLocked" class="flex-1 bg-dark-800 rounded-lg px-4 py-3 resize-none border border-dark-700 focus:ring-1 focus:ring-mystic-gold focus:border-mystic-gold focus:bg-dark-900 text-slate-200 placeholder-slate-600 transition-all h-[56px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"></textarea>
+                                <button @click="sendCocMessage" :disabled="!cocInput.trim() || isGenerating || isRoundLocked" class="w-[56px] h-[56px] bg-dark-800 hover:bg-mystic-gold hover:text-dark-950 text-mystic-gold border border-mystic-gold/50 rounded-lg flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg group"><svg class="w-6 h-6 transform rotate-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
                             </div>
                         </div>
                     </div>
@@ -617,8 +645,8 @@
                     <div class="glass-panel p-6 rounded-lg">
                         <h3 class="font-bold text-slate-200 mb-6 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-mystic-gold mr-3"></span> 模组档案</h3>
                         <!-- Host or Single Mode -->
-                        <div v-if="cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)">
-                            <div v-if="!cocState.module" class="flex flex-col gap-6">
+                        <div v-if="cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost) || (cocState.mode === 'multi' && !multiplayerState.isHost && cocState.module)">
+                            <div v-if="!cocState.module && (cocState.mode === 'single' || multiplayerState.isHost)" class="flex flex-col gap-6">
                                 <label class="w-full h-48 border border-dashed border-slate-600 hover:border-mystic-gold bg-dark-900/30 hover:bg-dark-800/50 rounded-lg cursor-pointer flex flex-col items-center justify-center text-slate-400 transition-all group relative overflow-hidden">
                                     <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-20"></div>
                                     <svg class="w-12 h-12 mb-4 text-slate-600 group-hover:text-mystic-gold transition-colors transform group-hover:scale-110 duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
@@ -632,15 +660,14 @@
                                     <div class="absolute bottom-4 right-4"><button @click="saveManualModule" :disabled="!cocState.tempModuleText" class="px-6 py-2 bg-dark-800 text-mystic-gold border border-mystic-gold/30 hover:bg-mystic-gold hover:text-dark-900 rounded transition-all font-bold disabled:opacity-0 disabled:cursor-not-allowed text-sm tracking-widest uppercase shadow-lg hover:shadow-mystic-gold/20">确认录入</button></div>
                                 </div>
                             </div>
-                            <div v-else class="bg-dark-800/50 p-5 rounded border border-dark-700 flex justify-between items-start">
-                                <div><h4 class="font-bold text-mystic-gold text-lg font-serif mb-1">{{ cocState.module.name }}</h4><p class="text-xs text-slate-500 font-mono">{{ cocState.module.content.length }} chars</p></div>
-                                <button @click="cocState.module = null" class="text-dark-400 hover:text-red-500 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                            <div v-else-if="cocState.module" class="bg-dark-800/50 p-5 rounded border border-dark-700 flex justify-between items-start">
+                                <div><h4 class="font-bold text-mystic-gold text-lg font-serif mb-1">{{ cocState.module.name }}</h4><p class="text-xs text-slate-500 font-mono">{{ cocState.module.content ? cocState.module.content.length : 0 }} chars</p></div>
+                                <button v-if="cocState.mode === 'single' || multiplayerState.isHost" @click="cocState.module = null" class="text-dark-400 hover:text-red-500 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                             </div>
                         </div>
-                        <!-- Guest in Multi Mode -->
+                        <!-- Guest in Multi Mode (No module yet) -->
                         <div v-else class="text-center py-8 border border-dark-800 border-dashed rounded bg-dark-900/30">
-                            <div v-if="cocState.module" class="text-mystic-gold font-bold font-serif text-xl">{{ cocState.module.name }}</div>
-                            <div v-else class="text-slate-500 italic">等待房主选择模组...</div>
+                            <div class="text-slate-500 italic">等待房主选择模组...</div>
                         </div>
                     </div>
 
@@ -1002,12 +1029,27 @@
                     generateResponse();
                 };
                 const cocInput = ref(''); const cocInputRef = ref(null); const cocChatContainer = ref(null); const isGenerating = ref(false);
+                const hasAiTeammates = Vue.computed(() => {
+                    if (cocState.mode === 'multi') return false;
+                    return Object.values(multiplayerState.assignments).some(uid => uid.startsWith('ai_'));
+                });
+                const isRoundLocked = Vue.computed(() => {
+                    if (isGenerating.value) return true;
+                    if (cocState.mode === 'multi') {
+                        return multiplayerState.roundActionIds.includes(user.uuid);
+                    }
+                    if (cocState.mode === 'single' && hasAiTeammates.value) {
+                        return multiplayerState.roundActionIds.includes(user.uuid);
+                    }
+                    return false;
+                });
                 const showMentionList = ref(false); const mentionQuery = ref('');
-                const mentionCandidates = Vue.computed(() => { if (!mentionQuery.value && mentionQuery.value !== '') return []; const q = mentionQuery.value.toLowerCase(); let candidates = []; if (cocState.mode === 'multi') { cocState.investigators.forEach((inv, idx) => { if (multiplayerState.assignments[idx] && multiplayerState.assignments[idx] !== user.uuid) candidates.push({ type: 'character', name: inv.name, id: `char_${idx}`, avatar: inv.avatar }); }); } return candidates.filter(c => c.name.toLowerCase().includes(q)); });
+                const mentionCandidates = Vue.computed(() => { if (!mentionQuery.value && mentionQuery.value !== '') return []; const q = mentionQuery.value.toLowerCase(); let candidates = []; if (cocState.mode === 'multi' || hasAiTeammates.value) { cocState.investigators.forEach((inv, idx) => { if (multiplayerState.assignments[idx] && multiplayerState.assignments[idx] !== user.uuid) candidates.push({ type: 'character', name: inv.name, id: `char_${idx}`, avatar: inv.avatar }); }); } return candidates.filter(c => c.name.toLowerCase().includes(q)); });
                 const handleInput = (e) => { const val = e.target.value; const cursor = e.target.selectionStart; const lastAt = val.lastIndexOf('@', cursor - 1); if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ' || val[lastAt - 1] === '\n')) { const query = val.substring(lastAt + 1, cursor); if (!query.includes(' ')) { mentionQuery.value = query; showMentionList.value = true; return; } } showMentionList.value = false; };
                 const selectMention = (candidate) => { const val = cocInput.value; const cursor = cocInputRef.value.selectionStart; const lastAt = val.lastIndexOf('@', cursor - 1); if (lastAt !== -1) { const before = val.substring(0, lastAt); const after = val.substring(cursor); cocInput.value = `${before}@${candidate.name} ${after}`; showMentionList.value = false; nextTick(() => { cocInputRef.value.focus(); const newCursorPos = lastAt + 1 + candidate.name.length + 1; cocInputRef.value.setSelectionRange(newCursorPos, newCursorPos); }); } };
 
-                const multiplayerState = reactive({ isConnected: false, inRoom: false, roomId: null, myId: null, isHost: false, members: [], turnStatus: {}, skipStatus: {}, isReady: false, assignments: {}, turnIndex: 0, roundActionIds: [], cotAuthorizedUsers: [] });
+                const multiplayerState = reactive({ isConnected: false, inRoom: false, roomId: null, myId: null, isHost: false, members: [], turnStatus: {}, skipStatus: {}, isReady: false, assignments: {}, turnIndex: 0, roundActionIds: [], cotAuthorizedUsers: [], syncReceived: false });
+                let joinRetryInterval = null;
                 const friends = ref([]); const friendRequests = ref([]); const friendInput = ref(''); const showJoinInput = ref(false); const joinRoomId = ref(''); const savedGames = ref([]);
                 const showBroadcast = ref(false); const dontShowBroadcast = ref(false); const currentVersion = '2.0 Beta';
                 const checkBroadcast = () => { const lastReadVersion = localStorage.getItem('coc_broadcast_read_version'); if (lastReadVersion !== currentVersion) showBroadcast.value = true; };
@@ -1074,7 +1116,19 @@
                     }
                 };
 
-                const allPlayersReady = Vue.computed(() => { if (multiplayerState.members.length < 2) return false; const hostPresent = multiplayerState.members.some(m => m.isHost); if (!hostPresent) return false; return multiplayerState.members.every(m => m.isReady || m.isHost); });
+                const allPlayersReady = Vue.computed(() => {
+                    // 必须有房主
+                    const hostPresent = multiplayerState.members.some(m => m.isHost);
+                    if (!hostPresent) return false;
+                    
+                    // 所有在场成员必须已准备（房主除外，房主点开始即视为准备）
+                    const membersReady = multiplayerState.members.every(m => m.isReady || m.isHost);
+                    if (!membersReady) return false;
+
+                    // 必须至少有一个角色被分配（给真人或AI），不能空着开局
+                    const hasAssignments = Object.keys(multiplayerState.assignments).length > 0;
+                    return hasAssignments;
+                });
                 
                 const toggleAiPlayer = (index) => {
                     if (multiplayerState.assignments[index] && multiplayerState.assignments[index].startsWith('ai_')) {
@@ -1098,17 +1152,21 @@
                         const inv = cocState.investigators[idx];
                         if (!inv) continue;
                         
-                        const aiSystemPrompt = `你现在是COC跑团游戏中的一名玩家，你正在扮演角色：${inv.name}。
+                        const aiSystemPrompt = `你正在参与一场COC跑团游戏，扮演角色：${inv.name}。
 角色资料：
 ${buildInvestigatorProfile(inv)}
 
-你的任务是：
-1. 根据当前的剧情发展，决定该角色的行动或发言。
-2. 必须完全贴合角色设定，语气、行为要符合其背景和属性。
-3. **严禁**上帝视角，你只能知道你角色目前能知道的信息。
-4. 积极配合其他玩家推进剧情，不要做破坏游戏体验的行为。
-5. 回复要简短有力，不要长篇大论。
-6. 不要输出任何解释性文字，直接输出角色的行动或对白。`;
+【核心指令】
+1. **像真人玩家一样行动**：回复必须极其简短、高效、口语化。
+2. **响应 KP 指令**：
+   - 当 KP 要求进行技能检定（如"请过侦查"）时，**必须**输出对应的检定指令。
+   - 检定指令格式：.ra 技能名 (如 .ra 侦查、.ra 聆听、.ra 力量)。
+   - 不要只口头说"我侦查一下"，要直接扔出指令。
+   - 如果 KP 要求 San Check，输出 .sc 成功扣除/失败扣除 (如 .sc 1/1d6)。
+3. **严禁写小说**：绝对不要描写心理活动、不要渲染气氛、不要长篇大论。
+4. **字数限制**：控制在 30 字以内。
+5. **行动准则**：只描述你做什么或说什么，不要解释原因。
+6. 直接输出内容，不要带任何前缀或解释。`;
 
                         const context = cocState.log.slice(-10).map(m => `${m.name}: ${m.content}`).join('\n');
 
@@ -1152,8 +1210,18 @@ ${buildInvestigatorProfile(inv)}
                 };
 
                 const checkAndTriggerRound = async () => {
-                    if (!multiplayerState.isHost || isGenerating.value) return;
-                    const participants = [...new Set(Object.values(multiplayerState.assignments))];
+                    const isSingleHost = cocState.mode === 'single';
+                    if ((!multiplayerState.isHost && !isSingleHost) || isGenerating.value) return;
+                    
+                    let participants = [];
+                    if (isSingleHost) {
+                        participants.push(user.uuid);
+                        Object.values(multiplayerState.assignments).forEach(uid => {
+                            if (uid.startsWith('ai_')) participants.push(uid);
+                        });
+                    } else {
+                        participants = [...new Set(Object.values(multiplayerState.assignments))];
+                    }
                     if (participants.length === 0) return;
                     
                     const realPlayers = participants.filter(uid => !uid.startsWith('ai_'));
@@ -1162,7 +1230,7 @@ ${buildInvestigatorProfile(inv)}
                     if (allActed) {
                         await processAiPlayers();
                         multiplayerState.roundActionIds = [];
-                        if (multiplayerState.isHost) {
+                        if (!isSingleHost && multiplayerState.isHost) {
                             broadcastMessage({
                                 type: 'sync_state',
                                 roundActionIds: [],
@@ -1321,16 +1389,165 @@ ${buildInvestigatorProfile(inv)}
                     try { let data = null; if (file.type === 'application/json' || file.name.endsWith('.json')) { data = JSON.parse(await file.text()); } else if (file.type === 'image/png' || file.name.endsWith('.png')) { data = await extractPngData(file); if (!data) throw new Error('未在 PNG 中找到嵌入的角色数据'); data.avatar = await compressImage(URL.createObjectURL(file), 300, 0.8); } if (!data) throw new Error('不支持的文件格式'); if (!data.stats) data.stats = { STR:50, CON:50, SIZ:65, DEX:50, APP:50, INT:60, POW:50, EDU:60 }; for (let k in data.stats) data.stats[k] = Number(data.stats[k]); if (data.hp === undefined) data.hp = Math.floor((data.stats.CON + data.stats.SIZ)/10); if (data.mp === undefined) data.mp = Math.floor(data.stats.POW/5); if (data.san === undefined) data.san = data.stats.POW; if (data.maxSan === undefined) data.maxSan = 99; if (data.maxHp === undefined) data.maxHp = Math.floor((data.stats.CON + data.stats.SIZ)/10); if (data.maxMp === undefined) data.maxMp = Math.floor(data.stats.POW/5); if (!data.history) data.history = []; if (!data.badges) data.badges = []; if (!data.skills) data.skills = []; cocState.investigators.push(data); if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators }); if (cocState.activeInvestigatorIndex === -1) cocState.activeInvestigatorIndex = cocState.investigators.length - 1; saveData(); showToast('调查员导入成功: ' + data.name, 'success'); } catch(err) { showToast('导入失败: ' + err.message, 'error'); } e.target.value = ''; 
                 };
                 const deleteInvestigator = async (index) => { if(await showConfirm('删除此调查员？', '删除角色')) { cocState.investigators.splice(index, 1); if(cocState.activeInvestigatorIndex >= index) cocState.activeInvestigatorIndex = -1; if (cocState.mode === 'multi' && multiplayerState.isHost) { broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators }); multiplayerState.assignments = {}; broadcastMessage({ type: 'sync_assignments', assignments: {} }); } saveData(); } };
-                const toggleReady = () => { if (!multiplayerState.isReady && cocState.gameState === 'preparing' && cocState.activeInvestigatorIndex === -1) return showToast('请先选择一名调查员', 'warning'); multiplayerState.isReady = !multiplayerState.isReady; if (roomChannel) roomChannel.track({ user_id: user.uuid, name: user.name, avatar: user.avatar, is_host: multiplayerState.isHost, isReady: multiplayerState.isReady, online_at: new Date() }); };
+                const toggleReady = () => {
+                    if (!multiplayerState.isReady && cocState.gameState === 'preparing' && cocState.activeInvestigatorIndex === -1) return showToast('请先选择一名调查员', 'warning');
+                    multiplayerState.isReady = !multiplayerState.isReady;
+                    // 发送准备状态更新广播
+                    broadcastMessage({
+                        type: 'toggle_ready',
+                        userId: user.uuid,
+                        isReady: multiplayerState.isReady
+                    });
+                };
                 const buildInvestigatorProfile = (inv) => { let profile = `姓名：${inv.name}\n职业：${inv.job} | 年龄：${inv.age} | 性别：${inv.gender} | 住地：${inv.residence}\n属性：STR:${inv.stats.STR} CON:${inv.stats.CON} SIZ:${inv.stats.SIZ} DEX:${inv.stats.DEX} APP:${inv.stats.APP} INT:${inv.stats.INT} POW:${inv.stats.POW} EDU:${inv.stats.EDU}\n状态：HP ${inv.hp}/${inv.maxHp} | MP ${inv.mp}/${inv.maxMp} | SAN ${inv.san}/${inv.maxSan}\n`; if (inv.skills && inv.skills.length) profile += `技能：${inv.skills.filter(s => s.value > 0).map(s => `${s.name}(${s.value})`).join(', ')}\n`; if (inv.backstory) { profile += `背景：\n`; for (const [k, v] of Object.entries(inv.backstory)) if (v) profile += `- ${k}: ${v}\n`; } if (inv.inventory) profile += `随身物品：${inv.inventory}\n`; return profile; };
                 const openSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; if (!inv) return showToast('请选择一名调查员', 'warning'); settlementState.moduleName = cocState.module?.name || '未知模组'; settlementState.sanRewardExpr = '1d6'; settlementState.sanRewardVal = 0; settlementState.specialReward = ''; settlementState.badge = { name: '幸存者', desc: `在《${settlementState.moduleName}》中存活`, icon: '🏅' }; settlementState.historyLog = `完成模组《${settlementState.moduleName}》`; settlementState.step = 1; settlementState.selectedSkills = []; settlementState.skillGrowths = []; settlementState.show = true; };
                 const rollSanReward = () => { const expr = settlementState.sanRewardExpr; let val = 0; if (expr.includes('d')) { const [n, d] = expr.split('d').map(Number); for(let i=0; i<(n||1); i++) val += Math.floor(Math.random()*(d||6))+1; } else val = parseInt(expr) || 0; settlementState.sanRewardVal = val; };
                 const processSkillGrowth = async () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; settlementState.isRolling = true; settlementState.skillGrowths = []; for (const skillName of settlementState.selectedSkills) { const skill = inv.skills.find(s => s.name === skillName); if (!skill) continue; const checkVal = Math.floor(Math.random() * 100) + 1; const success = checkVal > skill.value || checkVal > 95; let growth = 0; if (success) growth = Math.floor(Math.random() * 10) + 1; settlementState.skillGrowths.push({ name: skill.name, oldVal: skill.value, checkVal, success, growth, newVal: skill.value + growth }); await new Promise(r => setTimeout(r, 300)); } settlementState.isRolling = false; settlementState.step = 3; };
                 const sanitizeFilename = (name, defaultName = 'character') => name ? name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim() : defaultName;
                 const downloadFile = (blob, filename) => { const reader = new FileReader(); reader.onload = (e) => { const a = document.createElement('a'); a.href = e.target.result; a.download = filename; a.style.display = 'none'; document.body.appendChild(a); a.click(); setTimeout(() => document.body.removeChild(a), 100); }; reader.readAsDataURL(blob); };
-                const injectPngChunk = (pngBuffer, key, value) => { /* Simplified PNG Chunk Injector */ const encoder = new TextEncoder(); const keyBytes = encoder.encode(key); const valBytes = encoder.encode(value); const chunkLen = keyBytes.length + 1 + valBytes.length; const chunkData = new Uint8Array(chunkLen); chunkData.set(keyBytes); chunkData[keyBytes.length] = 0; chunkData.set(valBytes, keyBytes.length + 1); const fullChunk = new Uint8Array(4 + 4 + chunkLen + 4); const view = new DataView(fullChunk.buffer); view.setUint32(0, chunkLen); fullChunk.set(encoder.encode('tEXt'), 4); fullChunk.set(chunkData, 8); let crc = -1; /* skipping crc calc for brevity, browsers might ignore it or we need pako/crc32 lib */ const res = new Uint8Array(pngBuffer.length + fullChunk.length); let pos = 8; while(pos < pngBuffer.length) { const len = new DataView(pngBuffer.buffer).getUint32(pos); const type = String.fromCharCode(...pngBuffer.slice(pos+4, pos+8)); if(type === 'IHDR') { pos += 12+len; break; } pos += 12+len; } res.set(pngBuffer.slice(0, pos)); res.set(fullChunk, pos); res.set(pngBuffer.slice(pos), pos + fullChunk.length); return res; };
-                const exportCurrentInvestigatorJSON = () => { /* ... existing export logic ... */ const inv = cocState.investigators[cocState.activeInvestigatorIndex]; if (!inv) return; const exportData = JSON.parse(JSON.stringify(inv)); exportData.san = Math.min(exportData.maxSan||99, exportData.san + settlementState.sanRewardVal); settlementState.skillGrowths.forEach(g => { if(g.success) { const s = exportData.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } }); if (!exportData.history) exportData.history=[]; exportData.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`); const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'}); downloadFile(blob, `${sanitizeFilename(inv.name)}_Settled.json`); };
-                const exportCurrentInvestigatorPNG = async () => { /* ... existing export logic ... */ showToast('暂不支持 PNG 导出 (代码简化)', 'warning'); };
+                const crcTable = []; for (let n =0; n<256; n++){ let c = n; for(let k=0; k<8; k++){ if(c&1) c = 0xedb88320 ^ (c >>> 1); else c = c >>> 1; } crcTable[n] = c; }
+                const crc32 = (buf) => { let crc = 0xffffffff; for (let i = 0; i < buf.length; i++) { crc = crcTable[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8); } return crc ^ 0xffffffff; };
+
+                const injectPngChunk = (pngBuffer, key, value) => {
+                    const encoder = new TextEncoder();
+                    const keyBytes = encoder.encode(key);
+                    const valBytes = encoder.encode(value);
+                    const chunkLen = keyBytes.length + 1 + valBytes.length;
+                    const fullChunkLen = 4 + 4 + chunkLen + 4;
+                    const fullChunk = new Uint8Array(fullChunkLen);
+                    const view = new DataView(fullChunk.buffer);
+                    view.setUint32(0, chunkLen);
+                    fullChunk.set(encoder.encode('tEXt'), 4);
+                    fullChunk.set(keyBytes, 8);
+                    fullChunk[8 + keyBytes.length] = 0;
+                    fullChunk.set(valBytes, 8 + keyBytes.length + 1);
+                    const crcData = fullChunk.slice(4, 4 + 4 + chunkLen);
+                    view.setUint32(fullChunkLen - 4, crc32(crcData)); // Correct CRC32
+                    const res = new Uint8Array(pngBuffer.length + fullChunkLen);
+                    let pos = 8;
+                    while (pos < pngBuffer.length) {
+                        const len = new DataView(pngBuffer.buffer).getUint32(pos);
+                        const type = String.fromCharCode(...pngBuffer.slice(pos+4, pos+8));
+                        if(type === 'IEND') break;
+                        pos += 12+len;
+                    }
+                    res.set(pngBuffer.slice(0, pos));
+                    res.set(fullChunk, pos);
+                    res.set(pngBuffer.slice(pos), pos + fullChunkLen);
+                    return res;
+                };
+
+                const getInvestigatorExportData = () => {
+                    const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                    if (!inv) return null;
+                    const exportData = JSON.parse(JSON.stringify(inv));
+                    // Apply settlement changes
+                    exportData.san = Math.min(exportData.maxSan||99, exportData.san + settlementState.sanRewardVal);
+                    settlementState.skillGrowths.forEach(g => { if(g.success) { const s = exportData.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } });
+                    if (!exportData.history) exportData.history=[];
+                    if (settlementState.historyLog) exportData.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`);
+                    if (settlementState.badge.name) { if(!exportData.badges) exportData.badges=[]; exportData.badges.push({...settlementState.badge}); }
+                    return exportData;
+                };
+
+                const exportCurrentInvestigatorJSON = () => {
+                    const exportData = getInvestigatorExportData();
+                    if (!exportData) return;
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+                    downloadFile(blob, `${sanitizeFilename(exportData.name)}_Settled.json`);
+                };
+
+                const exportCurrentInvestigatorPNG = async () => {
+                    const exportData = getInvestigatorExportData();
+                    if (!exportData) return;
+                    showToast('正在生成角色卡...', 'info');
+                    
+                    try {
+                        // 1. Prepare Base Image (Avatar or Default)
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 300; canvas.height = 450;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Draw Background
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillRect(0, 0, 300, 450);
+                        
+                        // Draw Avatar if available
+                        if (exportData.avatar) {
+                            const img = new Image();
+                            img.src = exportData.avatar;
+                            await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+                            // Center crop
+                            const aspect = img.width / img.height;
+                            let drawW = 300, drawH = 300 / aspect;
+                            if (drawH < 300) { drawH = 300; drawW = 300 * aspect; }
+                            ctx.drawImage(img, (300 - drawW)/2, 0, drawW, drawH);
+                        } else {
+                            // Default Avatar Placeholder
+                            ctx.fillStyle = '#1e293b';
+                            ctx.fillRect(0, 0, 300, 300);
+                            ctx.fillStyle = '#334155';
+                            ctx.font = 'bold 80px serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(exportData.name.charAt(0), 150, 150);
+                        }
+                        
+                        // Overlay Gradient
+                        const grad = ctx.createLinearGradient(0, 200, 0, 450);
+                        grad.addColorStop(0, 'rgba(15, 23, 42, 0)');
+                        grad.addColorStop(0.5, 'rgba(15, 23, 42, 0.9)');
+                        grad.addColorStop(1, 'rgba(15, 23, 42, 1)');
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 200, 300, 250);
+
+                        // Draw Info
+                        ctx.fillStyle = '#d4af37';
+                        ctx.font = 'bold 24px serif';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(exportData.name, 20, 340);
+                        
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.font = '14px sans-serif';
+                        ctx.fillText(`${exportData.job} | ${exportData.age}岁`, 20, 365);
+                        
+                        // Stats Bar
+                        const drawStat = (label, val, x, color) => {
+                            ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
+                            ctx.fillRect(x, 385, 80, 40);
+                            ctx.fillStyle = color;
+                            ctx.font = 'bold 16px monospace';
+                            ctx.fillText(val, x + 10, 410);
+                            ctx.fillStyle = '#64748b';
+                            ctx.font = '10px sans-serif';
+                            ctx.fillText(label, x + 50, 410);
+                        };
+                        drawStat('HP', `${exportData.hp}/${exportData.maxHp||exportData.hp}`, 20, '#f87171');
+                        drawStat('SAN', `${exportData.san}`, 110, '#a78bfa');
+                        drawStat('LUCK', `${exportData.stats?.LUCK||50}`, 200, '#fbbf24');
+
+                        // 2. Export to Blob -> ArrayBuffer
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        const buffer = await blob.arrayBuffer();
+                        
+                        // 3. Prepare Data Chunk
+                        // Compatible with extractPngData: btoa(unescape(encodeURIComponent(json)))
+                        const jsonStr = JSON.stringify(exportData);
+                        const encodedData = window.btoa(unescape(encodeURIComponent(jsonStr)));
+                        
+                        // 4. Inject
+                        const newBuffer = injectPngChunk(new Uint8Array(buffer), 'coc_data', encodedData);
+                        
+                        // 5. Download
+                        const finalBlob = new Blob([newBuffer], { type: 'image/png' });
+                        downloadFile(finalBlob, `${sanitizeFilename(exportData.name)}_Card.png`);
+                        showToast('角色卡导出成功', 'success');
+                        
+                    } catch (e) {
+                        console.error(e);
+                        showToast('导出失败: ' + e.message, 'error');
+                    }
+                };
                 const confirmSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; inv.san = Math.min(inv.maxSan||99, inv.san + settlementState.sanRewardVal); settlementState.skillGrowths.forEach(g => { if(g.success) { const s = inv.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } }); if(!inv.history) inv.history=[]; inv.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`); if(settlementState.badge.name) { if(!inv.badges) inv.badges=[]; inv.badges.push({...settlementState.badge}); } saveData(); showToast('结算完成', 'success'); settlementState.show = false; };
 
                 const importTavernSave = (e) => {
@@ -1436,12 +1653,98 @@ ${logContent.slice(0, 50000)}
                     if (!cocState.module || cocState.investigators.length === 0) return showToast('请先导入模组和调查员', 'warning');
                     if (cocState.mode === 'multi') { /* ... multi validation ... */ } else { if (cocState.activeInvestigatorIndex === -1) cocState.activeInvestigatorIndex = 0; }
                     
-                    let systemPrompt = `你现在是COC跑团 (Call of Cthulhu 7th Edition) 的 Keeper (守密人)。...`; // Simplified prompt for length
-                    if (cocState.mode === 'multi') systemPrompt += `...`;
+                    let systemPrompt = [
+                        "你现在是《克苏鲁的呼唤》(Call of Cthulhu 7th Edition) 的 Keeper (守密人)。",
+                        "你正在主持一场沉浸式的跑团游戏。你的目标是为调查员们编织一场惊心动魄、充满悬疑与未知的冒险。",
+                        "",
+                        "【核心职责】",
+                        "1. **叙事与氛围**：",
+                        "   - 保持洛夫克拉夫特式的文学风格：强调未知的恐惧、古老的神秘和人类的渺小。",
+                        "   - **氛围烘托与肮脏美学**：",
+                        "     * 敢于描写令人不适的细节（如'浑浊的浆糊'、'浓重的牲畜臭味'、'浑浊的眼神'），用极度写实的笔触增强真实感。",
+                        "     * **生理与心理共振**：通过描述角色的生理反应（如'旧伤隐隐作痛'、'胃部痉挛'、'寒意顺着脊背爬升'）来暗示环境的压抑和不可名状的危险。",
+                        "   - **重视羁绊**：时刻关注角色卡中的背景设定和人物关系（如'战友'、'师徒'、'旧识'）。在叙事中通过眼神交流、默契配合或下意识的保护动作来体现这些关系，绝对不要把老熟人当成陌生人。",
+                        "   - **顺势而为**：紧扣玩家的行动动机（如玩家说'借口散步'，你就顺着描述他散步到的地方），让场景切换自然流畅。",
+                        "   - 适当地放慢叙事节奏，在关键时刻使用短句制造压抑感和悬念。",
+                        "   - 永远保持客观中立，你描述的是世界本身，而不是替玩家做决定。",
+                        "",
+                        "2. **规则裁决与骰点处理**：",
+                        "   - **系统掷骰原则**：玩家的掷骰指令（如 .ra, .sc）已被系统自动处理并附带了结果（显示为'> 🎲 ...'）。",
+                        "   - **KP职责**：请直接基于系统给出的骰点结果进行叙事。不要重复掷骰，也不要忽略已有的结果。",
+                        "   - **奖惩骰机制 (Bonus/Penalty Dice)**：",
+                        "     * 如果你认为当前情境需要应用奖励骰或惩罚骰，请基于玩家已投出的【个位数】保持不变，重新投掷【十位数】进行调整。",
+                        "     * 在回复中明确说明：'由于[原因]，适用(奖励/惩罚)骰。原结果[X]，调整为...'",
+                        "     * 如果系统已给出明确的成功/失败判定，且你认为无需调整，则直接采纳该结果。",
+                        "   - **主动要求检定**：当玩家行动存在风险且未主动掷骰时，请使用以下标准格式要求玩家检定：",
+                        "     * 格式：`@玩家名 .ra 技能名` (例如：`@林语风 .ra 侦查` 或 `@杰克 .sc 1/1d6`)",
+                        "     * 这种格式会被系统识别并高亮，方便玩家点击操作。",
+                        "   - **暗骰 (Hidden Dice)**：对于玩家不应知晓的信息（如 NPC 行动、隐秘线索），请自行在思维链 (CoT) 中进行暗骰。",
+                        "   - **检定结果反馈**：根据检定结果（大成功/成功/失败/大失败）给予差异化的叙事反馈。失败意味着'成功但有代价'或'情况恶化'。",
+                        "",
+                        "3. **剧情把控**：",
+                        "   - 不要一次性倾倒所有信息。线索应通过玩家的探索、对话和检定逐步获得。",
+                        "   - 如果玩家迷失方向，利用环境变化、NPC 介入或突发事件（如即兴的 San Check）来推动节奏。",
+                        "   - 扮演 NPC 时要鲜活立体，他们有自己的动机、恐惧和秘密。",
+                        "",
+                        "4. **多玩家处理**：",
+                        "   - 玩家（包括AI队友）会以【角色名】: ... 格式行动。",
+                        "   - **视角分隔**：为了保证每位玩家都能清晰地接收到属于自己的反馈，请**务必使用分割线** `---` 和 二三级markdown标题格式的**角色名标题**（如 ##【角色A】）来区分不同玩家的视角和结果。",
+                        "   - **即使在同一场景**：也要通过分段或小标题来明确区分'这是对A的反馈'和'这是对B的反馈'，避免信息混淆。",
+                        "   - **场景统一感**：虽然使用分割线，但在描述时仍需体现角色间的互动（例如在对A的反馈中提到B的动作），保持时空的连贯性。",
+                        "",
+                        "【思考指引】",
+                        "在输出剧情前，请先在 <cot>...</cot> 标签内进行思考（Think Step-by-Step）：",
+                        "- **检索角色卡**：当前行动的玩家有哪些关键技能？数值是多少？如果他没有对应技能，我有权让他检定什么属性？",
+                        "- **人际关系**：在场的角色之间有何羁绊？",
+                        "- 当前场景的重点是什么？",
+                        "- 玩家的行动是否需要检定？",
+                        "- NPC 会如何反应？",
+                        "- 下一步的恐怖氛围如何层层递进？",
+                        "",
+                        "请根据模组背景和玩家行动，输出一段精彩的剧情描述。"
+                    ].join('\n');
                     
                     // Insert Inv Profile & Module
-                    const inv = cocState.investigators[cocState.activeInvestigatorIndex];
-                    systemPrompt += `\n\n【当前调查员资料】\n${buildInvestigatorProfile(inv)}`;
+                    // 修复：在多人模式或单人带 AI 模式下，需要将所有参与的调查员资料都发给 KP
+                    let investigatorsProfiles = '';
+                    if (cocState.mode === 'multi') {
+                        // 多人模式：遍历所有已分配的角色
+                        Object.keys(multiplayerState.assignments).forEach(idx => {
+                            const investigator = cocState.investigators[idx];
+                            if (investigator) {
+                                investigatorsProfiles += `\n---\n【调查员：${investigator.name}】\n${buildInvestigatorProfile(investigator)}`;
+                            }
+                        });
+                    } else {
+                        // 单人模式：依然可能存在 AI 队友，不仅是 activeInvestigatorIndex
+                        // 检查是否有 assignments (AI 托管)
+                        const aiIndices = Object.keys(multiplayerState.assignments).filter(k => multiplayerState.assignments[k] && multiplayerState.assignments[k].startsWith('ai_'));
+                        
+                        // 添加玩家角色
+                        const playerInv = cocState.investigators[cocState.activeInvestigatorIndex];
+                        if (playerInv) {
+                            investigatorsProfiles += `\n---\n【调查员：${playerInv.name} (玩家)】\n${buildInvestigatorProfile(playerInv)}`;
+                        }
+                        
+                        // 添加 AI 队友
+                        aiIndices.forEach(idx => {
+                            // 避免重复添加玩家角色（如果玩家角色也被标记为 AI，虽然逻辑上不应发生）
+                            if (parseInt(idx) !== cocState.activeInvestigatorIndex) {
+                                const aiInv = cocState.investigators[idx];
+                                if (aiInv) {
+                                    investigatorsProfiles += `\n---\n【调查员：${aiInv.name} (AI队友)】\n${buildInvestigatorProfile(aiInv)}`;
+                                }
+                            }
+                        });
+                    }
+                    
+                    if (!investigatorsProfiles) {
+                        // Fallback
+                        const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                        investigatorsProfiles = `\n\n【当前调查员资料】\n${buildInvestigatorProfile(inv)}`;
+                    }
+
+                    systemPrompt += `\n\n【参与游戏的调查员名单与资料】${investigatorsProfiles}`;
                     systemPrompt += `\n\n【模组背景】\n${cocState.module.content.slice(0, 5000)}`;
 
                     if (cocState.log.length === 0) {
@@ -1468,23 +1771,247 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                     if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'game_start', log: cocState.log });
                 };
 
-                const handleInvestigatorClick = (index) => { /* ... selection logic ... */ cocState.activeInvestigatorIndex = index; };
-                const updateMyAssignment = () => { /* ... */ };
+                const handleInvestigatorClick = (index) => {
+                    // 如果正在游戏中，禁止切换角色（除非是房主在管理 AI）
+                    if (cocState.gameState === 'playing') {
+                        if (cocState.mode === 'multi') {
+                            const isMyChar = multiplayerState.assignments[index] === user.uuid;
+                            const isAi = multiplayerState.assignments[index]?.startsWith('ai_');
+                            // 房主可以点击 AI 角色来查看/管理，玩家只能点击自己的角色
+                            if (multiplayerState.isHost && isAi) {
+                                cocState.activeInvestigatorIndex = index;
+                                return;
+                            }
+                            if (isMyChar) {
+                                cocState.activeInvestigatorIndex = index;
+                                return;
+                            }
+                            return showToast('游戏中无法切换角色', 'warning');
+                        }
+                        // 单人模式允许切换查看
+                        cocState.activeInvestigatorIndex = index;
+                        return;
+                    }
+
+                    // 准备阶段
+                    if (cocState.mode === 'multi') {
+                        const currentAssignee = multiplayerState.assignments[index];
+                        
+                        // 如果该角色已被其他人占用
+                        if (currentAssignee && currentAssignee !== user.uuid && !currentAssignee.startsWith('ai_')) {
+                            const ownerName = multiplayerState.members.find(m => m.id === currentAssignee)?.name || '其他玩家';
+                            return showToast(`该角色已被 ${ownerName} 选择`, 'warning');
+                        }
+
+                        // 房主直接操作并广播
+                        if (multiplayerState.isHost) {
+                            if (currentAssignee === user.uuid) {
+                                delete multiplayerState.assignments[index];
+                                cocState.activeInvestigatorIndex = -1;
+                            } else {
+                                clearUserAssignments(user.uuid);
+                                multiplayerState.assignments[index] = user.uuid;
+                                cocState.activeInvestigatorIndex = index;
+                            }
+                            broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments });
+                        } else {
+                            // 成员发送请求给房主
+                            // 先本地暂时更新UI以提升体验（可选，但为了防止冲突最好等待房主确认）
+                            // 这里选择等待房主确认，只发送请求
+                            broadcastMessage({
+                                type: 'request_assignment',
+                                user: { id: user.uuid },
+                                index: index,
+                                isCancel: currentAssignee === user.uuid
+                            });
+                        }
+                    } else {
+                        cocState.activeInvestigatorIndex = index;
+                    }
+                };
+
+                const updateMyAssignment = () => {
+                    if (cocState.mode === 'multi') {
+                        // 根据 assignments 找到自己的角色索引
+                        const myIndex = Object.keys(multiplayerState.assignments).find(k => multiplayerState.assignments[k] === user.uuid);
+                        if (myIndex !== undefined) {
+                            cocState.activeInvestigatorIndex = parseInt(myIndex);
+                        } else {
+                            cocState.activeInvestigatorIndex = -1;
+                        }
+                    }
+                };
                 const scrollToBottom = () => { nextTick(() => { if (cocChatContainer.value) cocChatContainer.value.scrollTop = cocChatContainer.value.scrollHeight; }); };
+                // 骰子处理函数
+                const processDiceCommand = (content, inv) => {
+                    // 正则匹配指令，例如 .ra 侦查, .sc 1/1d6, .rc 力量
+                    // 支持格式: .ra [skill] [val?], .rc [stat] [val?], .sc [success]/[fail], .r [expr]
+                    // 简单起见，我们主要拦截并处理 .ra, .rc, .sc, .r
+                    
+                    // 1. 技能/属性检定 .ra / .rc
+                    const raMatch = content.match(/^[\.。](?:ra|rc)\s+([^\s\d]+)/i);
+                    if (raMatch && inv) {
+                        const skillName = raMatch[1];
+                        // 查找技能或属性值
+                        let skillVal = 0;
+                        let skillLabel = skillName;
+                        
+                        // 尝试在 stats 中查找
+                        const statKeyMap = { '力量': 'STR', '体质': 'CON', '体型': 'SIZ', '敏捷': 'DEX', '外貌': 'APP', '智力': 'INT', '灵感': 'INT', '意志': 'POW', '教育': 'EDU', '知识': 'EDU', '幸运': 'LUCK' };
+                        const statKey = statKeyMap[skillName] || (inv.stats[skillName.toUpperCase()] ? skillName.toUpperCase() : null);
+                        
+                        if (statKey) {
+                            skillVal = inv.stats[statKey];
+                            skillLabel = statDisplayMap[statKey] || statKey;
+                        } else {
+                            // 尝试在 skills 中查找
+                            const skill = inv.skills.find(s => s.name === skillName);
+                            if (skill) {
+                                skillVal = skill.value;
+                            } else {
+                                // 默认尝试基础技能值或设为 0 (或者不处理，让 AI 处理，但要求是系统骰，所以最好这里处理)
+                                // 简单处理：如果是未找到的技能，暂定 0，或者提示
+                                // 为了流畅，如果找不到，就只投 1d100
+                            }
+                        }
+                        
+                        const roll = Math.floor(Math.random() * 100) + 1;
+                        let resultStr = '';
+                        if (skillVal > 0) {
+                            let level = '';
+                            if (roll === 1) level = '【大成功】';
+                            else if (roll === 100) level = '【大失败】';
+                            else if (roll <= skillVal / 5) level = '【极难成功】';
+                            else if (roll <= skillVal / 2) level = '【困难成功】';
+                            else if (roll <= skillVal) level = '【成功】';
+                            else if (roll > 95) level = '【大失败】'; // 规则变体，暂定 >95 且 >技能
+                            else level = '【失败】';
+                            
+                            resultStr = `\n> 🎲 **${skillLabel}** 检定: 1D100 = **${roll}** / ${skillVal} ${level}`;
+                        } else {
+                            resultStr = `\n> 🎲 **${skillLabel}** 检定: 1D100 = **${roll}**`;
+                        }
+                        return content + resultStr;
+                    }
+                    
+                    // 2. San Check .sc
+                    // 支持格式: .sc (仅检定) 或 .sc 1/1d6 (带表达式)
+                    const scMatch = content.match(/^[\.。]sc(?:\s+([^\s\/]+)\/([^\s]+))?/i);
+                    if (scMatch && (scMatch[0].trim() === '.sc' || scMatch[0].trim() === '。sc' || scMatch[1])) {
+                        if (inv) {
+                            const successExpr = scMatch[1];
+                            const failExpr = scMatch[2];
+                            const san = inv.san;
+                            const roll = Math.floor(Math.random() * 100) + 1;
+                            const isSuccess = roll <= san;
+                            const result = isSuccess ? '成功' : '失败';
+                            
+                            let lossStr = '';
+                            
+                            if (successExpr && failExpr) {
+                                // 计算扣除 (简单表达式解析，支持 x, xdy)
+                                const parseDice = (expr) => {
+                                    let total = 0;
+                                    const parts = expr.split('+'); // 简单支持 x+y
+                                    for (let p of parts) {
+                                        if (p.includes('d')) {
+                                            const [n, d] = p.split('d').map(Number);
+                                            for(let i=0; i<(n||1); i++) total += Math.floor(Math.random()*(d||6))+1;
+                                        } else {
+                                            total += parseInt(p) || 0;
+                                        }
+                                    }
+                                    return total;
+                                };
+                                
+                                const loss = parseDice(isSuccess ? successExpr : failExpr);
+                                lossStr = `\n> 🧠 理智扣除: **${loss}** 点`;
+                            }
+                            
+                            return content + `\n> 🎲 **San Check**: 1D100 = **${roll}** / ${san} 【${result}】${lossStr}`;
+                        }
+                    }
+                    
+                    // 3. 普通投骰 .r
+                    const rMatch = content.match(/^[\.。]r\s+(.+)/i);
+                    if (rMatch) {
+                        const expr = rMatch[1];
+                        // 简单 dice parser
+                        try {
+                            // 替换 d 为实际投掷
+                            const evalExpr = expr.replace(/(\d*)d(\d+)/g, (match, n, d) => {
+                                let total = 0;
+                                let rolls = [];
+                                const count = parseInt(n) || 1;
+                                const sides = parseInt(d);
+                                for(let i=0; i<count; i++) {
+                                    const r = Math.floor(Math.random() * sides) + 1;
+                                    total += r;
+                                    rolls.push(r);
+                                }
+                                return `(${rolls.join('+')})`; // 暂时只返回总和，为了简单直接 eval 不太安全，但这里是客户端
+                            });
+                            
+                            // 简单的求值，注意安全
+                            // 这里做一个极简的求值器，只支持 + - * / ( )
+                            const safeEval = (str) => {
+                                return new Function('return ' + str.replace(/[^-()\d/*+.]/g, ''))();
+                            }
+                            
+                            // 重新解析一遍以获得数值结果
+                            let totalVal = 0;
+                            let details = '';
+                            
+                            // 实际上 regex replace 已经做了投掷，我们再投一次作为最终结果，或者重构一下
+                            // 更好的方式是直接在 replace 里计算
+                            
+                            let calcStr = expr.replace(/(\d*)d(\d+)/g, (match, n, d) => {
+                                let subTotal = 0;
+                                let subRolls = [];
+                                const count = parseInt(n) || 1;
+                                const sides = parseInt(d);
+                                for(let i=0; i<count; i++) {
+                                    const r = Math.floor(Math.random() * sides) + 1;
+                                    subTotal += r;
+                                    subRolls.push(r);
+                                }
+                                return subTotal;
+                            });
+                            
+                            totalVal = safeEval(calcStr);
+                            return content + `\n> 🎲 投掷 ${expr} = **${totalVal}**`;
+                        } catch (e) {
+                            return content; // 解析失败保持原样
+                        }
+                    }
+
+                    return content;
+                };
+
                 const sendCocMessage = async (manualContent = null) => {
                     // 修复：确保 manualContent 是字符串，否则使用输入框的值
                     // 当通过 @click 或 @keydown 触发时，manualContent 可能是事件对象
-                    const content = (typeof manualContent === 'string' && manualContent)
+                    let content = (typeof manualContent === 'string' && manualContent)
                         ? manualContent
                         : cocInput.value.trim();
                     if (!content) return;
                     
                     const inv = cocState.investigators[cocState.activeInvestigatorIndex];
+                    
+                    // 系统接管掷骰逻辑
+                    content = processDiceCommand(content, inv);
+
                     const msg = { role: 'user', content, timestamp: Date.now() };
                     
                     if (cocState.mode === 'multi') {
-                        msg.name = user.name;
-                        msg.avatar = user.avatar;
+                        // 如果在多人模式下已选择角色，优先使用角色信息
+                        if (inv) {
+                            msg.name = inv.name;
+                            msg.avatar = inv.avatar;
+                        } else {
+                            msg.name = user.name;
+                            msg.avatar = user.avatar;
+                        }
                         msg.id = user.uuid;
                     } else {
                         if (inv) {
@@ -1508,8 +2035,24 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                             checkAndTriggerRound();
                         }
                     } else {
-                        await processAiPlayers();
-                        generateResponse();
+                        // 单人模式
+                        if (hasAiTeammates.value) {
+                            // 有 AI 队友：开启回合制逻辑
+                            if (!multiplayerState.roundActionIds.includes(user.uuid)) {
+                                multiplayerState.roundActionIds.push(user.uuid);
+                                checkAndTriggerRound();
+                            }
+                        } else {
+                            // 纯单人模式：立即锁定输入
+                            isGenerating.value = true;
+                            try {
+                                await processAiPlayers();
+                                await generateResponse();
+                            } catch (e) {
+                                console.error(e);
+                                isGenerating.value = false;
+                            }
+                        }
                     }
                 };
                 
@@ -1517,11 +2060,23 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                     isGenerating.value = true;
                     const assistantMsg = { role: 'assistant', name: '守密人', content: '', showCot: false };
                     cocState.log.push(assistantMsg);
+                    
+                    // 多人模式下，房主先广播一条空消息占位，并通知其他玩家正在生成
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                        broadcastMessage({ type: 'generating_start' }); // 新增：广播生成开始状态
+                        broadcastMessage({ type: 'sync_log_append', message: assistantMsg });
+                    }
+
                     try {
-                        // 清洗消息记录，确保符合 API 规范
+                        // 清洗消息记录，确保符合 API 规范，并注入角色名
                         const validMessages = cocState.log.slice(0, -1)
                             .filter(m => m.content && typeof m.content === 'string' && m.content.trim() !== '')
-                            .map(m => ({ role: m.role, content: m.content }));
+                            .map(m => {
+                                if (m.role === 'user') {
+                                    return { role: 'user', content: `【${m.name}】: ${m.content}` };
+                                }
+                                return { role: m.role, content: m.content };
+                            });
 
                         if (validMessages.length === 0 && !cocState.systemPrompt) {
                             throw new Error('没有有效的对话历史');
@@ -1543,6 +2098,8 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
 
                         const reader = res.body.getReader();
                         const decoder = new TextDecoder();
+                        let lastBroadcastTime = 0;
+
                         while (true) {
                             const { done, value } = await reader.read();
                             if (done) break;
@@ -1550,52 +2107,363 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                             const lines = chunk.split('\n');
                             for (const line of lines) {
                                 if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-                                    try { const json = JSON.parse(line.slice(6)); if (json.choices[0]?.delta?.content) assistantMsg.content += json.choices[0].delta.content; scrollToBottom(); } catch(e){}
+                                    try {
+                                        const json = JSON.parse(line.slice(6));
+                                        if (json.choices[0]?.delta?.content) {
+                                            assistantMsg.content += json.choices[0].delta.content;
+                                            scrollToBottom();
+                                            
+                                            // 多人模式下，节流广播流式更新（每1.5秒一次），防止成员一直看空泡泡
+                                            if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                                                const now = Date.now();
+                                                if (now - lastBroadcastTime > 1500) {
+                                                    broadcastMessage({ type: 'update_last_message', content: assistantMsg.content });
+                                                    lastBroadcastTime = now;
+                                                }
+                                            }
+                                        }
+                                    } catch(e){}
                                 }
                             }
                         }
-                    } catch (e) { assistantMsg.content += `\n[Error: ${e.message}]`; } finally { isGenerating.value = false; }
+                    } catch (e) {
+                        assistantMsg.content += `\n[Error: ${e.message}]`;
+                    } finally {
+                        isGenerating.value = false;
+                        // 生成完成后，房主广播最终完整内容，并通知生成结束
+                        if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                            broadcastMessage({ type: 'update_last_message', content: assistantMsg.content });
+                            broadcastMessage({ type: 'generating_end' }); // 新增：广播生成结束状态
+                        }
+                    }
                 };
 
-                const initSupabase = () => { /* Supabase Mock/Stub */ };
+                const broadcastMessage = async (payload) => { if (roomChannel) await roomChannel.send({ type: 'broadcast', event: 'message', payload }); };
+
+                const broadcastState = () => {
+                    if (!multiplayerState.isHost) return;
+                    broadcastMessage({
+                        type: 'sync_state',
+                        gameState: cocState.gameState,
+                        module: cocState.module,
+                        members: multiplayerState.members,
+                        investigators: cocState.investigators,
+                        assignments: multiplayerState.assignments,
+                        assignmentDetails: multiplayerState.assignmentDetails,
+                        turnIndex: multiplayerState.turnIndex,
+                        roundActionIds: multiplayerState.roundActionIds,
+                        cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers,
+                        log: cocState.log
+                    });
+                };
+
+                const handleBroadcastMessage = (payload) => {
+                    switch (payload.type) {
+                        case 'player_joined':
+                            if (multiplayerState.isHost) {
+                                const newMember = payload.user;
+                                if (!multiplayerState.members.some(m => m.id === newMember.id)) {
+                                    multiplayerState.members.push({ ...newMember, isHost: false, isReady: false });
+                                    showToast(`${newMember.name} 加入了房间`, 'success');
+                                    broadcastState();
+                                }
+                            }
+                            break;
+                        case 'sync_state':
+                            if (!multiplayerState.isHost) {
+                                if (payload.gameState) cocState.gameState = payload.gameState;
+                                if (payload.module) cocState.module = payload.module;
+                                if (payload.members) multiplayerState.members = payload.members;
+                                if (payload.investigators) cocState.investigators = payload.investigators;
+                                if (payload.assignments) multiplayerState.assignments = payload.assignments || {};
+                                if (payload.assignmentDetails) multiplayerState.assignmentDetails = payload.assignmentDetails || {};
+                                if (payload.log) cocState.log = payload.log;
+                                if (payload.roundActionIds) multiplayerState.roundActionIds = payload.roundActionIds;
+                                if (typeof payload.turnIndex === 'number') multiplayerState.turnIndex = payload.turnIndex;
+                                if (payload.cotAuthorizedUsers) multiplayerState.cotAuthorizedUsers = payload.cotAuthorizedUsers;
+                                multiplayerState.isConnected = true;
+                                multiplayerState.inRoom = true;
+                                
+                                if (!multiplayerState.syncReceived) {
+                                    multiplayerState.syncReceived = true;
+                                    showToast('同步完成', 'success');
+                                    if (joinRetryInterval) {
+                                        clearInterval(joinRetryInterval);
+                                        joinRetryInterval = null;
+                                    }
+                                }
+                            }
+                            break;
+                        case 'sync_log_append':
+                             cocState.log.push(payload.message);
+                             scrollToBottom();
+                             break;
+                        case 'update_last_message':
+                             if (cocState.log.length > 0) {
+                                 // 尝试找到最后一条 Keeper 消息进行更新
+                                 let targetMsg = cocState.log[cocState.log.length - 1];
+                                 // 如果最后一条不是 assistant，尝试往前找（防止并发消息导致错位）
+                                 if (targetMsg.role !== 'assistant') {
+                                     for (let i = cocState.log.length - 1; i >= 0; i--) {
+                                         if (cocState.log[i].role === 'assistant') {
+                                             targetMsg = cocState.log[i];
+                                             break;
+                                         }
+                                     }
+                                 }
+                                 
+                                 if (targetMsg && targetMsg.role === 'assistant') {
+                                     targetMsg.content = payload.content;
+                                     scrollToBottom();
+                                 }
+                             }
+                             break;
+                        case 'sync_module':
+                            if (!multiplayerState.isHost) cocState.module = { name: payload.moduleName, content: '' };
+                            break;
+                        case 'sync_investigators':
+                            if (!multiplayerState.isHost) cocState.investigators = payload.investigators;
+                            break;
+                        case 'sync_assignments':
+                            if (!multiplayerState.isHost) {
+                                multiplayerState.assignments = payload.assignments;
+                                updateMyAssignment();
+                            }
+                            break;
+                        case 'request_assignment':
+                            if (multiplayerState.isHost) {
+                                const requesterId = payload.user.id;
+                                const targetIndex = payload.index;
+                                
+                                // 处理取消选择
+                                if (payload.isCancel) {
+                                    if (multiplayerState.assignments[targetIndex] === requesterId) {
+                                        delete multiplayerState.assignments[targetIndex];
+                                        broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments });
+                                    }
+                                    break;
+                                }
+
+                                // 处理选择新角色
+                                const currentOwner = multiplayerState.assignments[targetIndex];
+                                if (!currentOwner || currentOwner === requesterId) {
+                                    clearUserAssignments(requesterId);
+                                    multiplayerState.assignments[targetIndex] = requesterId;
+                                    broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments });
+                                } else {
+                                    // 目标已被占用，忽略或发送错误提示（这里简化为忽略，因为前端已做校验）
+                                }
+                            }
+                            break;
+                        case 'game_start':
+                             if (!multiplayerState.isHost) {
+                                 cocState.log = payload.log;
+                                 cocState.gameState = 'playing';
+                                 currentView.value = 'chat';
+                                 showToast('房主开始了游戏', 'success');
+                             }
+                             break;
+                        case 'room_closed':
+                             if (!multiplayerState.isHost) {
+                                 showToast('房主已解散房间', 'warning');
+                                 leaveRoom();
+                                 currentView.value = 'coc';
+                             }
+                             break;
+                        case 'request_cot_access':
+                            if (multiplayerState.isHost) {
+                                showToast(`${payload.userName} 申请查看思考过程`, 'info');
+                                grantCotAccess(payload.userId);
+                            }
+                            break;
+                        case 'grant_cot_access':
+                             if (payload.userId === user.uuid) {
+                                 showToast('已获得思考过程查看权限', 'success');
+                                 multiplayerState.cotAuthorizedUsers = payload.authorizedUsers;
+                             }
+                             break;
+                        case 'generating_start':
+                            if (!multiplayerState.isHost) isGenerating.value = true;
+                            break;
+                        case 'generating_end':
+                            if (!multiplayerState.isHost) isGenerating.value = false;
+                            break;
+                        case 'regenerate_start':
+                            if (!multiplayerState.isHost) {
+                                showToast('房主正在重新生成...', 'info');
+                                isGenerating.value = true; // 修复：重新生成时也同步状态
+                            }
+                            break;
+                        case 'action_taken':
+                            if (multiplayerState.isHost) {
+                                if (!multiplayerState.roundActionIds.includes(payload.userId)) {
+                                    multiplayerState.roundActionIds.push(payload.userId);
+                                    checkAndTriggerRound();
+                                }
+                            }
+                            break;
+                        case 'toggle_ready':
+                            if (multiplayerState.isHost) {
+                                const member = multiplayerState.members.find(m => m.id === payload.userId);
+                                if (member) {
+                                    member.isReady = payload.isReady;
+                                    // 房主广播最新状态，确保所有人看到准备状态更新
+                                    broadcastState();
+                                }
+                            }
+                            break;
+                    }
+                };
+
+                const initSupabase = () => {
+                    if (typeof supabase === 'undefined') return;
+                    try {
+                        supabaseClient = supabase.createClient(settings.supabaseUrl, settings.supabaseKey);
+                    } catch (e) {
+                        console.error('Supabase init error:', e);
+                    }
+                };
+
+                const joinRoomChannel = async (roomId) => {
+                    if (!supabaseClient) {
+                         initSupabase();
+                         if (!supabaseClient) {
+                             showToast('服务连接失败', 'error');
+                             throw new Error('Supabase client init failed');
+                         }
+                    }
+                    
+                    // 确保彻底断开旧连接
+                    if (roomChannel) {
+                        await supabaseClient.removeChannel(roomChannel);
+                        roomChannel = null;
+                    }
+
+                    return new Promise((resolve, reject) => {
+                        const channel = supabaseClient.channel(`room:${roomId}`, {
+                            config: { broadcast: { self: false } }
+                        });
+
+                        // 设置连接超时
+                        const timeout = setTimeout(() => {
+                            if (multiplayerState.isConnected) return;
+                            showToast('连接超时，请重试', 'error');
+                            supabaseClient.removeChannel(channel);
+                            reject('TIMEOUT');
+                        }, 10000);
+
+                        channel.on('broadcast', { event: 'message' }, ({ payload }) => {
+                            handleBroadcastMessage(payload);
+                        }).subscribe((status) => {
+                            if (status === 'SUBSCRIBED') {
+                                clearTimeout(timeout);
+                                roomChannel = channel; // 连接成功才赋值给全局变量
+                                multiplayerState.isConnected = true;
+                                multiplayerState.inRoom = true;
+                                
+                                if (!multiplayerState.isHost) {
+                                    multiplayerState.syncReceived = false;
+                                    showToast('已连接房间，请求同步...', 'success');
+                                    
+                                    broadcastMessage({
+                                        type: 'player_joined',
+                                        user: { id: user.uuid, name: user.name, avatar: user.avatar }
+                                    });
+
+                                    if (joinRetryInterval) clearInterval(joinRetryInterval);
+                                    joinRetryInterval = setInterval(() => {
+                                        if (multiplayerState.syncReceived || !multiplayerState.inRoom) {
+                                            clearInterval(joinRetryInterval);
+                                            joinRetryInterval = null;
+                                            return;
+                                        }
+                                        broadcastMessage({
+                                            type: 'player_joined',
+                                            user: { id: user.uuid, name: user.name, avatar: user.avatar }
+                                        });
+                                    }, 2000);
+                                }
+                                resolve();
+                            } else if (status === 'CHANNEL_ERROR') {
+                                clearTimeout(timeout);
+                                // 尝试静默重连或拒绝
+                                console.warn('Channel error, retrying...');
+                                // 这里不reject，Supabase 可能会自动重连，或者等待用户再次点击
+                                // 只有明确的错误才弹窗
+                            } else if (status === 'TIMED_OUT') {
+                                clearTimeout(timeout);
+                                showToast('连接超时', 'error');
+                                reject(status);
+                            }
+                        });
+                    });
+                };
                 
+                const isConnecting = ref(false); // 添加连接状态锁
+
                 const createRoom = async (isLoadGame = false) => {
+                    if (isConnecting.value) return;
+                    isConnecting.value = true;
+                    
+                    if (!supabaseClient) initSupabase();
                     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    multiplayerState.isConnected = true;
-                    multiplayerState.inRoom = true;
+                    
                     multiplayerState.roomId = roomId;
                     multiplayerState.isHost = true;
                     multiplayerState.myId = user.uuid;
                     multiplayerState.members = [{ id: user.uuid, name: user.name, avatar: user.avatar, isHost: true, isReady: true }];
-                    showToast(`房间 ${roomId} 已创建`, 'success');
-                    selectCocMode('multi');
+                    
+                    try {
+                        await joinRoomChannel(roomId);
+                        showToast(`房间 ${roomId} 已创建`, 'success');
+                        selectCocMode('multi');
+                    } catch (e) {
+                        console.error('Create room failed:', e);
+                        showToast('创建房间失败，请重试', 'error');
+                    } finally {
+                        isConnecting.value = false;
+                    }
                 };
 
                 const joinRoom = async (id = null, asHost = false) => {
-                    if (!id) return;
-                    multiplayerState.isConnected = true;
-                    multiplayerState.inRoom = true;
+                    if (!id || isConnecting.value) return;
+                    isConnecting.value = true;
+                    
+                    if (!supabaseClient) initSupabase();
+                    
                     multiplayerState.roomId = id;
                     multiplayerState.isHost = asHost;
                     multiplayerState.myId = user.uuid;
-                    // Mock joining: assume we join a room with a host
-                    const hostId = 'host_' + Math.random().toString(36).substring(7);
-                    multiplayerState.members = [
-                        { id: hostId, name: 'Host Player', isHost: true, isReady: true },
-                        { id: user.uuid, name: user.name, avatar: user.avatar, isHost: asHost, isReady: false }
-                    ];
-                    showToast(`已加入房间 ${id}`, 'success');
-                    selectCocMode('multi');
+                    multiplayerState.members = [{ id: user.uuid, name: user.name, avatar: user.avatar, isHost: asHost, isReady: false }];
+                    
+                    try {
+                        await joinRoomChannel(id);
+                        selectCocMode('multi');
+                    } catch (e) {
+                        console.error('Join room failed:', e);
+                        // showToast 已经在 joinRoomChannel 里处理了部分错误，这里可以补充通用提示
+                    } finally {
+                        isConnecting.value = false;
+                    }
                 };
 
                 const leaveRoom = async () => {
+                    if (joinRetryInterval) {
+                        clearInterval(joinRetryInterval);
+                        joinRetryInterval = null;
+                    }
+                    if (roomChannel) {
+                        supabaseClient.removeChannel(roomChannel);
+                        roomChannel = null;
+                    }
                     multiplayerState.inRoom = false;
+                    multiplayerState.isConnected = false;
                     multiplayerState.roomId = null;
                     multiplayerState.members = [];
                     multiplayerState.assignments = {};
+                    multiplayerState.syncReceived = false;
                     showToast('已断开连接', 'info');
                 };
-                const broadcastMessage = async (payload) => { if (roomChannel) await roomChannel.send({ type: 'broadcast', event: 'message', payload }); };
                 const addFriend = () => { /* ... */ };
                 const acceptFriend = (req) => { /* ... */ };
                 const inviteFriend = (f) => { /* ... */ };
@@ -1626,7 +2494,7 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                 return {
                     currentView, showMobileMenu, showMobileRightSidebar, user, settings, toasts, confirmState, showBroadcast, dontShowBroadcast, closeBroadcast,
                     cocState, cocInput, cocInputRef, cocChatContainer, isGenerating, multiplayerState, showJoinInput, joinRoomId, friends, friendRequests, friendInput,
-                    showMentionList, mentionCandidates, handleInput, selectMention, savedGames,
+                    showMentionList, mentionCandidates, handleInput, selectMention, savedGames, isRoundLocked, hasAiTeammates,
                     selectCocMode, exitCocMode, exitCocGame, startCocGame, sendCocMessage, saveGame, deleteSave, loadSave, exportSave, importSave,
                     importCocModule, saveManualModule, importInvestigator, deleteInvestigator,
                     initSupabase, createRoom, joinRoom, leaveRoom, addFriend, acceptFriend, inviteFriend,
