@@ -2398,7 +2398,7 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                         }
                     }
                 };
-                const scrollToBottom = () => { nextTick(() => { if (cocChatContainer.value) cocChatContainer.value.scrollTop = cocChatContainer.value.scrollHeight; }); };
+                const scrollToBottom = () => { /* 自动滚动已禁用 */ };
                 // 骰子处理函数
                 const processDiceCommand = (content, inv) => {
                     // 1. 技能/属性检定 .ra / .rc
