@@ -914,7 +914,7 @@ $$ language plpgsql;`;
                 };
 
                 const adaptNovelToModule = async () => {
-                    const novelContent = libraryState.uploadForm.content;
+                    const novelContent = libraryState.alchemyForm.content;
                     if (!novelContent || novelContent.length < 50) return showToast('内容太短，无法改编', 'warning');
                     
                     libraryState.isAdapting = true;
@@ -922,8 +922,50 @@ $$ language plpgsql;`;
 
                     try {
                         const msgs = [
-                            { role: 'system', content: `你是一位资深的 COC (Call of Cthulhu 7th Edition) 跑团模组作者。你的任务是将用户提供的小说内容或故事大纲，改编成一个标准的 COC 模组。` },
-                            { role: 'user', content: `请将以下小说/大纲改编为 COC 模组：\n\n${novelContent.slice(0, 15000)}` }
+                            { role: 'system', content: `你是一位资深的 COC (Call of Cthulhu 7th Edition) 跑团模组作者。你的任务是将用户提供的小说内容或故事大纲，重构改编成一个结构完整、细节丰富且可直接用于跑团的**长篇大型 COC 战役模组书 (Campaign)**。
+
+**核心原则（非常重要）：**
+1.  **极度详尽，禁止概括**：原文非常长，但我需要你将其转化为一个**超长篇、细节极其丰富**的模组。**绝对不要**为了讲完故事而概括剧情。宁可只写完前几章的超详细内容，也不要写一个匆忙的全文大纲。
+2.  **场景化写作**：对于每一个场景，**必须**包含：
+    *   **念白（Boxed Text）**：一段可以直接读给玩家听的、充满氛围感的环境描写（至少150字）。
+    *   **详细调查点**：将场景拆分为“书桌”、“尸体”、“书架”、“暗门”等具体交互点，每个点都要有对应的检定（Check）和发现。
+    *   **NPC 互动**：保留原文中的精彩对话，转化为 RP（角色扮演）指南。
+3.  **数据与机制**：不要只写剧情，要写**规则**。包括特殊机制（如san值惩罚规则）、怪物数据、物品属性。
+
+**请严格按照以下格式输出（请输出尽可能多的字数，直到达到你的输出上限）：**
+
+# [模组标题] - 长篇战役模组
+
+> **简介**：[推荐人数] | [时代背景] | [预计时长：20-30小时]
+
+## 第一部分：守秘人（KP）情报
+*   **核心真相**：(详细揭示幕后黑手和神话生物的阴谋)
+*   **主要 NPC 图鉴**：(包含姓名、外貌、性格、扮演建议、关键台词)
+
+## 第二部分：模组正文（请尽可能详细地扩写以下章节）
+
+### 第一章：[章节名]
+#### 场景 1：[场景名]
+*   **【念白/环境描述】**：
+    > (这里请根据原文，写一段极具代入感的环境描写，包含视觉、听觉、嗅觉细节...)
+*   **【探索与检定】**：
+    *   **[位置A]**：
+        *   **【侦查】**：...
+        *   **【图书馆】**：...
+    *   **[位置B]**：...
+*   **【NPC 互动】**：...
+
+#### 场景 2：[场景名]
+... (以此类推，请保留原文的所有细节，不要跳过任何一个重要场景)
+
+...
+
+**(请一直写下去，直到达到你的输出长度极限。如果写不完，请在最后列出剩余章节的大纲)**
+
+## 附录：数据统计
+*   **NPC/怪物数据**：(STR, CON, SIZ, DEX, APP, INT, POW, EDU, HP, MP, SAN, 伤害)
+` },
+                            { role: 'user', content: `请依据上述规则，将以下长篇内容改编为一部宏大的 COC 战役模组书。请务必保留丰富的细节，宁可写不完也不要概括：\n\n${novelContent.slice(0, 100000)}` }
                         ];
 
                         const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
@@ -939,17 +981,18 @@ $$ language plpgsql;`;
                         const data = await res.json();
                         if (data.choices && data.choices[0]?.message?.content) {
                             const adaptedContent = data.choices[0].message.content;
-                            libraryState.uploadForm.content = adaptedContent;
-                            libraryState.uploadForm.type = 'original';
+                            // 将结果写入炼金写字台的结果区域
+                            libraryState.alchemyForm.result = adaptedContent;
                             
+                            // 尝试从内容中提取标题
                             const titleMatch = adaptedContent.match(/^#\s+(.+)$/m);
-                            if (titleMatch) libraryState.uploadForm.title = titleMatch[1].replace(/[\[\]]/g, '');
-                            
-                            if (!libraryState.uploadForm.description) {
-                                generateModuleSummary(adaptedContent);
+                            if (titleMatch) {
+                                libraryState.alchemyForm.title = titleMatch[1].replace(/[\[\]]/g, '');
+                            } else {
+                                libraryState.alchemyForm.title = '炼金产物';
                             }
-                            libraryState.activeTab = 'standard';
-                            showToast('改编完成！请在常规页面校对后入库。', 'success');
+                            
+                            showToast('炼金重构完成！请在右侧查看并编辑结果。', 'success');
                         } else {
                             throw new Error('API 返回数据为空');
                         }
@@ -1024,7 +1067,7 @@ $$ language plpgsql;`;
 
                 return {
                     user, libraryState, toasts, showSqlModal, sqlToRun,
-                    fetchLibraryModules, uploadToLibrary, handleLibraryFileUpload, useLibraryModule,
+                    fetchLibraryModules, uploadToLibrary, handleLibraryFileUpload, handleAlchemyFileUpload, useLibraryModule,
                     adaptNovelToModule, exportModuleToWord, copyToClipboard, generateModuleSummary,
                     uploadAlchemyResult, exportAlchemyResult, deleteModule, confirmDelete, cancelDelete,
                     showDeleteModal, moduleToDelete
