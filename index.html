@@ -67,7 +67,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; border-color: #d4af37; }
         .text-shadow-gold { text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
         .text-shadow-red { text-shadow: 0 0 10px rgba(138, 28, 28, 0.4); }
-        .markdown-body { font-size: 0.875rem; line-height: 1.65; color: #e2e8f0; font-family: 'Noto Serif SC', serif; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; }
+        .markdown-body { font-size: 0.9375rem; line-height: 1.65; color: #e2e8f0; font-family: 'Noto Serif SC', serif; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; }
         @media (min-width: 768px) { .markdown-body { font-size: 0.95rem; line-height: 1.7; } }
         .markdown-body p { margin-bottom: 0.8em; }
         .markdown-body strong { font-weight: 700; color: #c0a062; }
@@ -1221,6 +1221,11 @@ ${buildInvestigatorProfile(inv)}
                         });
                     } else {
                         participants = [...new Set(Object.values(multiplayerState.assignments))];
+                        // Fix: 确保房主也在参与者列表中，防止成员先行动导致跳过房主
+                        const host = multiplayerState.members.find(m => m.isHost);
+                        if (host && !participants.includes(host.id)) {
+                            participants.push(host.id);
+                        }
                     }
                     if (participants.length === 0) return;
                     
@@ -2001,7 +2006,9 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                     // 系统接管掷骰逻辑
                     content = processDiceCommand(content, inv);
 
-                    const msg = { role: 'user', content, timestamp: Date.now() };
+                    // 检测是否是私聊/提及消息
+                    const isWhisper = /@\S+/.test(content);
+                    const msg = { role: isWhisper ? 'whisper' : 'user', content, timestamp: Date.now() };
                     
                     if (cocState.mode === 'multi') {
                         // 如果在多人模式下已选择角色，优先使用角色信息
@@ -2029,7 +2036,8 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                     
                     if (cocState.mode === 'multi') {
                         broadcastMessage({ type: 'sync_log_append', message: msg });
-                        if (!multiplayerState.roundActionIds.includes(user.uuid)) {
+                        // 只有非私聊消息才视为行动
+                        if (msg.role !== 'whisper' && !multiplayerState.roundActionIds.includes(user.uuid)) {
                             multiplayerState.roundActionIds.push(user.uuid);
                             broadcastMessage({ type: 'action_taken', userId: user.uuid });
                             checkAndTriggerRound();
