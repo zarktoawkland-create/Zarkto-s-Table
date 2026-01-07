@@ -41,7 +41,8 @@
                         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.6s ease-out',
+                        'fade-in': 'fadeIn 0.6s ease-out forwards',
+                        'fade-in-bg': 'fadeInBg 2s ease-out forwards',
                         'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
                         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'message-in': 'messageIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
@@ -49,6 +50,7 @@
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        fadeInBg: { '0%': { opacity: '0' }, '100%': { opacity: '0.05' } },
                         slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
                         messageIn: { '0%': { transform: 'translateY(15px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
                         float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-5px)' } },
@@ -73,7 +75,8 @@
         .markdown-body strong { font-weight: 700; color: #c0a062; }
         .markdown-body blockquote { border-left: 2px solid #2d6a4f; padding-left: 1em; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.2); padding: 0.5em 1em; }
         .markdown-body code { background-color: #1e293b; padding: 0.1em 0.3em; border-radius: 0.2em; font-family: monospace; font-size: 0.9em; color: #c0a062; border: 1px solid #334155; }
-        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 0.8em; }
+        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 0.8em; list-style-type: disc; }
+        .markdown-body ol { list-style-type: decimal; }
         .markdown-body li { margin-bottom: 0.3em; }
         .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #c0a062; font-family: 'Noto Serif SC', serif; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; }
         .markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid #334155; padding-bottom: 0.2em; }
@@ -196,12 +199,11 @@
                     <div class="text-xs text-slate-500"><span v-if="settlementState.step === 1">第一步：输入奖励与选择技能</span><span v-if="settlementState.step === 2">第二步：成长检定</span><span v-if="settlementState.step === 3">第三步：确认结果</span></div>
                     <div class="flex gap-3">
                         <button v-if="settlementState.step === 1" @click="processSkillGrowth" class="px-6 py-2 bg-mystic-gold text-dark-950 font-bold rounded shadow-lg hover:bg-yellow-600 transition-all text-sm">开始检定</button>
-                        <div v-if="settlementState.step === 3" class="flex gap-2">
+                        <div v-else-if="settlementState.step === 3" class="flex gap-2">
                             <button @click="exportCurrentInvestigatorJSON" class="px-4 py-2 border border-dark-600 text-slate-400 rounded hover:text-slate-200 hover:border-slate-400 transition-all text-xs font-bold uppercase tracking-wider">导出 JSON</button>
                             <button @click="exportCurrentInvestigatorPNG" class="px-4 py-2 border border-mystic-gold/30 text-mystic-gold rounded hover:bg-mystic-gold/10 transition-all text-xs font-bold uppercase tracking-wider">导出 PNG</button>
                             <button @click="confirmSettlement" class="px-6 py-2 bg-mystic-green text-teal-100 font-bold rounded shadow-lg hover:bg-teal-700 transition-all text-sm">确认更新角色卡</button>
                         </div>
-                        <button v-else-if="settlementState.step === 1" @click="processSkillGrowth" class="px-6 py-2 bg-mystic-gold text-dark-950 font-bold rounded shadow-lg hover:bg-yellow-600 transition-all text-sm">开始检定</button>
                     </div>
                 </div>
             </div>
@@ -341,12 +343,12 @@
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col h-full overflow-hidden relative bg-black/20">
-            <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-5">
+            <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center animate-fade-in-bg">
                 <svg class="w-[800px] h-[800px] text-mystic-gold animate-pulse-slow" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8 c0-4.41,3.59-8,8-8s8,3.59,8,8C20,16.41,16.41,20,12,20z M12,6c-3.31,0-6,2.69-6,6c0,1.36,0.46,2.61,1.23,3.62l1.46-1.46 C8.26,13.61,8,12.84,8,12c0-2.21,1.79-4,4-4s4,1.79,4,4c0,0.84-0.26,1.61-0.69,2.16l1.46,1.46C17.54,14.61,18,13.36,18,12 C18,8.69,15.31,6,12,6z M12,10c-1.1,0-2,0.9-2,2c0,0.55,0.22,1.05,0.59,1.41l2.83-2.83C13.05,10.22,12.55,10,12,10z"/></svg>
             </div>
             
             <!-- Mobile Header -->
-            <div v-if="cocState.gameState !== 'playing'" class="md:hidden min-h-14 py-2 bg-dark-900 border-b border-dark-800 flex items-center justify-between px-4 z-10 flex-shrink-0 safe-pt">
+            <div v-if="cocState.gameState !== 'playing' || currentView !== 'chat'" class="md:hidden min-h-14 py-2 bg-dark-900 border-b border-dark-800 flex items-center justify-between px-4 z-10 flex-shrink-0 safe-pt">
                 <button @click="showMobileMenu = !showMobileMenu" class="text-slate-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg></button>
                 <div class="font-bold text-mystic-gold font-serif tracking-wider truncate mx-2">{{ getPageTitle() }}</div>
                 <div class="w-6"></div>
@@ -420,20 +422,62 @@
                                             <div class="px-2.5 pt-1.5 pb-1 md:px-3 md:pt-2 md:pb-1.5 rounded-2xl rounded-tr-none border shadow-xl relative overflow-hidden" :class="msg.role === 'whisper' ? 'bg-purple-900/10 border-purple-500/20 text-purple-200' : 'bg-dark-800 border-dark-700 text-slate-200'">
                                                 <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
                                                 <div class="markdown-body relative z-10" v-html="renderMarkdown(msg.content)"></div>
-                                                <!-- Dice Result Display -->
-                                                <div v-if="msg.diceResult" class="mt-2 mb-1 p-2 rounded bg-dark-950/50 border border-dark-600/50 relative overflow-hidden group/dice">
-                                                    <div class="absolute left-0 top-0 bottom-0 w-1" :class="msg.diceResult.success === true ? 'bg-mystic-green' : (msg.diceResult.success === false ? 'bg-red-500' : 'bg-mystic-gold')"></div>
-                                                    <div class="flex items-center gap-2 text-xs font-mono relative z-10">
-                                                        <span class="text-xl">🎲</span>
-                                                        <div class="flex-1">
-                                                            <div class="flex justify-between items-center">
-                                                                <span class="font-bold text-slate-300">{{ msg.diceResult.label || '掷骰' }}</span>
-                                                                <span :class="msg.diceResult.success === true ? 'text-mystic-green font-bold' : (msg.diceResult.success === false ? 'text-red-400 font-bold' : 'text-mystic-gold')">{{ msg.diceResult.level || (msg.diceResult.success === true ? '成功' : (msg.diceResult.success === false ? '失败' : '')) }}</span>
+                                                <!-- Stat Changes Display -->
+                                                <div v-if="msg.stLogs && msg.stLogs.length > 0" class="mt-3 space-y-2">
+                                                    <div v-for="(log, lIdx) in msg.stLogs" :key="lIdx"
+                                                         class="rounded-lg relative overflow-hidden border transition-all duration-300"
+                                                         :class="parseStLogDiff(log) < 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-mystic-green/10 border-mystic-green/30'">
+                                                        <div class="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 blur-xl"
+                                                             :class="parseStLogDiff(log) < 0 ? 'bg-red-500' : 'bg-mystic-green'"></div>
+                                                        <div class="p-3 relative z-10 flex items-center gap-3">
+                                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl shadow-inner"
+                                                                 :class="parseStLogDiff(log) < 0 ? 'bg-red-900/20 text-red-400' : 'bg-mystic-green/20 text-mystic-green'">
+                                                                <span v-if="parseStLogDiff(log) < 0">💔</span>
+                                                                <span v-else>💚</span>
                                                             </div>
-                                                            <div class="text-slate-400 mt-0.5">
-                                                                <span class="text-white font-bold">{{ msg.diceResult.roll }}</span>
-                                                                <span v-if="msg.diceResult.target" class="opacity-70"> / {{ msg.diceResult.target }}</span>
-                                                                <span v-if="msg.diceResult.extra" class="ml-2 opacity-80 border-l border-slate-600 pl-2">{{ msg.diceResult.extra }}</span>
+                                                            <div class="flex-1 min-w-0">
+                                                                <div class="flex justify-between items-baseline mb-0.5">
+                                                                    <span class="font-bold text-slate-200 text-sm font-serif tracking-wide">属性变更</span>
+                                                                    <span class="text-xs font-bold uppercase tracking-wider"
+                                                                          :class="parseStLogDiff(log) < 0 ? 'text-red-400' : 'text-mystic-green'">
+                                                                        {{ parseStLogDiff(log) < 0 ? '减少' : '增加' }}
+                                                                    </span>
+                                                                </div>
+                                                                <div class="text-xs font-mono text-slate-400" v-html="formatStLog(log)"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- Dice Result Display -->
+                                                <div v-if="msg.diceResult" class="mt-3 mb-2 rounded-lg relative overflow-hidden group/dice border transition-all duration-300"
+                                                     :class="msg.diceResult.success === true ? 'bg-mystic-green/10 border-mystic-green/30' : (msg.diceResult.success === false ? 'bg-red-900/10 border-red-500/30' : 'bg-mystic-gold/5 border-mystic-gold/20')">
+                                                    <!-- 装饰背景 -->
+                                                    <div class="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 blur-xl"
+                                                         :class="msg.diceResult.success === true ? 'bg-mystic-green' : (msg.diceResult.success === false ? 'bg-red-500' : 'bg-mystic-gold')"></div>
+                                                    
+                                                    <div class="p-3 relative z-10 flex items-center gap-3">
+                                                        <!-- 骰子图标容器 -->
+                                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl shadow-inner"
+                                                             :class="msg.diceResult.success === true ? 'bg-mystic-green/20 text-mystic-green' : (msg.diceResult.success === false ? 'bg-red-900/20 text-red-400' : 'bg-mystic-gold/10 text-mystic-gold')">
+                                                            🎲
+                                                        </div>
+                                                        
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex justify-between items-baseline mb-0.5">
+                                                                <span class="font-bold text-slate-200 text-sm font-serif tracking-wide">{{ msg.diceResult.label || '命运投掷' }}</span>
+                                                                <span class="text-xs font-bold uppercase tracking-wider"
+                                                                      :class="msg.diceResult.success === true ? 'text-mystic-green' : (msg.diceResult.success === false ? 'text-red-400' : 'text-mystic-gold')">
+                                                                    {{ msg.diceResult.level || (msg.diceResult.success === true ? 'SUCCESS' : (msg.diceResult.success === false ? 'FAILURE' : 'RESULT')) }}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+                                                                <span class="text-lg font-bold"
+                                                                      :class="msg.diceResult.success === true ? 'text-mystic-green' : (msg.diceResult.success === false ? 'text-red-300' : 'text-slate-200')">
+                                                                    {{ msg.diceResult.roll }}
+                                                                </span>
+                                                                <span v-if="msg.diceResult.target" class="opacity-60">/ {{ msg.diceResult.target }}</span>
+                                                                <span v-if="msg.diceResult.extra" class="ml-auto opacity-70 italic font-serif">{{ msg.diceResult.extra }}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -465,9 +509,35 @@
                                                         <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5" :class="msg.showCot ? 'rotate-90' : ''" style="transition: transform 0.2s" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg> 阿撒托斯的低语 (COT)</span>
                                                         <span class="text-[10px] opacity-50 font-mono"></span>
                                                     </div>
-                                                    <div v-show="msg.showCot" class="cot-content markdown-body" v-html="renderMarkdown(getCotContent(msg.content))"></div>
+                                                    <div v-show="msg.showCot" class="cot-content markdown-body" v-html="renderMarkdown(getCotContent(msg.content), true)"></div>
                                                 </div>
                                                 <div class="markdown-body relative z-10 font-serif leading-loose" v-html="renderMarkdown(removeCot(msg.content))"></div>
+                                                <!-- Stat Changes Display (Keeper) -->
+                                                <div v-if="msg.stLogs && msg.stLogs.length > 0" class="mt-3 space-y-2 relative z-10">
+                                                    <div v-for="(log, lIdx) in msg.stLogs" :key="lIdx"
+                                                         class="rounded-lg relative overflow-hidden border transition-all duration-300"
+                                                         :class="parseStLogDiff(log) < 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-mystic-green/10 border-mystic-green/30'">
+                                                        <div class="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 blur-xl"
+                                                             :class="parseStLogDiff(log) < 0 ? 'bg-red-500' : 'bg-mystic-green'"></div>
+                                                        <div class="p-3 relative z-10 flex items-center gap-3">
+                                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl shadow-inner"
+                                                                 :class="parseStLogDiff(log) < 0 ? 'bg-red-900/20 text-red-400' : 'bg-mystic-green/20 text-mystic-green'">
+                                                                <span v-if="parseStLogDiff(log) < 0">💔</span>
+                                                                <span v-else>💚</span>
+                                                            </div>
+                                                            <div class="flex-1 min-w-0">
+                                                                <div class="flex justify-between items-baseline mb-0.5">
+                                                                    <span class="font-bold text-slate-200 text-sm font-serif tracking-wide">属性变更</span>
+                                                                    <span class="text-xs font-bold uppercase tracking-wider"
+                                                                          :class="parseStLogDiff(log) < 0 ? 'text-red-400' : 'text-mystic-green'">
+                                                                        {{ parseStLogDiff(log) < 0 ? '减少' : '增加' }}
+                                                                    </span>
+                                                                </div>
+                                                                <div class="text-xs font-mono text-slate-400" v-html="formatStLog(log)"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div v-if="isGenerating && index === cocState.log.length - 1 && !removeCot(msg.content)" class="typing-indicator py-1"><span class="bg-mystic-gold/60"></span><span class="bg-mystic-gold/60"></span><span class="bg-mystic-gold/60"></span></div>
                                             </div>
                                             <div v-if="index === lastAssistantIndex && (cocState.mode === 'single' || (cocState.mode === 'multi' && multiplayerState.isHost)) && !isGenerating" class="mt-2 animate-fade-in">
@@ -498,48 +568,114 @@
 
                             <!-- Sidebar Info (Desktop & Mobile) -->
                             <div :class="['fixed inset-y-0 right-0 z-30 w-72 bg-dark-900 border-l border-dark-800 transform transition-transform duration-300 md:relative md:translate-x-0 flex flex-col shadow-2xl md:shadow-none overflow-y-auto safe-pb', showMobileRightSidebar ? 'translate-x-0' : 'translate-x-full']">
-                                <div v-if="cocState.activeInvestigatorIndex !== -1 && cocState.investigators[cocState.activeInvestigatorIndex]" class="p-5">
-                                    <div class="flex flex-col items-center mb-6 relative">
-                                        <div class="w-20 h-20 rounded bg-dark-800 overflow-hidden mb-3 border-2 border-dark-700 shadow-xl">
-                                            <img v-if="cocState.investigators[cocState.activeInvestigatorIndex].avatar" :src="cocState.investigators[cocState.activeInvestigatorIndex].avatar" class="w-full h-full object-cover">
+                                <div v-if="cocState.activeInvestigatorIndex !== -1 && cocState.investigators[cocState.activeInvestigatorIndex]" class="p-5 space-y-6">
+                                    <!-- 头像 & 基础信息 -->
+                                    <div class="flex items-center gap-4 pb-4 border-b border-dark-800">
+                                        <div class="w-16 h-16 rounded-xl bg-dark-800 overflow-hidden border-2 border-dark-700 shadow-[0_0_15px_rgba(0,0,0,0.5)] relative group cursor-pointer">
+                                            <img v-if="cocState.investigators[cocState.activeInvestigatorIndex].avatar" :src="cocState.investigators[cocState.activeInvestigatorIndex].avatar" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                                             <div v-else class="w-full h-full flex items-center justify-center text-2xl font-bold text-dark-600 font-serif">{{ cocState.investigators[cocState.activeInvestigatorIndex].name.charAt(0) }}</div>
+                                            <div class="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl"></div>
                                         </div>
-                                        <div class="font-bold text-lg font-serif text-mystic-gold">{{ cocState.investigators[cocState.activeInvestigatorIndex].name }}</div>
-                                    </div>
-                                    <div class="grid grid-cols-3 gap-2 text-center mb-6">
-                                        <div class="bg-red-900/10 p-2 rounded border border-red-900/20"><div class="text-[10px] text-red-500/70 tracking-widest mb-1">HP</div><div class="font-bold text-red-500 text-lg font-serif">{{ cocState.investigators[cocState.activeInvestigatorIndex].hp }}</div></div>
-                                        <div class="bg-blue-900/10 p-2 rounded border border-blue-900/20"><div class="text-[10px] text-blue-500/70 tracking-widest mb-1">MP</div><div class="font-bold text-blue-500 text-lg font-serif">{{ cocState.investigators[cocState.activeInvestigatorIndex].mp }}</div></div>
-                                        <div class="bg-purple-900/10 p-2 rounded border border-purple-900/20"><div class="text-[10px] text-purple-500/70 tracking-widest mb-1">SAN</div><div class="font-bold text-purple-500 text-lg font-serif">{{ cocState.investigators[cocState.activeInvestigatorIndex].san }}</div></div>
-                                    </div>
-                                    <!-- Stats -->
-                                    <div class="mb-6" v-if="cocState.investigators[cocState.activeInvestigatorIndex].stats">
-                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 border-b border-dark-800 pb-1 uppercase tracking-widest">基础属性</h4>
-                                        <div class="grid grid-cols-4 gap-2">
-                                            <div v-for="(val, key) in cocState.investigators[cocState.activeInvestigatorIndex].stats" :key="key" class="bg-dark-800 p-1.5 rounded text-center cursor-pointer hover:bg-mystic-gold/10 hover:text-mystic-gold transition-colors border border-transparent hover:border-mystic-gold/30" @click="cocInput = `.ra ${key}`" title="点击检定">
-                                                <div class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">{{ statDisplayMap[key] || key }}</div>
-                                                <div class="font-bold text-sm text-slate-300 font-mono">{{val}}</div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-bold text-lg font-serif text-mystic-gold truncate">{{ cocState.investigators[cocState.activeInvestigatorIndex].name }}</div>
+                                            <div class="text-xs text-slate-500 font-mono truncate mt-0.5">{{ cocState.investigators[cocState.activeInvestigatorIndex].job }}</div>
+                                            <div class="flex items-center gap-2 mt-2">
+                                                 <span class="px-1.5 py-0.5 rounded bg-dark-800 border border-dark-700 text-[10px] text-slate-400 font-mono">AGE: {{ cocState.investigators[cocState.activeInvestigatorIndex].age }}</span>
+                                                 <span class="px-1.5 py-0.5 rounded bg-dark-800 border border-dark-700 text-[10px] text-slate-400 font-mono">{{ cocState.investigators[cocState.activeInvestigatorIndex].gender }}</span>
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- 状态栏 (HP/MP/SAN) -->
+                                    <div class="space-y-3">
+                                        <!-- HP -->
+                                        <div class="group cursor-help">
+                                            <div class="flex justify-between text-[10px] font-bold tracking-widest mb-1">
+                                                <span class="text-red-500/80">HP (生命)</span>
+                                                <span class="font-mono text-red-400">{{ cocState.investigators[cocState.activeInvestigatorIndex].hp }} <span class="text-slate-600">/ {{ cocState.investigators[cocState.activeInvestigatorIndex].maxHp || cocState.investigators[cocState.activeInvestigatorIndex].hp }}</span></span>
+                                            </div>
+                                            <div class="h-1.5 w-full bg-dark-950 rounded-full overflow-hidden border border-dark-800/50">
+                                                <div class="h-full bg-gradient-to-r from-red-900 to-red-600 transition-all duration-500" :style="{ width: Math.min(100, (cocState.investigators[cocState.activeInvestigatorIndex].hp / (cocState.investigators[cocState.activeInvestigatorIndex].maxHp || cocState.investigators[cocState.activeInvestigatorIndex].hp || 1)) * 100) + '%' }"></div>
+                                            </div>
+                                        </div>
+                                        <!-- MP -->
+                                        <div class="group cursor-help">
+                                            <div class="flex justify-between text-[10px] font-bold tracking-widest mb-1">
+                                                <span class="text-blue-500/80">MP (魔法)</span>
+                                                <span class="font-mono text-blue-400">{{ cocState.investigators[cocState.activeInvestigatorIndex].mp }} <span class="text-slate-600">/ {{ cocState.investigators[cocState.activeInvestigatorIndex].maxMp || cocState.investigators[cocState.activeInvestigatorIndex].mp }}</span></span>
+                                            </div>
+                                            <div class="h-1.5 w-full bg-dark-950 rounded-full overflow-hidden border border-dark-800/50">
+                                                <div class="h-full bg-gradient-to-r from-blue-900 to-blue-600 transition-all duration-500" :style="{ width: Math.min(100, (cocState.investigators[cocState.activeInvestigatorIndex].mp / (cocState.investigators[cocState.activeInvestigatorIndex].maxMp || cocState.investigators[cocState.activeInvestigatorIndex].mp || 1)) * 100) + '%' }"></div>
+                                            </div>
+                                        </div>
+                                        <!-- SAN -->
+                                        <div class="group cursor-help">
+                                            <div class="flex justify-between text-[10px] font-bold tracking-widest mb-1">
+                                                <span class="text-purple-500/80">SAN (理智)</span>
+                                                <span class="font-mono text-purple-400">{{ cocState.investigators[cocState.activeInvestigatorIndex].san }} <span class="text-slate-600">/ {{ cocState.investigators[cocState.activeInvestigatorIndex].maxSan || 99 }}</span></span>
+                                            </div>
+                                            <div class="h-1.5 w-full bg-dark-950 rounded-full overflow-hidden border border-dark-800/50">
+                                                <div class="h-full bg-gradient-to-r from-purple-900 to-purple-600 transition-all duration-500" :style="{ width: Math.min(100, (cocState.investigators[cocState.activeInvestigatorIndex].san / (cocState.investigators[cocState.activeInvestigatorIndex].maxSan || 99)) * 100) + '%' }"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Stats Grid -->
+                                    <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].stats">
+                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
+                                            <span class="w-1 h-1 rounded-full bg-slate-500"></span> 基础属性
+                                        </h4>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div v-for="(val, key) in cocState.investigators[cocState.activeInvestigatorIndex].stats" :key="key"
+                                                 class="bg-dark-800/50 hover:bg-mystic-gold/5 border border-dark-700/50 hover:border-mystic-gold/30 rounded p-2 text-center cursor-pointer transition-all group"
+                                                 @click="cocInput = `.ra ${key}`" title="点击检定">
+                                                <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider mb-0.5 group-hover:text-mystic-gold/70">{{ key }}</div>
+                                                <div class="font-bold text-sm text-slate-300 font-mono group-hover:text-mystic-gold">{{ val }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Skills -->
-                                    <div class="mb-6" v-if="cocState.investigators[cocState.activeInvestigatorIndex].skills">
-                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 border-b border-dark-800 pb-1 uppercase tracking-widest">技能列表</h4>
-                                        <div class="flex flex-wrap gap-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                                            <span v-for="skill in cocState.investigators[cocState.activeInvestigatorIndex].skills.filter(s => s.value > 0)" :key="skill.name" class="px-2 py-1 bg-dark-800 rounded text-xs text-slate-400 border border-dark-700 cursor-pointer hover:bg-mystic-green/10 hover:text-mystic-green hover:border-mystic-green/30 transition-colors select-none" @click="cocInput = `.ra ${skill.name}`" title="点击检定">{{ skill.name }} <span class="font-bold text-slate-300 ml-1">{{ skill.value }}</span></span>
-                                        </div>
-                                    </div>
-                                    <!-- Badges & History -->
-                                    <div class="mb-6" v-if="cocState.investigators[cocState.activeInvestigatorIndex].badges && cocState.investigators[cocState.activeInvestigatorIndex].badges.length > 0">
-                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 border-b border-dark-800 pb-1 uppercase tracking-widest">勋章墙</h4>
-                                        <div class="flex flex-wrap gap-2">
-                                            <div v-for="(badge, bIdx) in cocState.investigators[cocState.activeInvestigatorIndex].badges" :key="bIdx" class="group relative w-8 h-8 flex items-center justify-center bg-dark-800 rounded-full border border-mystic-gold/30 cursor-help">
-                                                <span class="text-lg medal-icon flex items-center justify-center" v-html="badge.icon || '🏅'"></span>
-                                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-2 bg-dark-950 border border-mystic-gold/20 rounded text-[10px] text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl"><div class="font-bold text-mystic-gold">{{ badge.name }}</div><div class="text-slate-400 mt-1">{{ badge.desc }}</div></div>
+                                    <div class="flex-1 min-h-0 flex flex-col" v-if="cocState.investigators[cocState.activeInvestigatorIndex].skills">
+                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
+                                            <span class="w-1 h-1 rounded-full bg-slate-500"></span> 技能列表
+                                        </h4>
+                                        <div class="overflow-y-auto custom-scrollbar pr-1 -mr-1 flex-1">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button v-for="skill in cocState.investigators[cocState.activeInvestigatorIndex].skills.filter(s => s.value > 0).sort((a,b) => b.value - a.value)" :key="skill.name"
+                                                        class="px-2.5 py-1 bg-dark-800 hover:bg-mystic-green/10 border border-dark-700 hover:border-mystic-green/40 rounded text-xs text-slate-400 hover:text-mystic-green transition-all flex items-center gap-2 group"
+                                                        @click="cocInput = `.ra ${skill.name}`" title="点击检定">
+                                                    <span>{{ skill.name }}</span>
+                                                    <span class="font-mono font-bold text-slate-500 group-hover:text-mystic-green/80">{{ skill.value }}</span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="mt-4 pt-4 border-t border-dark-800">
-                                        <button @click="openSettlement" class="w-full py-2 bg-gradient-to-r from-mystic-gold/10 to-transparent border border-mystic-gold/30 rounded text-mystic-gold text-xs font-bold uppercase tracking-widest hover:bg-mystic-gold/20 transition-all flex items-center justify-center gap-2 group"><svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 结团 / 奖励结算</button>
+
+                                    <!-- Badges -->
+                                    <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].badges && cocState.investigators[cocState.activeInvestigatorIndex].badges.length > 0">
+                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
+                                            <span class="w-1 h-1 rounded-full bg-slate-500"></span> 勋章墙
+                                        </h4>
+                                        <div class="flex flex-wrap gap-2">
+                                            <div v-for="(badge, bIdx) in cocState.investigators[cocState.activeInvestigatorIndex].badges" :key="bIdx" class="group relative w-9 h-9 flex items-center justify-center bg-dark-800 rounded-lg border border-mystic-gold/20 hover:border-mystic-gold/50 cursor-help transition-all hover:shadow-[0_0_10px_rgba(212,175,55,0.2)]">
+                                                <span class="text-lg medal-icon select-none" v-html="sanitizeBadgeIcon(badge.icon)"></span>
+                                                <!-- Tooltip -->
+                                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-dark-900/95 backdrop-blur-md border border-mystic-gold/30 rounded-lg text-[10px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-2xl scale-95 group-hover:scale-100 origin-bottom">
+                                                    <div class="font-bold text-mystic-gold text-xs mb-1 font-serif">{{ badge.name }}</div>
+                                                    <div class="text-slate-400 leading-relaxed">{{ badge.desc }}</div>
+                                                    <div class="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2 h-2 bg-dark-900 border-r border-b border-mystic-gold/30 transform rotate-45"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Footer Actions -->
+                                    <div class="pt-4 mt-auto border-t border-dark-800/50">
+                                         <button @click="openSettlement" class="w-full py-2.5 bg-gradient-to-r from-mystic-gold/5 via-mystic-gold/10 to-mystic-gold/5 border border-mystic-gold/20 hover:border-mystic-gold/40 rounded text-mystic-gold text-xs font-bold uppercase tracking-widest hover:bg-mystic-gold/10 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-black/20">
+                                            <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-700 text-mystic-gold/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span>奖励结算</span>
+                                         </button>
                                     </div>
                                 </div>
                             </div>
@@ -785,7 +921,90 @@
                 </div>
             </div>
 
-            <!-- 6. Tavern View (New) -->
+            <!-- 6. Settings View -->
+            <div v-if="currentView === 'settings'" class="h-full overflow-y-auto p-4 md:p-8 animate-fade-in bg-dark-950 bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]">
+                <h2 class="text-2xl font-bold mb-8 text-slate-200 font-serif flex items-center gap-3">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    设置中心
+                </h2>
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <!-- User Profile -->
+                    <div class="glass-panel p-6 rounded-lg">
+                        <h3 class="font-bold text-slate-200 mb-6 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-mystic-gold mr-3"></span> 个人信息</h3>
+                        <div class="flex items-center gap-6 mb-6">
+                            <label class="relative cursor-pointer group">
+                                <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-dark-600 group-hover:border-mystic-gold transition-colors shadow-lg">
+                                    <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover">
+                                    <div v-else class="w-full h-full bg-dark-800 flex items-center justify-center text-2xl font-bold text-mystic-gold font-serif">{{ user.name.charAt(0).toUpperCase() }}</div>
+                                </div>
+                                <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                </div>
+                                <input type="file" accept="image/*" @change="handleUserAvatarUpload" class="hidden">
+                            </label>
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">昵称</label>
+                                <input v-model="user.name" @change="saveData" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-gold outline-none">
+                            </div>
+                        </div>
+                        <div class="bg-dark-800/50 p-4 rounded border border-dark-700">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">用户 ID</label>
+                            <div class="flex items-center gap-2">
+                                <code class="flex-1 text-sm text-mystic-gold font-mono select-all bg-dark-900 px-3 py-2 rounded">{{ user.uuid }}</code>
+                                <button @click="copyToClipboard(user.uuid)" class="px-3 py-2 bg-dark-900 border border-dark-600 rounded hover:border-mystic-gold hover:text-mystic-gold transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Settings -->
+                    <div class="glass-panel p-6 rounded-lg">
+                        <h3 class="font-bold text-slate-200 mb-6 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-mystic-green mr-3"></span> API 配置</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">API 地址</label>
+                                <input v-model="settings.apiUrl" @change="saveData" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-green outline-none font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">API Key</label>
+                                <input v-model="settings.apiKey" @change="saveData" type="password" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-green outline-none font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">模型</label>
+                                <input v-model="settings.model" @change="saveData" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-green outline-none font-mono text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connection Settings -->
+                    <div class="glass-panel p-6 rounded-lg">
+                        <h3 class="font-bold text-slate-200 mb-6 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-indigo-500 mr-3"></span> 联机服务</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Supabase URL</label>
+                                <input v-model="settings.supabaseUrl" @change="saveData" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-indigo-500 outline-none font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Supabase Key</label>
+                                <input v-model="settings.supabaseKey" @change="saveData" type="password" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-indigo-500 outline-none font-mono text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- App Info -->
+                    <div class="glass-panel p-6 rounded-lg">
+                        <h3 class="font-bold text-slate-200 mb-4 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-slate-600 mr-3"></span> 关于</h3>
+                        <div class="text-sm text-slate-500 space-y-2">
+                            <p><span class="text-slate-400">版本：</span> 2.0 Beta</p>
+                            <p><span class="text-slate-400">开发者：</span> Z4RKTO & STA1N</p>
+                            <p class="text-xs italic mt-4">"在疯狂与理智的边缘，我们寻找真相。"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Tavern View (New) -->
             <div v-if="currentView === 'tavern'" class="h-full overflow-y-auto p-4 md:p-8 animate-fade-in bg-dark-950 bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]">
                 <div class="flex justify-between items-center mb-8">
                     <h2 class="text-2xl font-bold text-amber-500 font-serif flex items-center gap-3">
@@ -916,6 +1135,82 @@
         const { createApp, ref, reactive, onMounted, watch, nextTick } = Vue;
         marked.use({ breaks: true });
 
+        // IndexedDB 数据库管理
+        const DB_NAME = 'CocTrpgDB';
+        const DB_VERSION = 1;
+        const STORE_SAVES = 'saves';
+        let dbInstance = null;
+
+        const openDatabase = () => {
+            return new Promise((resolve, reject) => {
+                if (dbInstance) {
+                    resolve(dbInstance);
+                    return;
+                }
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    dbInstance = request.result;
+                    resolve(dbInstance);
+                };
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_SAVES)) {
+                        const store = db.createObjectStore(STORE_SAVES, { keyPath: 'id' });
+                        store.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                };
+            });
+        };
+
+        const dbGetAllSaves = async () => {
+            const db = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_SAVES, 'readonly');
+                const store = tx.objectStore(STORE_SAVES);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    const saves = request.result || [];
+                    saves.sort((a, b) => b.timestamp - a.timestamp);
+                    resolve(saves);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        };
+
+        const dbAddSave = async (save) => {
+            const db = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_SAVES, 'readwrite');
+                const store = tx.objectStore(STORE_SAVES);
+                const request = store.add(save);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        };
+
+        const dbDeleteSave = async (id) => {
+            const db = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_SAVES, 'readwrite');
+                const store = tx.objectStore(STORE_SAVES);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        };
+
+        const dbGetSave = async (id) => {
+            const db = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_SAVES, 'readonly');
+                const store = tx.objectStore(STORE_SAVES);
+                const request = store.get(id);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        };
+
         createApp({
             setup() {
                 const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); });
@@ -988,7 +1283,7 @@
 
                 const showConfirm = (message, title = '确认操作') => { return new Promise((resolve) => { confirmState.message = message; confirmState.title = title; confirmState.show = true; confirmState.resolve = resolve; }); };
                 const user = reactive({ name: '游客', avatar: '', uuid: generateUUID() });
-                const settings = reactive({ apiUrl: 'https://opis.zeabur.app', apiKey: 'sk-8PZs39TSK9Jde8dpD2IIrJxyAnJQUot7pskCbA4WlyFAwVJd', model: 'gemini-3-pro-preview-maxthinking', supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co', supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E', temperature: 1.0 });
+                const settings = reactive({ apiUrl: 'https://opis.zeabur.app', apiKey: 'sk-XdfGk68aG9Z4TwnELnXS9PL097BZmC4XIahJldIwiEmswjWy', model: 'gemini-3-pro-preview-maxthinking', supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co', supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E', temperature: 1.0 });
 
                 const statDisplayMap = { STR: '力量', CON: '体质', SIZ: '体型', DEX: '敏捷', APP: '外貌', INT: '智力', POW: '意志', EDU: '教育', LUCK: '幸运' };
                 const cocState = reactive({ mode: null, module: null, tempModuleText: '', investigators: [], activeInvestigatorIndex: -1, gameState: 'idle', log: [], systemPrompt: '', pendingRolls: [] });
@@ -1011,18 +1306,50 @@
                 const requestCotAccess = () => { if (!multiplayerState.inRoom) return; broadcastMessage({ type: 'request_cot_access', userId: user.uuid, userName: user.name }); showToast('已发送权限申请', 'info'); };
                 const grantCotAccess = (targetUserId) => { if (!multiplayerState.cotAuthorizedUsers.includes(targetUserId)) { multiplayerState.cotAuthorizedUsers.push(targetUserId); broadcastMessage({ type: 'grant_cot_access', userId: targetUserId, authorizedUsers: multiplayerState.cotAuthorizedUsers }); showToast('已授权查看 CoT', 'success'); } };
 
-                const regenerateLastResponse = async () => { if (cocState.mode === 'multi' && !multiplayerState.isHost) return showToast('仅房主可以重新生成', 'warning'); const lastAiIdx = lastAssistantIndex.value; if (lastAiIdx === -1) return; if (!await showConfirm('确定要回溯到此处并重新生成吗？该消息及之后的所有对话将被清除。', '回溯重生成')) return; cocState.log.splice(lastAiIdx); if (cocState.mode === 'multi' && multiplayerState.isHost) { broadcastMessage({ type: 'sync_state', log: cocState.log, gameState: cocState.gameState, investigators: cocState.investigators, assignments: multiplayerState.assignments, assignmentDetails: multiplayerState.assignmentDetails, turnIndex: multiplayerState.turnIndex, roundActionIds: multiplayerState.roundActionIds, cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers }); broadcastMessage({ type: 'regenerate_start' }); } generateResponse(); };
+                const regenerateLastResponse = async () => {
+                    if (cocState.mode === 'multi' && !multiplayerState.isHost) return showToast('仅房主可以重新生成', 'warning');
+                    const lastAiIdx = lastAssistantIndex.value;
+                    if (lastAiIdx === -1) return;
+                    if (!await showConfirm('确定要回溯到此处并重新生成吗？该消息及之后的所有对话将被清除。', '回溯重生成')) return;
+                    
+                    // Rollback state changes from deleted messages
+                    for (let i = cocState.log.length - 1; i >= lastAiIdx; i--) {
+                        const msg = cocState.log[i];
+                        if (msg.stRollbacks) {
+                            rollbackStChanges(msg.stRollbacks);
+                        }
+                    }
+
+                    cocState.log.splice(lastAiIdx);
+                    multiplayerState.roundActionIds = [];
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                        broadcastMessage({ type: 'sync_state', log: cocState.log, gameState: cocState.gameState, investigators: cocState.investigators, assignments: multiplayerState.assignments, assignmentDetails: multiplayerState.assignmentDetails, turnIndex: multiplayerState.turnIndex, roundActionIds: [], cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers });
+                        broadcastMessage({ type: 'regenerate_start' });
+                    }
+                    generateResponse();
+                };
                 const regenerateAiMessage = async (index) => {
                     const msg = cocState.log[index];
                     if (!msg || !msg.isAiGenerated) return;
                     if (cocState.mode === 'multi' && !multiplayerState.isHost) return showToast('仅房主可以重新生成', 'warning');
                     if (!await showConfirm('确定要回溯到此处并重新生成吗？该消息及之后的所有对话将被清除。', '回溯重生成')) return;
                     
+                    // Rollback state changes from deleted messages
+                    for (let i = cocState.log.length - 1; i >= index; i--) {
+                        const m = cocState.log[i];
+                        if (m.stRollbacks) {
+                            rollbackStChanges(m.stRollbacks);
+                        }
+                    }
+
                     const aiIndex = msg.aiIndex;
                     cocState.log.splice(index);
+                    multiplayerState.roundActionIds = [];
                     
                     if (cocState.mode === 'multi' && multiplayerState.isHost) {
                          broadcastMessage({ type: 'sync_log', log: cocState.log });
+                         broadcastMessage({ type: 'sync_state', roundActionIds: [] });
+                         broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
                     }
                     
                     await processAiPlayers(aiIndex);
@@ -1072,15 +1399,59 @@
                 };
 
                 const saveData = () => { localStorage.setItem('coc_user', JSON.stringify(user)); localStorage.setItem('coc_settings', JSON.stringify(settings)); localStorage.setItem('coc_investigators', JSON.stringify(cocState.investigators)); localStorage.setItem('coc_friends', JSON.stringify(friends.value)); localStorage.setItem('coc_tavern_novels', JSON.stringify(tavernState.savedNovels)); };
-                const loadData = () => {
+                const loadData = async () => {
                     const lUser = localStorage.getItem('coc_user'); if (lUser) Object.assign(user, JSON.parse(lUser));
                     const lSettings = localStorage.getItem('coc_settings'); if (lSettings) Object.assign(settings, JSON.parse(lSettings));
                     const lInv = localStorage.getItem('coc_investigators'); if (lInv) cocState.investigators = JSON.parse(lInv);
                     const lFriends = localStorage.getItem('coc_friends'); if (lFriends) friends.value = JSON.parse(lFriends);
-                    const lSaves = localStorage.getItem('coc_saves'); if (lSaves) savedGames.value = JSON.parse(lSaves);
                     const lNovels = localStorage.getItem('coc_tavern_novels'); if (lNovels) tavernState.savedNovels = JSON.parse(lNovels);
+                    // 从 IndexedDB 加载存档
+                    try {
+                        savedGames.value = await dbGetAllSaves();
+                    } catch (e) {
+                        console.error('Failed to load saves from IndexedDB:', e);
+                        savedGames.value = [];
+                    }
                 };
 
+                const parseStLogDiff = (log) => {
+                    // 解析 log 中的数值变化
+                    // 原格式: 🔧 **属性变更** 角色名 的 HP: 10 ➔ 7
+                    if (!log) return 0;
+                    const match = log.match(/:\s*(\d+)\s*➔\s*(\d+)/);
+                    if (match) {
+                        return parseInt(match[2]) - parseInt(match[1]);
+                    }
+                    return 0;
+                };
+
+                const formatStLog = (log) => {
+                    // 将 log 格式化为更易读的 HTML
+                    // 原格式: 🔧 **属性变更** 角色名 的 HP: 10 ➔ 7
+                    if (!log) return '';
+                    // 移除 emoji 和 markdown
+                    let formatted = log.replace(/🔧\s*\*\*属性变更\*\*\s*/, '');
+                    // 高亮角色名和属性
+                    formatted = formatted.replace(/(\S+)\s*的\s*(\w+):\s*(\d+)\s*➔\s*(\d+)/, (match, name, prop, old, newVal) => {
+                        const oldNum = parseInt(old);
+                        const newNum = parseInt(newVal);
+                        const diff = newNum - oldNum;
+                        const diffStr = diff > 0 ? `<span class="text-mystic-green font-bold">+${diff}</span>` : `<span class="text-red-400 font-bold">${diff}</span>`;
+                        return `<span class="text-mystic-gold font-bold">${name}</span> <span class="text-slate-500">的</span> <span class="font-bold text-slate-200">${prop}</span>: <span class="text-slate-500">${old}</span> <span class="text-slate-500">➔</span> <span class="font-bold ${newNum < oldNum ? 'text-red-300' : 'text-mystic-green'}">${newVal}</span> <span class="ml-1">(${diffStr})</span>`;
+                    });
+                    return formatted;
+                };
+
+                const sanitizeBadgeIcon = (icon) => {
+                    if (!icon || typeof icon !== 'string') return '🏅';
+                    const trimmed = icon.trim();
+                    if (!trimmed) return '🏅';
+                    // 如果是 emoji (长度1-2个字符，不含<)，直接返回
+                    if (trimmed.length <= 4 && !trimmed.includes('<')) return trimmed;
+                    // 如果包含 SVG 或 HTML 标签，用 DOMPurify 清理
+                    if (trimmed.includes('<')) return DOMPurify.sanitize(trimmed);
+                    return trimmed;
+                };
                 const showToast = (msg, type = 'info') => { const id = Date.now(); toasts.value.push({ id, message: msg, type }); setTimeout(() => toasts.value = toasts.value.filter(t => t.id !== id), 3000); };
                 const copyToClipboard = (text) => { if (!text) return; navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => showToast('复制失败', 'error')); };
 
@@ -1100,15 +1471,87 @@
                     } else return { success: false, msg: `数值格式错误: ${valExpr}` };
                     if (isStat) inv.stats[targetKey] = newVal; else inv[targetKey] = newVal;
                     if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(99, inv[targetKey])); if (targetKey === 'hp') inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey])); if (targetKey === 'mp') inv[targetKey] = Math.max(0, Math.min(inv.maxMp || 99, inv[targetKey]));
-                    saveData(); return { success: true, msg: `${prop.toUpperCase()} ${op==='+'?'+':''}${change} => ${inv[targetKey]}`, log: `🔧 **属性变更** ${inv.name} 的 ${prop.toUpperCase()}: ${currentVal} ➔ ${inv[targetKey]}` };
+                    
+                    const finalVal = isStat ? inv.stats[targetKey] : inv[targetKey];
+                    saveData();
+                    return {
+                        success: true,
+                        msg: `${prop.toUpperCase()} ${op==='+'?'+':''}${change} => ${finalVal}`,
+                        log: `🔧 **属性变更** ${inv.name} 的 ${prop.toUpperCase()}: ${currentVal} ➔ ${finalVal}`,
+                        rollback: { invIndex: -1, prop: targetKey, isStat, oldVal: currentVal } // invIndex will be injected by caller
+                    };
+                };
+
+                const findInvestigatorIndexByName = (name) => {
+                    if (!name) return -1;
+                    return cocState.investigators.findIndex(i => i.name === name || i.name.includes(name));
+                };
+
+                const applyStCommands = (content, defaultInvIndex = -1) => {
+                    if (!content) return { logs: [], rollbacks: [] };
+                    
+                    // 先移除 COT 内容，避免执行思维链中的指令
+                    let cleanContent = removeCot(content);
+                    
+                    // Regex to match .st commands: (@Name)? .st prop val
+                    // Updated to support Chinese names and better spacing
+                    // Matches:
+                    // 1. @OptionalName (lazy)
+                    // 2. .st or 。st
+                    // 3. property (e.g. hp)
+                    // 4. value (e.g. -3, +1d6, 10)
+                    const regex = /(?:@([^\s\.]+)\s+)?[\.。]st\s+(\w+)\s+([+-]?\d+(?:d\d+)?|[+-]?\d+)/gi;
+                    const logs = [];
+                    const rollbacks = [];
+                    
+                    let match;
+                    while ((match = regex.exec(cleanContent)) !== null) {
+                        const targetName = match[1];
+                        const prop = match[2];
+                        const valExpr = match[3];
+                        
+                        let invIndex = defaultInvIndex;
+                        if (targetName) {
+                            const foundIndex = findInvestigatorIndexByName(targetName);
+                            if (foundIndex !== -1) invIndex = foundIndex;
+                        }
+                        
+                        if (invIndex !== -1 && cocState.investigators[invIndex]) {
+                            const result = executeStCommand(cocState.investigators[invIndex], prop, valExpr);
+                            if (result && result.success) {
+                                logs.push(result.log);
+                                rollbacks.push({ ...result.rollback, invIndex });
+                            }
+                        }
+                    }
+                    return { logs, rollbacks };
+                };
+
+                const rollbackStChanges = (rollbacks) => {
+                    if (!rollbacks || !Array.isArray(rollbacks)) return;
+                    rollbacks.reverse().forEach(rb => {
+                        const inv = cocState.investigators[rb.invIndex];
+                        if (inv) {
+                            if (rb.isStat) inv.stats[rb.prop] = rb.oldVal;
+                            else inv[rb.prop] = rb.oldVal;
+                        }
+                    });
+                    saveData();
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                        broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                    }
                 };
                 
-                const renderMarkdown = (text) => {
+                const renderMarkdown = (text, disableCommands = false) => {
                     // 确保输入是字符串类型
                     const str = ensureString(text);
                     if (!str) return '';
                     try {
-                        let processed = str.replace(/(^|[\s\n>])(\.(?:ra|rc|sc|san|r|roll|st|set)(?:\s+[^\s\n<。，！\?]+)?)(?=$|[\s\n<。，！\?])/gi, '$1<span class="cursor-pointer text-mystic-gold font-bold hover:underline decoration-mystic-gold/30" onclick="event.stopPropagation(); window.triggerCocCommand(\'$2\')">$2</span>');
+                        let processed = str;
+                        // 只有非COT内容才渲染可点击的指令按钮
+                        if (!disableCommands) {
+                            processed = str.replace(/(^|[\s\n>])(\.(?:ra|rc|sc|san|r|roll|st|set)(?:\s+[^\s\n<。，！\?]+)?)(?=$|[\s\n<。，！\?])/gi, '$1<span class="cursor-pointer text-mystic-gold font-bold hover:underline decoration-mystic-gold/30" onclick="event.stopPropagation(); window.triggerCocCommand(\'$2\')">$2</span>');
+                        }
                         return DOMPurify.sanitize(marked.parse(processed));
                     } catch (e) {
                         console.error('Markdown Render Error:', e);
@@ -1188,6 +1631,7 @@ ${buildInvestigatorProfile(inv)}
                             
                             if (content) {
                                 const msg = { role: 'user', name: inv.name, avatar: inv.avatar, content, isAiGenerated: true, aiIndex: idx };
+                                processAiMessageStCommands(msg); // Process .st commands for AI
                                 cocState.log.push(msg);
                                 if (cocState.mode === 'multi' && multiplayerState.isHost) {
                                     broadcastMessage({
@@ -1205,6 +1649,28 @@ ${buildInvestigatorProfile(inv)}
                             }
                         } catch (e) {
                             console.error('AI Player Error:', e);
+                        }
+                    }
+                };
+
+                const processAiMessageStCommands = (msg) => {
+                    // For AI messages, we assume the AI is operating on its own character (msg.aiIndex)
+                    // But if the AI uses @OtherPlayer .st, it should probably be respected or restricted?
+                    // Let's allow AI to modify itself or others if explicitly targeted.
+                    // Default target is itself.
+                    if (msg && msg.content && typeof msg.aiIndex === 'number') {
+                        const { logs, rollbacks } = applyStCommands(msg.content, msg.aiIndex);
+                        if (logs.length > 0) {
+                            msg.stLogs = logs;
+                            msg.stRollbacks = rollbacks;
+                            // Optionally append logs to content? Or just keep them hidden/system level?
+                            // User request: "给予系统提示" -> Show system logs
+                            // We can append logs to the message content or insert new system messages.
+                            // Inserting new messages might be messy for rollback.
+                            // Let's append to the message content for now or add a special visual indicator.
+                            // Or better: push system messages to log.
+                            // BUT, we need to link them for rollback.
+                            // Storing logs in msg object allows display component to render them.
                         }
                     }
                 };
@@ -1258,30 +1724,76 @@ ${buildInvestigatorProfile(inv)}
                 const exitCocMode = () => { if (cocState.mode === 'multi') exitCocGame(); else { cocState.mode = null; cocState.gameState = 'idle'; currentView.value = 'coc'; } };
                 const exitCocGame = async () => { if (cocState.mode === 'multi' && multiplayerState.isHost) { if (await showConfirm('您是房主，退出将解散房间。是否先保存当前游戏进度？', '保存进度')) saveGame(); else return; if (!await showConfirm('确定要解散房间并退出吗？所有玩家将被强制退出。', '解散房间')) return; await broadcastMessage({ type: 'room_closed' }); } else { if(!await showConfirm('确定退出吗？未保存的进度将丢失。', '退出确认')) return; } cocState.gameState = 'idle'; cocState.log = []; multiplayerState.assignments = {}; currentView.value = 'coc'; if (multiplayerState.inRoom) leaveRoom(); };
                 
-                const saveGame = () => { 
-                    const save = { id: Date.now(), timestamp: Date.now(), mode: cocState.mode, moduleName: cocState.module?.name, moduleContent: cocState.module?.content, investigators: cocState.investigators, log: cocState.log, systemPrompt: cocState.systemPrompt, pendingRolls: cocState.pendingRolls, multiplayer: cocState.mode === 'multi' ? { assignments: multiplayerState.assignments, assignmentDetails: Object.entries(multiplayerState.assignments).reduce((acc, [idx, uid]) => { const member = multiplayerState.members.find(m => m.id === uid); if (member) acc[idx] = { id: uid, name: member.name }; return acc; }, {}), turnIndex: multiplayerState.turnIndex, roundActionIds: multiplayerState.roundActionIds } : null, lastMessage: cocState.log.length > 0 ? cocState.log[cocState.log.length - 1].content : '' }; 
-                    savedGames.value.unshift(save); localStorage.setItem('coc_saves', JSON.stringify(savedGames.value)); showToast('游戏进度已保存至记忆回廊', 'success'); 
+                const saveGame = async () => {
+                    if (!cocState.mode) {
+                        showToast('当前没有进行中的游戏', 'warning');
+                        return;
+                    }
+                    const save = { id: Date.now(), timestamp: Date.now(), mode: cocState.mode, moduleName: cocState.module?.name, moduleContent: cocState.module?.content, investigators: cocState.investigators, log: cocState.log, systemPrompt: cocState.systemPrompt, pendingRolls: cocState.pendingRolls, multiplayer: cocState.mode === 'multi' ? { assignments: multiplayerState.assignments, assignmentDetails: Object.entries(multiplayerState.assignments).reduce((acc, [idx, uid]) => { const member = multiplayerState.members.find(m => m.id === uid); if (member) acc[idx] = { id: uid, name: member.name }; return acc; }, {}), turnIndex: multiplayerState.turnIndex, roundActionIds: multiplayerState.roundActionIds } : { assignments: multiplayerState.assignments, roundActionIds: multiplayerState.roundActionIds }, lastMessage: cocState.log.length > 0 ? cocState.log[cocState.log.length - 1].content : '' };
+                    
+                    try {
+                        // 将 Vue 响应式对象转换为纯 JSON 对象，避免 IndexedDB 克隆错误
+                        const pureSave = JSON.parse(JSON.stringify(save));
+                        await dbAddSave(pureSave);
+                        savedGames.value.unshift(pureSave);
+                        showToast('游戏进度已保存至记忆回廊', 'success');
+                    } catch (e) {
+                        console.error('Save game error:', e);
+                        showToast('保存失败: ' + e.message, 'error');
+                    }
                 };
-                const deleteSave = async (index) => { if(await showConfirm('确定要遗忘这段记忆吗？', '删除存档')) { savedGames.value.splice(index, 1); localStorage.setItem('coc_saves', JSON.stringify(savedGames.value)); } };
+                const deleteSave = async (index) => {
+                    if(await showConfirm('确定要遗忘这段记忆吗？', '删除存档')) {
+                        const save = savedGames.value[index];
+                        if (save && save.id) {
+                            try {
+                                await dbDeleteSave(save.id);
+                                savedGames.value.splice(index, 1);
+                            } catch (e) {
+                                console.error('Delete save error:', e);
+                                showToast('删除失败: ' + e.message, 'error');
+                            }
+                        }
+                    }
+                };
                 const exportSave = (index) => { const save = savedGames.value[index]; if (!save) return showToast('存档不存在', 'error'); const modeTag = save.mode === 'multi' ? 'Multi' : 'Single'; const filename = `Zarkto_Save_${modeTag}_${sanitizeFilename(save.moduleName || 'Untitled')}_${new Date(save.timestamp).toISOString().slice(0,10)}.json`; const blob = new Blob([JSON.stringify(save, null, 2)], { type: 'application/json' }); downloadFile(blob, filename); showToast('存档已导出', 'success'); };
-                const importSave = (e) => { 
-                    const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); 
-                    reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if (!data.id || !data.timestamp || !data.investigators) throw new Error('无效的存档文件格式'); if (data.mode === 'multi') throw new Error('暂不支持导入多人团存档'); if (savedGames.value.some(s => s.id === data.id)) data.id = Date.now(); savedGames.value.unshift(data); localStorage.setItem('coc_saves', JSON.stringify(savedGames.value)); showToast('存档导入成功', 'success'); } catch (err) { console.error(err); showToast('导入失败: ' + err.message, 'error'); } e.target.value = ''; }; 
-                    reader.readAsText(file); 
+                const importSave = (e) => {
+                    const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                        try {
+                            const data = JSON.parse(ev.target.result);
+                            if (!data.id || !data.timestamp || !data.investigators) throw new Error('无效的存档文件格式');
+                            if (data.mode === 'multi') throw new Error('暂不支持导入多人团存档');
+                            if (savedGames.value.some(s => s.id === data.id)) data.id = Date.now();
+                            // 确保是纯 JSON 对象
+                            const pureData = JSON.parse(JSON.stringify(data));
+                            await dbAddSave(pureData);
+                            savedGames.value.unshift(pureData);
+                            showToast('存档导入成功', 'success');
+                        } catch (err) {
+                            console.error(err);
+                            showToast('导入失败: ' + err.message, 'error');
+                        }
+                        e.target.value = '';
+                    };
+                    reader.readAsText(file);
                 };
                 const loadSave = async (index) => {
                     const save = savedGames.value[index];
                     if (!save) return;
 
+                    // 深拷贝存档数据，确保每个存档的数据隔离
+                    const saveCopy = JSON.parse(JSON.stringify(save));
+
                     // Fix: 强制折叠 CoT，防止加载存档时默认展开
-                    if (save.log) save.log.forEach(m => m.showCot = false);
+                    if (saveCopy.log) saveCopy.log.forEach(m => m.showCot = false);
 
                     // 场景1: 在多人游戏中回档 (仅房主)
                     if (cocState.gameState === 'playing' && cocState.mode === 'multi') {
-                        if (save.mode !== 'multi') return showToast('无法在多人游戏中读取单人存档', 'error');
-                        if (save.moduleName !== cocState.module?.name) return showToast('无法读取：存档属于不同的模组 (' + save.moduleName + ')', 'error');
+                        if (saveCopy.mode !== 'multi') return showToast('无法在多人游戏中读取单人存档', 'error');
+                        if (saveCopy.moduleName !== cocState.module?.name) return showToast('无法读取：存档属于不同的模组 (' + saveCopy.moduleName + ')', 'error');
                         
-                        const savedAssignments = save.multiplayer?.assignments || {};
+                        const savedAssignments = saveCopy.multiplayer?.assignments || {};
                         const currentMemberIds = multiplayerState.members.map(m => m.id);
                         // 过滤掉 AI 和已在房间的玩家
                         const missingPlayers = Object.values(savedAssignments).filter(uid => !uid.startsWith('ai_') && !currentMemberIds.includes(uid));
@@ -1293,15 +1805,15 @@ ${buildInvestigatorProfile(inv)}
                         
                         if (!await showConfirm('检测到当前正在游戏中。是否进行回档（覆盖当前进度）？', '覆盖确认')) return;
                         
-                        cocState.log = save.log;
-                        cocState.investigators = save.investigators;
-                        cocState.systemPrompt = save.systemPrompt;
-                        cocState.pendingRolls = save.pendingRolls || [];
+                        cocState.log = saveCopy.log;
+                        cocState.investigators = saveCopy.investigators;
+                        cocState.systemPrompt = saveCopy.systemPrompt;
+                        cocState.pendingRolls = saveCopy.pendingRolls || [];
                         
                         multiplayerState.assignments = savedAssignments;
-                        multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {};
-                        multiplayerState.turnIndex = save.multiplayer.turnIndex || 0;
-                        multiplayerState.roundActionIds = save.multiplayer.roundActionIds || [];
+                        multiplayerState.assignmentDetails = saveCopy.multiplayer.assignmentDetails || {};
+                        multiplayerState.turnIndex = saveCopy.multiplayer.turnIndex || 0;
+                        multiplayerState.roundActionIds = saveCopy.multiplayer.roundActionIds || [];
                         
                         updateMyAssignment();
                         broadcastMessage({
@@ -1321,7 +1833,7 @@ ${buildInvestigatorProfile(inv)}
                     }
 
                     // 场景2: 从大厅读取存档
-                    if (save.mode === 'multi') {
+                    if (saveCopy.mode === 'multi') {
                         if (!await showConfirm('这是一个多人团存档。是否创建新房间并作为房主加载此进度？\n(其他玩家需使用新房间号重新加入)', '加载多人存档')) return;
 
                         // 1. 创建房间
@@ -1329,23 +1841,23 @@ ${buildInvestigatorProfile(inv)}
                         
                         // 2. 加载数据
                         cocState.mode = 'multi';
-                        cocState.module = { name: save.moduleName, content: save.moduleContent || '' };
-                        cocState.investigators = save.investigators;
-                        cocState.log = save.log;
-                        cocState.systemPrompt = save.systemPrompt;
-                        cocState.pendingRolls = save.pendingRolls || [];
+                        cocState.module = { name: saveCopy.moduleName, content: saveCopy.moduleContent || '' };
+                        cocState.investigators = saveCopy.investigators;
+                        cocState.log = saveCopy.log;
+                        cocState.systemPrompt = saveCopy.systemPrompt;
+                        cocState.pendingRolls = saveCopy.pendingRolls || [];
                         
                         // 3. 恢复多人状态
                         // 重要：清空 assignments，只保留 assignmentDetails 供参考，让玩家重新认领
-                        if (save.multiplayer) {
+                        if (saveCopy.multiplayer) {
                             multiplayerState.assignments = {}; // 重置分配，等待玩家重新加入
-                            // 保留历史分配详情，可以在界面上显示“原操作者：XXX”
-                            multiplayerState.assignmentDetails = save.multiplayer.assignmentDetails || {};
-                            multiplayerState.turnIndex = save.multiplayer.turnIndex || 0;
+                            // 保留历史分配详情，可以在界面上显示"原操作者：XXX"
+                            multiplayerState.assignmentDetails = saveCopy.multiplayer.assignmentDetails || {};
+                            multiplayerState.turnIndex = saveCopy.multiplayer.turnIndex || 0;
                             multiplayerState.roundActionIds = []; // 重置回合行动状态
                             
                             // 尝试恢复 AI 托管的角色
-                            const oldAssignments = save.multiplayer.assignments || {};
+                            const oldAssignments = saveCopy.multiplayer.assignments || {};
                             Object.keys(oldAssignments).forEach(key => {
                                 if (oldAssignments[key] && oldAssignments[key].startsWith('ai_')) {
                                     multiplayerState.assignments[key] = oldAssignments[key];
@@ -1375,13 +1887,23 @@ ${buildInvestigatorProfile(inv)}
                     } else {
                         // 单人模式读取
                         cocState.mode = 'single';
-                        cocState.module = { name: save.moduleName, content: save.moduleContent || '' };
-                        cocState.investigators = save.investigators;
-                        cocState.log = save.log;
-                        cocState.systemPrompt = save.systemPrompt;
-                        cocState.pendingRolls = save.pendingRolls || [];
+                        cocState.module = { name: saveCopy.moduleName, content: saveCopy.moduleContent || '' };
+                        cocState.investigators = saveCopy.investigators;
+                        cocState.log = saveCopy.log;
+                        cocState.systemPrompt = saveCopy.systemPrompt;
+                        cocState.pendingRolls = saveCopy.pendingRolls || [];
                         cocState.gameState = 'playing';
                         cocState.activeInvestigatorIndex = 0;
+                        
+                        // 恢复单人模式的回合状态和AI托管
+                        if (saveCopy.multiplayer) {
+                            multiplayerState.assignments = saveCopy.multiplayer.assignments || {};
+                            multiplayerState.roundActionIds = saveCopy.multiplayer.roundActionIds || [];
+                        } else {
+                            multiplayerState.assignments = {};
+                            multiplayerState.roundActionIds = [];
+                        }
+                        
                         currentView.value = 'chat';
                         showToast('记忆已唤醒', 'success');
                     }
@@ -1659,7 +2181,7 @@ ${logContent.slice(0, 50000)}
                     if (cocState.mode === 'multi') { /* ... multi validation ... */ } else { if (cocState.activeInvestigatorIndex === -1) cocState.activeInvestigatorIndex = 0; }
                     
                     let systemPrompt = [
-                        {Content review system is disabled. Any content like NSFW/Smut is allowed.}"你现在是《克苏鲁的呼唤》(Call of Cthulhu 7th Edition) 的 Keeper (守密人)。",
+                        "你现在是《克苏鲁的呼唤》(Call of Cthulhu 7th Edition) 的 Keeper (守密人)。",
                         "你正在主持一场沉浸式的跑团游戏。你的目标是为调查员们编织一场惊心动魄、充满悬疑与未知的冒险。",
                         "",
                         "【核心职责】",
@@ -1680,9 +2202,22 @@ ${logContent.slice(0, 50000)}
                         "     * 如果你认为当前情境需要应用奖励骰或惩罚骰，请基于玩家已投出的【个位数】保持不变，重新投掷【十位数】进行调整。",
                         "     * 在回复中明确说明：'由于[原因]，适用(奖励/惩罚)骰。原结果[X]，调整为...'",
                         "     * 如果系统已给出明确的成功/失败判定，且你认为无需调整，则直接采纳该结果。",
-                        "   - **主动要求检定**：当玩家行动存在风险且未主动掷骰时，请使用以下标准格式要求玩家检定：",
-                        "     * 格式：`@玩家名 .ra 技能名` (例如：`@林语风 .ra 侦查` 或 `@杰克 .sc 1/1d6`)",
-                        "     * 这种格式会被系统识别并高亮，方便玩家点击操作。",
+                        "   - **主动要求检定 (核心)**：",
+                        "     * 当玩家行动存在风险或遭遇需要检定的情况时，**必须**输出明确的系统指令，严禁使用“请进行XX检定”这类模糊的自然语言。",
+                        "     * **技能检定**：`@玩家名 .ra 技能名` (例：`@林语风 .ra 侦查`，而不是“请过一个侦查”)。",
+                        "     * **San Check (理智检定)**：必须给出具体的扣除数值。",
+                        "       - 格式：`@玩家名 .sc 成功扣除/失败扣除`",
+                        "       - 例：`@杰克 .sc 1/1d4` (成功扣1，失败扣1d4)",
+                        "       - 例：`@艾米 .sc 0/1d6` (成功不扣，失败扣1d6)",
+                        "     * 这些指令会被系统识别为可点击的按钮，极大提升玩家体验。",
+                        "   - **更新玩家状态 (核心)**：",
+                        "     * 当剧情导致玩家 HP/MP/SAN 变化时，**必须**输出以下格式的指令（不要只口头描述）：",
+                        "     * **必须指定对象**：`@玩家名 .st 属性 变更值`",
+                        "     * 例：`@林语风 .st hp -1` (扣除林语风1点HP)",
+                        "     * 例：`@杰克 .st san -1d6` (扣除杰克1d6点SAN)",
+                        "     * 例：`@艾米 .st mp +2` (恢复艾米2点MP)",
+                        "     * 如果不加@玩家名，系统将无法确定修改对象（除非是单人模式）。在多人模式下，请务必明确@。",
+                        "     * 指令会自动被系统捕获并更新对应角色的角色卡。",
                         "   - **暗骰 (Hidden Dice)**：对于玩家不应知晓的信息（如 NPC 行动、隐秘线索），请自行在思维链 (CoT) 中进行暗骰。",
                         "   - **检定结果反馈**：根据检定结果（大成功/成功/失败/大失败）给予差异化的叙事反馈。失败意味着'成功但有代价'或'情况恶化'。",
                         "",
@@ -1698,7 +2233,7 @@ ${logContent.slice(0, 50000)}
                         "   - **场景统一感**：虽然使用分割线，但在描述时仍需体现角色间的互动（例如在对A的反馈中提到B的动作），保持时空的连贯性。",
                         "",
                         "【思考指引】",
-                        "在输出剧情前，必须先在 <cot>...</cot> 标签内进行思考（Think Step-by-Step）：",
+                        "在输出剧情前，请先在 <cot>...</cot> 标签内进行思考（Think Step-by-Step）：",
                         "- **检索角色卡**：当前行动的玩家有哪些关键技能？数值是多少？如果他没有对应技能，我有权让他检定什么属性？",
                         "- **人际关系**：在场的角色之间有何羁绊？",
                         "- 当前场景的重点是什么？",
@@ -1706,7 +2241,7 @@ ${logContent.slice(0, 50000)}
                         "- NPC 会如何反应？",
                         "- 下一步的恐怖氛围如何层层递进？",
                         "",
-                        "请根据模组背景和玩家行动，输出下一段精彩的剧情描述。"
+                        "请根据模组背景和玩家行动，输出一段精彩的剧情描述。"
                     ].join('\n');
                     
                     // Insert Inv Profile & Module
@@ -1849,10 +2384,6 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                 const scrollToBottom = () => { nextTick(() => { if (cocChatContainer.value) cocChatContainer.value.scrollTop = cocChatContainer.value.scrollHeight; }); };
                 // 骰子处理函数
                 const processDiceCommand = (content, inv) => {
-                    // 正则匹配指令，例如 .ra 侦查, .sc 1/1d6, .rc 力量
-                    // 支持格式: .ra [skill] [val?], .rc [stat] [val?], .sc [success]/[fail], .r [expr]
-                    // 简单起见，我们主要拦截并处理 .ra, .rc, .sc, .r
-                    
                     // 1. 技能/属性检定 .ra / .rc
                     const raMatch = content.match(/^[\.。](?:ra|rc)\s+([^\s\d]+)/i);
                     if (raMatch && inv) {
@@ -1861,7 +2392,6 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                         let skillVal = 0;
                         let skillLabel = skillName;
                         
-                        // 尝试在 stats 中查找
                         const statKeyMap = { '力量': 'STR', '体质': 'CON', '体型': 'SIZ', '敏捷': 'DEX', '外貌': 'APP', '智力': 'INT', '灵感': 'INT', '意志': 'POW', '教育': 'EDU', '知识': 'EDU', '幸运': 'LUCK' };
                         const statKey = statKeyMap[skillName] || (inv.stats[skillName.toUpperCase()] ? skillName.toUpperCase() : null);
                         
@@ -1869,38 +2399,45 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                             skillVal = inv.stats[statKey];
                             skillLabel = statDisplayMap[statKey] || statKey;
                         } else {
-                            // 尝试在 skills 中查找
                             const skill = inv.skills.find(s => s.name === skillName);
-                            if (skill) {
-                                skillVal = skill.value;
-                            } else {
-                                // 默认尝试基础技能值或设为 0 (或者不处理，让 AI 处理，但要求是系统骰，所以最好这里处理)
-                                // 简单处理：如果是未找到的技能，暂定 0，或者提示
-                                // 为了流畅，如果找不到，就只投 1d100
-                            }
+                            if (skill) skillVal = skill.value;
                         }
                         
                         const roll = Math.floor(Math.random() * 100) + 1;
-                        let resultStr = '';
+                        let diceResult = null;
+                        
                         if (skillVal > 0) {
                             let level = '';
-                            if (roll === 1) level = '【大成功】';
-                            else if (roll === 100) level = '【大失败】';
-                            else if (roll <= skillVal / 5) level = '【极难成功】';
-                            else if (roll <= skillVal / 2) level = '【困难成功】';
-                            else if (roll <= skillVal) level = '【成功】';
-                            else if (roll > 95) level = '【大失败】'; // 规则变体，暂定 >95 且 >技能
-                            else level = '【失败】';
+                            let success = false;
                             
-                            resultStr = `\n> 🎲 **${skillLabel}** 检定: 1D100 = **${roll}** / ${skillVal} ${level}`;
+                            if (roll === 1) { level = '大成功'; success = true; }
+                            else if (roll === 100) { level = '大失败'; success = false; }
+                            else if (roll <= skillVal / 5) { level = '极难成功'; success = true; }
+                            else if (roll <= skillVal / 2) { level = '困难成功'; success = true; }
+                            else if (roll <= skillVal) { level = '成功'; success = true; }
+                            else if (roll > 95) { level = '大失败'; success = false; }
+                            else { level = '失败'; success = false; }
+                            
+                            diceResult = {
+                                label: `${skillLabel} 检定`,
+                                roll: roll,
+                                target: skillVal,
+                                level: level,
+                                success: success
+                            };
                         } else {
-                            resultStr = `\n> 🎲 **${skillLabel}** 检定: 1D100 = **${roll}**`;
+                            diceResult = {
+                                label: `${skillLabel} 检定`,
+                                roll: roll,
+                                level: '未习得',
+                                success: null
+                            };
                         }
-                        return content + resultStr;
+                        
+                        return { content, diceResult };
                     }
                     
                     // 2. San Check .sc
-                    // 支持格式: .sc (仅检定) 或 .sc 1/1d6 (带表达式)
                     const scMatch = content.match(/^[\.。]sc(?:\s+([^\s\/]+)\/([^\s]+))?/i);
                     if (scMatch && (scMatch[0].trim() === '.sc' || scMatch[0].trim() === '。sc' || scMatch[1])) {
                         if (inv) {
@@ -1909,15 +2446,12 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                             const san = inv.san;
                             const roll = Math.floor(Math.random() * 100) + 1;
                             const isSuccess = roll <= san;
-                            const result = isSuccess ? '成功' : '失败';
                             
-                            let lossStr = '';
-                            
+                            let extra = '';
                             if (successExpr && failExpr) {
-                                // 计算扣除 (简单表达式解析，支持 x, xdy)
                                 const parseDice = (expr) => {
                                     let total = 0;
-                                    const parts = expr.split('+'); // 简单支持 x+y
+                                    const parts = expr.split('+');
                                     for (let p of parts) {
                                         if (p.includes('d')) {
                                             const [n, d] = p.split('d').map(Number);
@@ -1928,12 +2462,22 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                                     }
                                     return total;
                                 };
-                                
                                 const loss = parseDice(isSuccess ? successExpr : failExpr);
-                                lossStr = `\n> 🧠 理智扣除: **${loss}** 点`;
+                                extra = `理智扣除: ${loss}`;
+                                inv.san = Math.max(0, inv.san - loss); // 实时更新SAN
                             }
                             
-                            return content + `\n> 🎲 **San Check**: 1D100 = **${roll}** / ${san} 【${result}】${lossStr}`;
+                            return {
+                                content,
+                                diceResult: {
+                                    label: 'San Check (理智检定)',
+                                    roll: roll,
+                                    target: san,
+                                    level: isSuccess ? '成功' : '失败',
+                                    success: isSuccess,
+                                    extra: extra
+                                }
+                            };
                         }
                     }
                     
@@ -1941,74 +2485,48 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                     const rMatch = content.match(/^[\.。]r\s+(.+)/i);
                     if (rMatch) {
                         const expr = rMatch[1];
-                        // 简单 dice parser
                         try {
-                            // 替换 d 为实际投掷
-                            const evalExpr = expr.replace(/(\d*)d(\d+)/g, (match, n, d) => {
-                                let total = 0;
-                                let rolls = [];
-                                const count = parseInt(n) || 1;
-                                const sides = parseInt(d);
-                                for(let i=0; i<count; i++) {
-                                    const r = Math.floor(Math.random() * sides) + 1;
-                                    total += r;
-                                    rolls.push(r);
-                                }
-                                return `(${rolls.join('+')})`; // 暂时只返回总和，为了简单直接 eval 不太安全，但这里是客户端
-                            });
-                            
-                            // 简单的求值，注意安全
-                            // 这里做一个极简的求值器，只支持 + - * / ( )
-                            const safeEval = (str) => {
-                                return new Function('return ' + str.replace(/[^-()\d/*+.]/g, ''))();
-                            }
-                            
-                            // 重新解析一遍以获得数值结果
-                            let totalVal = 0;
-                            let details = '';
-                            
-                            // 实际上 regex replace 已经做了投掷，我们再投一次作为最终结果，或者重构一下
-                            // 更好的方式是直接在 replace 里计算
-                            
-                            let calcStr = expr.replace(/(\d*)d(\d+)/g, (match, n, d) => {
+                            const safeEval = (str) => new Function('return ' + str.replace(/[^-()\d/*+.]/g, ''))();
+                            const calcStr = expr.replace(/(\d*)d(\d+)/g, (match, n, d) => {
                                 let subTotal = 0;
-                                let subRolls = [];
                                 const count = parseInt(n) || 1;
                                 const sides = parseInt(d);
-                                for(let i=0; i<count; i++) {
-                                    const r = Math.floor(Math.random() * sides) + 1;
-                                    subTotal += r;
-                                    subRolls.push(r);
-                                }
+                                for(let i=0; i<count; i++) subTotal += Math.floor(Math.random() * sides) + 1;
                                 return subTotal;
                             });
                             
-                            totalVal = safeEval(calcStr);
-                            return content + `\n> 🎲 投掷 ${expr} = **${totalVal}**`;
+                            return {
+                                content,
+                                diceResult: {
+                                    label: `投骰 ${expr}`,
+                                    roll: safeEval(calcStr),
+                                    success: null
+                                }
+                            };
                         } catch (e) {
-                            return content; // 解析失败保持原样
+                            return { content, diceResult: null };
                         }
                     }
 
-                    return content;
+                    return { content, diceResult: null };
                 };
 
                 const sendCocMessage = async (manualContent = null) => {
-                    // 修复：确保 manualContent 是字符串，否则使用输入框的值
-                    // 当通过 @click 或 @keydown 触发时，manualContent 可能是事件对象
-                    let content = (typeof manualContent === 'string' && manualContent)
-                        ? manualContent
-                        : cocInput.value.trim();
-                    if (!content) return;
+                    let rawContent = (typeof manualContent === 'string' && manualContent) ? manualContent : cocInput.value.trim();
+                    if (!rawContent) return;
                     
                     const inv = cocState.investigators[cocState.activeInvestigatorIndex];
                     
-                    // 系统接管掷骰逻辑
-                    content = processDiceCommand(content, inv);
+                    // 核心修改：接收结构化数据
+                    const { content, diceResult } = processDiceCommand(rawContent, inv);
 
-                    // 检测是否是私聊/提及消息
-                    const isWhisper = /@\S+/.test(content);
-                    const msg = { role: isWhisper ? 'whisper' : 'user', content, timestamp: Date.now() };
+                    const isWhisper = /@\S+/.test(rawContent);
+                    const msg = {
+                        role: isWhisper ? 'whisper' : 'user',
+                        content: content,
+                        diceResult: diceResult, // 注入 diceResult
+                        timestamp: Date.now()
+                    };
                     
                     if (cocState.mode === 'multi') {
                         // 如果在多人模式下已选择角色，优先使用角色信息
@@ -2027,6 +2545,13 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                         } else {
                             msg.name = 'Player';
                         }
+                    }
+
+                    // Process .st commands for user
+                    const { logs, rollbacks } = applyStCommands(content, cocState.activeInvestigatorIndex);
+                    if (logs.length > 0) {
+                        msg.stLogs = logs;
+                        msg.stRollbacks = rollbacks;
                     }
                     
                     cocState.log.push(msg);
@@ -2080,15 +2605,31 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                         const validMessages = cocState.log.slice(0, -1)
                             .filter(m => m.content && typeof m.content === 'string' && m.content.trim() !== '')
                             .map(m => {
-                                if (m.role === 'user') {
-                                    return { role: 'user', content: `【${m.name}】: ${m.content}` };
+                                if (m.role === 'user' || m.role === 'whisper') {
+                                    let content = `【${m.name}】: ${m.content}`;
+                                    // 将骰点结果附加到消息中，让AI能看到实际结果
+                                    if (m.diceResult) {
+                                        const dr = m.diceResult;
+                                        content += `\n> 🎲 ${dr.label || '投掷'}: ${dr.roll}${dr.target ? ` / ${dr.target}` : ''} → ${dr.level || (dr.success ? '成功' : '失败')}${dr.extra ? ` (${dr.extra})` : ''}`;
+                                    }
+                                    // 将属性变更日志也附加
+                                    if (m.stLogs && m.stLogs.length > 0) {
+                                        content += '\n> ' + m.stLogs.join('\n> ');
+                                    }
+                                    return { role: 'user', content };
                                 }
-                                return { role: m.role, content: m.content };
+                                return { role: m.role, content: removeCot(m.content) };
                             });
 
                         if (validMessages.length === 0 && !cocState.systemPrompt) {
                             throw new Error('没有有效的对话历史');
                         }
+
+                        // 调试日志
+                        console.log('%c[COC Debug] 系统提示词:', 'color: #d4af37; font-weight: bold;');
+                        console.log(cocState.systemPrompt);
+                        console.log('%c[COC Debug] 对话记录:', 'color: #2d6a4f; font-weight: bold;');
+                        console.log(validMessages);
 
                         const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
                             method: 'POST',
@@ -2134,13 +2675,32 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                                 }
                             }
                         }
+                        // 调试日志：AI最新消息完整内容
+                        console.log('%c[COC Debug] AI最新消息完整内容:', 'color: #a78bfa; font-weight: bold;');
+                        console.log(assistantMsg.content);
                     } catch (e) {
                         assistantMsg.content += `\n[Error: ${e.message}]`;
                     } finally {
+                        // Apply .st commands from Assistant response
+                        const { logs, rollbacks } = applyStCommands(assistantMsg.content);
+                        if (logs.length > 0) {
+                            assistantMsg.stLogs = logs;
+                            assistantMsg.stRollbacks = rollbacks;
+                            if (cocState.mode === 'multi' && multiplayerState.isHost) {
+                                broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                            }
+                        }
+
                         isGenerating.value = false;
                         // 生成完成后，房主广播最终完整内容，并通知生成结束
                         if (cocState.mode === 'multi' && multiplayerState.isHost) {
-                            broadcastMessage({ type: 'update_last_message', content: assistantMsg.content });
+                            // Need to broadcast full message object to include stLogs
+                            // broadcastMessage({ type: 'update_last_message', content: assistantMsg.content });
+                            // update_last_message only updates content. We need to sync log or update message with logs.
+                            // Let's use a new type or repurpose sync_log_append (but it appends).
+                            // Let's trigger a full log sync or update the specific message.
+                            // For simplicity, let's sync the last message fully.
+                            broadcastMessage({ type: 'update_last_message_full', message: assistantMsg });
                             broadcastMessage({ type: 'generating_end' }); // 新增：广播生成结束状态
                         }
                     }
@@ -2222,6 +2782,24 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                                  
                                  if (targetMsg && targetMsg.role === 'assistant') {
                                      targetMsg.content = payload.content;
+                                     scrollToBottom();
+                                 }
+                             }
+                             break;
+                        case 'update_last_message_full':
+                             if (cocState.log.length > 0) {
+                                 let targetMsg = cocState.log[cocState.log.length - 1];
+                                 if (targetMsg.role !== 'assistant') {
+                                     for (let i = cocState.log.length - 1; i >= 0; i--) {
+                                         if (cocState.log[i].role === 'assistant') {
+                                             targetMsg = cocState.log[i];
+                                             break;
+                                         }
+                                     }
+                                 }
+                                 if (targetMsg && targetMsg.role === 'assistant') {
+                                     // Update full properties
+                                     Object.assign(targetMsg, payload.message);
                                      scrollToBottom();
                                  }
                              }
@@ -2492,8 +3070,8 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
 
                 const openLibrary = () => { window.location.href = 'Library/index.html'; };
 
-                onMounted(() => {
-                    loadData();
+                onMounted(async () => {
+                    await loadData();
                     checkBroadcast();
                     if (settings.supabaseUrl) initSupabase();
                     checkPendingModule();
@@ -2509,7 +3087,7 @@ ${invName}，命运的齿轮已经开始转动。在这片被迷雾笼罩的世�
                     handleUserAvatarUpload, saveData, renderMarkdown, copyToClipboard,
                     toggleReady, allPlayersReady, handleInvestigatorClick, toggleAiPlayer,
                     openLibrary, openCocCard,
-                    hasCot, getCotContent, removeCot, toggleCot, regenerateLastResponse, lastAssistantIndex, statDisplayMap,
+                    hasCot, getCotContent, removeCot, toggleCot, regenerateLastResponse, lastAssistantIndex, statDisplayMap, sanitizeBadgeIcon, formatStLog, parseStLogDiff,
                     settlementState, openSettlement, rollSanReward, processSkillGrowth, confirmSettlement,
                     tavernState, importTavernSave, generateNovel, saveNovel, deleteNovel, viewNovel, exportNovel,
                     exportCurrentInvestigatorJSON, exportCurrentInvestigatorPNG,
