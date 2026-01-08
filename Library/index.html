@@ -560,13 +560,22 @@
                 // State
                 const user = reactive({ name: '游客', avatar: '', uuid: '' });
                 const settings = reactive({
-                    apiUrl: 'https://opis.zeabur.app',
+                    apiUrl: 'https://sta1n.zeabur.app',
                     apiKey: 'sk-DbpuLgh6XZyTyhy5yzRntgNDGlEsquBD9sxTFCFR2SMSd5A5',
-                    model: 'gpt-4o',
-                    supabaseUrl: '',
-                    supabaseKey: '',
+                    model: 'gemini-3-pro-preview-maxthinking',
+                    supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co',
+                    supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E',
                     temperature: 1.0
                 });
+                
+                // 默认配置 - 公益项目预设值，强制使用
+                const DEFAULT_API_CONFIG = {
+                    apiUrl: 'https://sta1n.zeabur.app',
+                    apiKey: 'sk-DbpuLgh6XZyTyhy5yzRntgNDGlEsquBD9sxTFCFR2SMSd5A5',
+                    model: 'gemini-3-pro-preview-maxthinking',
+                    supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co',
+                    supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E'
+                };
                 const toasts = ref([]);
                 const libraryState = reactive({
                     modules: [],
@@ -607,6 +616,13 @@
                     
                     const lSettings = localStorage.getItem('coc_settings');
                     if (lSettings) Object.assign(settings, JSON.parse(lSettings));
+
+                    // 强制刷新API配置为默认值（公益项目，不需要用户自己填写）
+                    settings.apiUrl = DEFAULT_API_CONFIG.apiUrl;
+                    settings.apiKey = DEFAULT_API_CONFIG.apiKey;
+                    settings.model = DEFAULT_API_CONFIG.model;
+                    settings.supabaseUrl = DEFAULT_API_CONFIG.supabaseUrl;
+                    settings.supabaseKey = DEFAULT_API_CONFIG.supabaseKey;
                 };
 
                 const initSupabase = () => {
