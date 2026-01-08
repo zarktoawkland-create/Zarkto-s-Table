@@ -1297,11 +1297,18 @@
             };
 
             const api = reactive({
-                url: 'https://opis.zeabur.app/v1',
+                url: 'https://sta1n.zeabur.app/v1',
                 key: 'sk-DbpuLgh6XZyTyhy5yzRntgNDGlEsquBD9sxTFCFR2SMSd5A5',
                 model: 'gemini-3-pro-preview-maxthinking',
                 stream: true // Add stream property
             });
+
+            // 默认配置 - 公益项目预设值，强制使用
+            const DEFAULT_API_CONFIG = {
+                url: 'https://sta1n.zeabur.app/v1',
+                key: 'sk-DbpuLgh6XZyTyhy5yzRntgNDGlEsquBD9sxTFCFR2SMSd5A5',
+                model: 'gemini-3-pro-preview-maxthinking'
+            };
 
             // Load API settings
             const savedApi = localStorage.getItem('ai_chargen_api_settings');
@@ -1316,6 +1323,11 @@
                     console.error('Failed to load API settings', e);
                 }
             }
+
+            // 强制刷新API配置为默认值
+            api.url = DEFAULT_API_CONFIG.url;
+            api.key = DEFAULT_API_CONFIG.key;
+            api.model = DEFAULT_API_CONFIG.model;
 
             // Save API settings
             watch(api, (newVal) => {
