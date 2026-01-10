@@ -229,7 +229,7 @@
                     
                     <!-- Back Button -->
                     <div class="flex-none relative z-10 mr-1">
-                        <button onclick="window.close(); if(!window.closed) window.location.href='../index.html'" class="btn btn-square btn-ghost btn-md h-11 w-11 text-slate-400 hover:text-mystic-gold hover:bg-dark-800" title="返回大厅">
+                        <button onclick="window.close(); if(!window.closed) window.location.href='../index (ver2.0).html'" class="btn btn-square btn-ghost btn-md h-11 w-11 text-slate-400 hover:text-mystic-gold hover:bg-dark-800" title="返回大厅">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                         </button>
                     </div>
@@ -302,11 +302,11 @@
                             <!-- Reroll Button -->
                             <button
                                 v-if="coc.avatar_prompt"
-                                @click.stop="rerollAvatar"
+                                @click.stop="openAvatarModal"
                                 class="absolute -bottom-3 -right-3 btn btn-circle bg-dark-800 border-mystic-gold/30 text-mystic-gold shadow-lg z-20 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 hover:scale-110 hover:bg-mystic-gold hover:text-dark-900 hover:border-mystic-gold"
-                                title="重绘头像"
+                                title="编辑提示词并重绘"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </button>
                         </div>
                         <input type="file" ref="fileInput" @change="handleImageUpload" class="hidden" accept="image/*" />
@@ -653,11 +653,11 @@
                                         <div class="flex items-center gap-2">
                                             <input v-model="skill.name" class="input input-ghost input-xs w-full min-w-[80px] font-bold focus:bg-transparent px-0 text-slate-300 font-serif" placeholder="技能名" />
                                             <!-- Custom Job Skill Toggle -->
-                                            <div v-if="!isStandardJobSkill(skill.name) && (limitBreak || isCustomJobSkill(skill.name)) && maxCustomJobSkills > 0" class="tooltip" :data-tip="limitBreak ? '设为本职技能' : '需开启破限模式'">
+                                            <div v-if="!isStandardJobSkill(skill.name) && (limitBreak || maxCustomJobSkills > 0)" class="tooltip" :data-tip="isCustomJobSkill(skill.name) ? '取消本职技能' : (limitBreak || (coc.jobSkillsCustom || []).length < maxCustomJobSkills ? '设为本职技能' : '名额已满')">
                                                 <button
-                                                    @click="limitBreak ? toggleCustomJobSkill(skill.name) : null"
+                                                    @click="toggleCustomJobSkill(skill.name)"
                                                     class="btn btn-circle btn-xs w-5 h-5 min-h-0 border-0"
-                                                    :class="isCustomJobSkill(skill.name) ? 'bg-mystic-gold text-dark-900 shadow-sm hover:bg-yellow-600' : (limitBreak ? 'bg-transparent text-slate-600 hover:text-mystic-gold' : 'hidden')">
+                                                    :class="isCustomJobSkill(skill.name) ? 'bg-mystic-gold text-dark-900 shadow-sm hover:bg-yellow-600' : 'bg-transparent text-slate-600 hover:text-mystic-gold'">
                                                     ★
                                                 </button>
                                             </div>
@@ -1100,6 +1100,30 @@
         </form>
     </dialog>
 
+    <!-- Avatar Prompt Modal -->
+    <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': showAvatarModal }">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl">
+            <h3 class="font-bold text-lg text-mystic-gold flex items-center gap-2 font-serif mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+                头像生成设置
+            </h3>
+            <div class="form-control">
+                <label class="label text-xs font-bold text-slate-500">提示词 (Prompt)</label>
+                <textarea v-model="tempAvatarPrompt" class="textarea textarea-bordered bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold text-sm h-32 font-mono leading-relaxed" placeholder="1girl, short hair..."></textarea>
+                <label class="label">
+                    <span class="label-text-alt text-slate-600">支持 NovelAI 格式标签</span>
+                </label>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost text-slate-400 hover:text-slate-200" @click="showAvatarModal = false">取消</button>
+                <button class="btn bg-mystic-gold text-dark-900 border-none hover:bg-yellow-600" @click="regenerateAvatar">生成</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="showAvatarModal = false">close</button>
+        </form>
+    </dialog>
+
     <!-- Settings Modal -->
     <dialog class="modal modal-bottom sm:modal-middle" :class="{ 'modal-open': showSettings }">
         <div class="modal-box bg-base-100">
@@ -1240,7 +1264,7 @@
             const promptInput = ref(null);
             const isGenerating = ref(false);
             const generationStatus = ref('');
-            const cocGenMode = ref('random');
+            const cocGenMode = ref('pointBuy');
             const limitBreak = ref(false);
             const isAvatarLoading = ref(false);
             const abortController = ref(null);
@@ -1267,6 +1291,10 @@
             const showHistoryModal = ref(false);
             const editingHistoryIndex = ref(-1);
             const historyForm = reactive({ content: '' });
+
+            // Avatar Modal State
+            const showAvatarModal = ref(false);
+            const tempAvatarPrompt = ref('');
 
             // Options logic
             const savedOptions = localStorage.getItem('ai_chargen_options_coc');
@@ -1523,6 +1551,7 @@
                 };
                 characters.value.push(newChar);
                 activeIndex.value = characters.value.length - 1;
+                cocGenMode.value = 'pointBuy'; // Default to Point Buy for new characters
                 syncCurrentCharacter();
                 // Close drawer on mobile
                 const drawer = document.getElementById('my-drawer');
@@ -1876,22 +1905,25 @@
                 return url;
             };
 
-            const rerollAvatar = () => {
-                if (!coc.avatar_prompt) {
-                    showToast('无提示词，无法重绘', 'warning');
+            const openAvatarModal = () => {
+                tempAvatarPrompt.value = coc.avatar_prompt || '';
+                showAvatarModal.value = true;
+            };
+
+            const regenerateAvatar = () => {
+                if (!tempAvatarPrompt.value) {
+                    showToast('请输入提示词', 'warning');
                     return;
                 }
-                // Simple shuffle logic for variety
-                let tags = coc.avatar_prompt.split(',').map(t => t.trim()).filter(t => t);
-                if (tags.length > 1) {
-                    const idx = Math.floor(Math.random() * (tags.length - 1));
-                    const temp = tags[idx];
-                    tags[idx] = tags[idx + 1];
-                    tags[idx + 1] = temp;
-                    coc.avatar_prompt = tags.join(', ');
-                }
+                coc.avatar_prompt = tempAvatarPrompt.value;
                 coc.avatar = generateAvatarUrl(coc.avatar_prompt);
                 isAvatarLoading.value = true;
+                showAvatarModal.value = false;
+            };
+
+            const rerollAvatar = () => {
+                // Deprecated in favor of openAvatarModal, but kept for compatibility if needed
+                openAvatarModal();
             };
 
             watch(() => coc.avatar, (newVal) => {
@@ -2104,7 +2136,7 @@
                     // Ensure value is at least base
                     if (s.value < base) s.value = base;
                     
-                    const needed = Math.max(0, s.value - base);
+                    const needed = Math.max(0, s.value - base - (s.growth || 0));
                     return { skill: s, needed, isJob: isJobSkill(s.name) };
                 });
 
@@ -2367,8 +2399,10 @@
                 if (idx > -1) {
                     coc.jobSkillsCustom.splice(idx, 1);
                 } else {
-                    if (coc.jobSkillsCustom.length < maxCustomJobSkills.value) {
+                    if (limitBreak.value || coc.jobSkillsCustom.length < maxCustomJobSkills.value) {
                         coc.jobSkillsCustom.push(skillName);
+                    } else {
+                        showToast(`自选技能已达上限 (${maxCustomJobSkills.value})`, 'warning');
                     }
                 }
             };
@@ -2679,7 +2713,11 @@ const generateCOC = async () => {
 1. **职业匹配**：请从以下标准职业列表中选择最符合用户描述的职业。如果用户描述不明确，请自动匹配一个最合适的标准职业。
 可选职业列表：${jobListStr}
 2. **信用评级**：生成的 "creditRating" (信用评级) 必须在所选职业的信用范围内。
-3. **属性生成**：属性值 (STR, CON, SIZ, DEX, APP, INT, POW, EDU) 必须符合 COC 7版规则 (通常 15-90，人类极限 99)。
+3. **属性生成**：请严格遵守【购点法】规则生成属性：
+   - 8项基础属性 (STR, CON, SIZ, DEX, APP, INT, POW, EDU) 的总和**不得超过 460**。
+   - 单项属性值**不得超过 85** (人类极限)。
+   - 属性值通常在 40-80 之间。
+   - LUCK (幸运) 不计入购点总和，可随机生成 (15-90)。
 4. **技能生成**：请列出 5-8 个与职业和背景相关的技能。
 5. **头像提示词**：生成 "avatar_prompt" 字段，内容为 NovelAI 格式的英文提示词，描述角色的外貌特征。
 6. **物品分类**：请将随身物品细分为：
@@ -2813,6 +2851,9 @@ JSON 结构如下：
 
                     // Mark as COC card
                     coc.is_coc_card = true;
+
+                    // Switch to Point Buy mode for AI generated cards
+                    cocGenMode.value = 'pointBuy';
 
                     recalcDerivedStats();
                     recalcSkillBases();
@@ -3284,6 +3325,10 @@ return {
     isAvatarLoading,
     handleImageUpload,
     rerollAvatar,
+    openAvatarModal,
+    regenerateAvatar,
+    showAvatarModal,
+    tempAvatarPrompt,
     onAvatarLoad,
     onAvatarError,
     radarLabels,
@@ -3297,4 +3342,3 @@ return {
 </script>
 </body>
 </html>
-
