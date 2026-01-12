@@ -1283,7 +1283,7 @@
 
                 const showConfirm = (message, title = '确认操作') => { return new Promise((resolve) => { confirmState.message = message; confirmState.title = title; confirmState.show = true; confirmState.resolve = resolve; }); };
                 const user = reactive({ name: '游客', avatar: '', uuid: generateUUID() });
-                const settings = reactive({ apiUrl: 'https://sta1n.zeabur.app', apiKey: 'sk-7eXTZgoL3I7apUz2U3Jy8sywgHbRmN42KpMYR7ORtYiJUP83', model: 'gemini-3-pro-preview-maxthinking', supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co', supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E', temperature: 1.0 });
+                const settings = reactive({ apiUrl: 'https://sta1n.zeabur.app', apiKey: 'sk-e11TwTdcibEs6DsgXWCiLJ1LaTu6RgpJwJlDbU6VOflA5gLn', model: 'gemini-3-pro-preview-maxthinking', supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co', supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E', temperature: 1.0 });
 
                 const statDisplayMap = { STR: '力量', CON: '体质', SIZ: '体型', DEX: '敏捷', APP: '外貌', INT: '智力', POW: '意志', EDU: '教育', LUCK: '幸运' };
                 const cocState = reactive({ mode: null, module: null, tempModuleText: '', investigators: [], activeInvestigatorIndex: -1, gameState: 'idle', log: [], systemPrompt: '', pendingRolls: [] });
@@ -1402,7 +1402,7 @@
                 // 默认配置 - 公益项目预设值，强制使用
                 const DEFAULT_API_CONFIG = {
                     apiUrl: 'https://sta1n.zeabur.app',
-                    apiKey: 'sk-7eXTZgoL3I7apUz2U3Jy8sywgHbRmN42KpMYR7ORtYiJUP83',
+                    apiKey: 'sk-e11TwTdcibEs6DsgXWCiLJ1LaTu6RgpJwJlDbU6VOflA5gLn',
                     model: 'gemini-3-pro-preview-maxthinking',
                     supabaseUrl: 'https://ghswjgxrblpdklukxjnq.supabase.co',
                     supabaseKey: 'sb_publishable_rIc2MYg6kaGIQcddDgVKYw_uLkWaY4E'
