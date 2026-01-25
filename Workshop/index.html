@@ -345,6 +345,10 @@
 
                             <!-- Export Buttons (Visible below radar on mobile/tablet) -->
                             <div class="flex gap-2 w-full lg:hidden">
+                                <button @click="$refs.reportInput.click()" class="btn btn-sm btn-outline border-mystic-green/50 text-mystic-green hover:bg-mystic-green hover:text-white flex-1 font-serif" title="导入调查凭证更新角色">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    更新
+                                </button>
                                 <button @click="exportJSON" class="btn btn-sm btn-outline border-dark-600 text-slate-400 hover:border-mystic-gold hover:bg-mystic-gold hover:text-dark-900 flex-1 font-serif">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                                     JSON
@@ -378,7 +382,7 @@
                                 <div class="join w-full shadow-sm">
                                     <select v-model="coc.job" class="select select-bordered select-sm join-item flex-1 bg-dark-900 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 font-serif">
                                         <option value="" disabled selected>选择职业...</option>
-                                        <option v-for="(data, job) in cocJobs" :key="job" :value="job">{{ job }}</option>
+                                        <option v-for="(data, job) in filteredJobs" :key="job" :value="job">{{ job }}</option>
                                     </select>
                                     <input type="text" v-model="coc.job" class="input input-bordered input-sm join-item w-1/3 bg-dark-900 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 font-serif" placeholder="自定义" />
                                 </div>
@@ -418,6 +422,15 @@
                                         </select>
                                         <input type="text" v-model="coc.gender" class="input input-bordered input-sm join-item w-1/2 bg-dark-900 border-dark-700 text-slate-300 min-w-0 px-2 focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 font-serif" placeholder="自定" />
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Era Selection -->
+                            <div class="form-control w-full">
+                                <label class="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1 font-serif">时代背景 Era</label>
+                                <div class="join w-full shadow-sm">
+                                    <button @click="coc.era = '1920s'" class="btn btn-sm join-item flex-1 font-serif" :class="coc.era === '1920s' ? 'bg-mystic-gold text-dark-900 hover:bg-yellow-600 border-mystic-gold' : 'bg-dark-900 border-dark-700 text-slate-400 hover:bg-dark-800'">1920s</button>
+                                    <button @click="coc.era = 'Modern'" class="btn btn-sm join-item flex-1 font-serif" :class="coc.era === 'Modern' ? 'bg-mystic-teal text-white hover:bg-teal-700 border-mystic-teal' : 'bg-dark-900 border-dark-700 text-slate-400 hover:bg-dark-800'">现代</button>
                                 </div>
                             </div>
                         </div>
@@ -488,6 +501,10 @@
 
                         <!-- Export Buttons (Visible on Right of Radar on PC) -->
                     <div class="hidden lg:flex justify-center w-full gap-3 mt-3">
+                        <button @click="$refs.reportInput.click()" class="btn btn-md btn-outline border-mystic-green/50 text-mystic-green hover:bg-mystic-green hover:text-white flex-1 font-serif" title="导入调查凭证更新角色">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            更新
+                        </button>
                         <button @click="exportJSON" class="btn btn-md btn-outline border-dark-600 text-slate-400 hover:border-mystic-gold hover:bg-mystic-gold hover:text-dark-900 flex-1 font-serif">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                             JSON
@@ -713,10 +730,39 @@
                                 <a class="tab transition-all duration-200" :class="{ 'tab-active bg-mystic-gold text-dark-900 font-bold': inventoryTab === 'normal' }" @click="inventoryTab = 'normal'">杂物</a>
                             </div>
                         </div>
-                        <div class="relative flex-1">
-                            <textarea v-show="inventoryTab === 'gear'" v-model="coc.inventory_gear" class="textarea textarea-bordered w-full h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="武器、防具、工具..."></textarea>
-                            <textarea v-show="inventoryTab === 'key'" v-model="coc.inventory_key" class="textarea textarea-bordered w-full h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="关键道具、信件、古籍..."></textarea>
-                            <textarea v-show="inventoryTab === 'normal'" v-model="coc.inventory" class="textarea textarea-bordered w-full h-24 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="一般随身物品..."></textarea>
+                        <div class="relative flex-1 flex flex-col gap-2">
+                            <!-- Weapon List Display -->
+                            <div v-if="inventoryTab === 'gear'" class="flex flex-col gap-2 h-full">
+                                <div v-if="coc.weapons && coc.weapons.length > 0" class="flex-1 overflow-y-auto min-h-[4rem] bg-dark-900/30 rounded-lg border border-dark-700 p-1 custom-scrollbar">
+                                    <table class="table table-xs w-full">
+                                        <thead>
+                                            <tr class="text-slate-500 border-b border-dark-700/50">
+                                                <th>武器</th>
+                                                <th>技能</th>
+                                                <th>伤害</th>
+                                                <th class="text-right"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(w, idx) in coc.weapons" :key="idx" class="hover:bg-dark-800/50 border-b border-dark-700/30 last:border-none group">
+                                                <td class="font-bold text-slate-300">{{ w.name }}</td>
+                                                <td class="text-slate-500">{{ w.skill }}</td>
+                                                <td class="text-mystic-gold font-mono">{{ w.damage }}</td>
+                                                <td class="text-right">
+                                                    <button @click="removeWeapon(idx)" class="btn btn-ghost btn-xs text-slate-600 hover:text-red-500 w-5 h-5 min-h-0 p-0">×</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button v-if="inventoryTab === 'gear'" @click="showWeaponModal = true" class="btn btn-xs btn-outline border-dashed border-dark-600 text-slate-500 hover:border-mystic-gold hover:text-mystic-gold w-full font-serif">
+                                    + 添加武器
+                                </button>
+                                <textarea v-model="coc.inventory_gear" class="textarea textarea-bordered w-full h-20 bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="其他装备、防具..."></textarea>
+                            </div>
+                            
+                            <textarea v-show="inventoryTab === 'key'" v-model="coc.inventory_key" class="textarea textarea-bordered w-full h-full bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="关键道具、信件、古籍..."></textarea>
+                            <textarea v-show="inventoryTab === 'normal'" v-model="coc.inventory" class="textarea textarea-bordered w-full h-full bg-dark-900/50 border-dark-700 text-slate-300 text-sm focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 shadow-inner font-serif leading-relaxed" placeholder="一般随身物品..."></textarea>
                         </div>
                     </div>
                     <div class="form-control">
@@ -1124,6 +1170,68 @@
         </form>
     </dialog>
 
+    <!-- Weapon Selection Modal -->
+    <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': showWeaponModal }">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl max-w-3xl h-[80vh] flex flex-col p-0">
+            <div class="p-4 border-b border-dark-700 flex justify-between items-center bg-dark-800/50">
+                <h3 class="font-bold text-lg text-mystic-gold flex items-center gap-2 font-serif">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+                    武器库 ({{ coc.era }})
+                </h3>
+                <button class="btn btn-sm btn-circle btn-ghost text-slate-500 hover:text-white" @click="showWeaponModal = false">✕</button>
+            </div>
+            
+            <div class="p-2 border-b border-dark-700 bg-dark-800/30">
+                <input type="text" v-model="weaponSearch" class="input input-sm input-bordered w-full bg-dark-900 border-dark-600 text-slate-200 focus:border-mystic-gold" placeholder="搜索武器..." />
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                <div v-for="(group, category) in filteredWeapons" :key="category">
+                    <div class="sticky top-0 bg-dark-800/90 backdrop-blur text-xs font-bold text-mystic-gold px-4 py-2 uppercase tracking-wider border-y border-dark-700 z-10">
+                        {{ category }}
+                    </div>
+                    <table class="table table-xs w-full">
+                        <thead class="bg-dark-900/50 text-slate-500">
+                            <tr>
+                                <th class="pl-4">名称</th>
+                                <th>技能</th>
+                                <th>伤害</th>
+                                <th class="hidden sm:table-cell">射程</th>
+                                <th class="hidden sm:table-cell">次数</th>
+                                <th class="hidden sm:table-cell">装弹</th>
+                                <th class="hidden sm:table-cell">故障</th>
+                                <th class="pr-4 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="w in group" :key="w.name" class="hover:bg-dark-700/30 border-b border-dark-800/50 last:border-none transition-colors">
+                                <td class="pl-4 font-bold text-slate-300">
+                                    {{ w.name }}
+                                    <span v-if="w.era !== 'All'" class="badge badge-[10px] badge-outline font-normal ml-1 opacity-60" :class="w.era === 'Modern' ? 'badge-info' : 'badge-warning'">{{ w.era === 'Modern' ? '现代' : '1920s' }}</span>
+                                </td>
+                                <td class="text-slate-400">{{ w.skill }}</td>
+                                <td class="text-mystic-gold font-mono">{{ w.damage }}</td>
+                                <td class="hidden sm:table-cell text-slate-500 font-mono">{{ w.range }}</td>
+                                <td class="hidden sm:table-cell text-slate-500 font-mono">{{ w.attacks }}</td>
+                                <td class="hidden sm:table-cell text-slate-500 font-mono">{{ w.ammo }}</td>
+                                <td class="hidden sm:table-cell text-slate-500 font-mono">{{ w.malfunction }}</td>
+                                <td class="pr-4 text-right">
+                                    <button @click="addWeapon(w)" class="btn btn-xs btn-ghost text-mystic-gold hover:bg-mystic-gold/20 border border-mystic-gold/30">添加</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-if="Object.keys(filteredWeapons).length === 0" class="p-8 text-center text-slate-500">
+                    未找到匹配的武器
+                </div>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="showWeaponModal = false">close</button>
+        </form>
+    </dialog>
+
     <!-- Settings Modal -->
     <dialog class="modal modal-bottom sm:modal-middle" :class="{ 'modal-open': showSettings }">
         <div class="modal-box bg-base-100">
@@ -1198,6 +1306,7 @@
                     </div>
                     
                     <input type="file" ref="importInput" accept=".json,.png" class="hidden" @change="handleImportCharacter" />
+                    <input type="file" ref="reportInput" accept=".json" class="hidden" @change="handleImportReport" />
 
                     <ul class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar overflow-x-hidden">
                         <li v-for="(char, index) in characters" :key="index">
@@ -1274,6 +1383,10 @@
             const showBadgeModal = ref(false);
             const editingBadgeIndex = ref(-1);
             const badgeForm = reactive({ name: '', desc: '', icon: '', date: '' });
+
+            // Weapon Modal
+            const showWeaponModal = ref(false);
+            const weaponSearch = ref('');
 
             const cthulhuIcons = {
                 'cthulhu': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8 c0-4.41,3.59-8,8-8s8,3.59,8,8C20,16.41,16.41,20,12,20z M12,6c-3.31,0-6,2.69-6,6c0,1.36,0.46,2.61,1.23,3.62l1.46-1.46 C8.26,13.61,8,12.84,8,12c0-2.21,1.79-4,4-4s4,1.79,4,4c0,0.84-0.26,1.61-0.69,2.16l1.46,1.46C17.54,14.61,18,13.36,18,12 C18,8.69,15.31,6,12,6z M12,10c-1.1,0-2,0.9-2,2c0,0.55,0.22,1.05,0.59,1.41l2.83-2.83C13.05,10.22,12.55,10,12,10z"/></svg>',
@@ -1369,6 +1482,7 @@
                 gender: '',
                 residence: '',
                 birthplace: '',
+                era: '1920s', // 1920s | Modern
                 stats: {
                     STR: 50, CON: 50, SIZ: 65, DEX: 50, APP: 50,
                     INT: 65, POW: 50, EDU: 60, LUCK: 50
@@ -1529,7 +1643,8 @@
                             backstory: { personalDescription: '', ideology: '', significantPeople: '', meaningfulLocations: '', treasuredPossessions: '', traits: '', injuries: '', phobias: '' },
                             mythos: { tomes: '', spells: '', encounters: '' }, weapons: [],
                             history: [],
-                            badges: []
+                            badges: [],
+                            era: '1920s'
                         };
                         Object.assign(coc, defaultCoc);
                         
@@ -1582,9 +1697,78 @@
 
             // Import Logic
             const importInput = ref(null);
+            const reportInput = ref(null);
 
             const triggerImport = () => {
                 importInput.value.click();
+            };
+
+            const handleImportReport = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const report = JSON.parse(e.target.result);
+                        if (report.type !== 'investigation_report') throw new Error('无效的调查凭证文件');
+                        
+                        // 1. Stats Changes
+                        if (report.changes) {
+                            if (report.changes.san) coc.san = Math.min(coc.maxSan, Math.max(0, coc.san + report.changes.san));
+                            if (report.changes.creditRating) coc.creditRating = Math.max(0, Math.min(99, coc.creditRating + report.changes.creditRating));
+                            // Handle other stats if needed
+                        }
+                        
+                        // 2. Skill Growths
+                        if (report.skillGrowths && Array.isArray(report.skillGrowths)) {
+                            report.skillGrowths.forEach(g => {
+                                let skill = coc.skills.find(s => s.name === g.name);
+                                if (!skill) {
+                                    addStandardSkill(g.name);
+                                    skill = coc.skills.find(s => s.name === g.name);
+                                }
+                                if (skill) {
+                                    skill.value += g.value;
+                                    // Ensure not exceeding 99
+                                    if (skill.value > 99) skill.value = 99;
+                                }
+                            });
+                        }
+                        
+                        // 3. New Items
+                        if (report.newItems && Array.isArray(report.newItems) && report.newItems.length > 0) {
+                            const itemsStr = report.newItems.join(', ');
+                            // Append to inventory_key (props) or normal inventory?
+                            // Let's append to normal inventory for safety
+                            if (coc.inventory) coc.inventory += `\n[新增] ${itemsStr}`;
+                            else coc.inventory = itemsStr;
+                        }
+                        
+                        // 4. Badge
+                        if (report.badge) {
+                            if (!coc.badges) coc.badges = [];
+                            coc.badges.push({
+                                name: report.badge.name,
+                                desc: report.badge.desc,
+                                icon: report.badge.icon || '🏅',
+                                date: new Date().toISOString().slice(0,10)
+                            });
+                        }
+                        
+                        // 5. History
+                        if (report.summary) {
+                            if (!coc.history) coc.history = [];
+                            coc.history.unshift(`[${new Date().toISOString().slice(0,10)}] 完成模组《${report.moduleName}》: ${report.summary}`);
+                        }
+                        
+                        showToast(`调查凭证已归档：${report.moduleName}`, 'success');
+                    } catch (err) {
+                        console.error(err);
+                        showToast('导入失败: ' + err.message, 'error');
+                    }
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
             };
 
             const extractPngChunk = (buffer, key) => {
@@ -1964,7 +2148,7 @@
                 '拳击手/摔跤手': { formula: 'EDU*2+STR*2', credit: [9, 60], skills: ['闪避', '格斗(斗殴)', '恐吓', '跳跃', '心理学', '侦查'], custom: 2 },
                 '管家/女仆': { formula: 'EDU*4', credit: [9, 40], skills: ['会计', '估价', '急救', '聆听', '心理学', '侦查'], custom: 1 },
                 '神职人员': { formula: 'EDU*4', credit: [9, 60], skills: ['会计', '历史', '图书馆', '聆听', '取悦', '话术', '恐吓', '说服', '心理学'], custom: 1 },
-                '程序员/黑客': { formula: 'EDU*4', credit: [10, 70], skills: ['计算机使用', '电气维修', '电子学', '图书馆', '侦查'], custom: 2 },
+                '程序员/黑客': { formula: 'EDU*4', credit: [10, 70], skills: ['计算机使用', '电气维修', '电子学', '图书馆', '侦查'], custom: 2, era: 'Modern' },
                 '牛仔': { formula: 'EDU*2+STR*2|EDU*2+DEX*2', credit: [9, 20], skills: ['闪避', '格斗(斗殴)', '射击(手枪)', '急救', '博物学', '跳跃', '骑术', '生存', '投掷', '追踪'], custom: 0 },
                 '工匠': { formula: 'EDU*2+DEX*2', credit: [9, 40], skills: ['会计', '机械维修', '博物学', '侦查'], custom: 2 },
                 '罪犯(职业)': { formula: 'EDU*2+STR*2|EDU*2+DEX*2', credit: [5, 65], skills: ['取悦', '话术', '恐吓', '说服', '心理学', '侦查', '潜行'], custom: 1 },
@@ -2026,8 +2210,125 @@
                 '殡葬师': { formula: 'EDU*4', credit: [20, 40], skills: ['会计', '汽车驾驶', '取悦', '话术', '恐吓', '说服', '历史', '神秘学', '心理学'], custom: 0 },
                 '服务生': { formula: 'EDU*2+APP*2|EDU*2+DEX*2', credit: [9, 20], skills: ['会计', '闪避', '聆听', '取悦', '话术', '恐吓', '说服', '心理学'], custom: 1 },
                 '狂热者': { formula: 'EDU*2+APP*2|EDU*2+POW*2', credit: [0, 30], skills: ['历史', '取悦', '话术', '恐吓', '说服', '心理学', '潜行'], custom: 3 },
-                '饲养员': { formula: 'EDU*4', credit: [9, 20], skills: ['动物驯养', '会计', '闪避', '急救', '博物学', '医学'], custom: 0 }
+                '饲养员': { formula: 'EDU*4', credit: [9, 20], skills: ['动物驯养', '会计', '闪避', '急救', '博物学', '医学'], custom: 0 },
+                '私酒贩子': { formula: 'EDU*2+APP*2|EDU*2+DEX*2', credit: [10, 60], skills: ['会计', '汽车驾驶', '射击(手枪)', '格斗(斗殴)', '聆听', '潜行', '心理学', '话术'], custom: 0, era: '1920s' },
+                '技术专家': { formula: 'EDU*4', credit: [30, 70], skills: ['计算机使用', '电子学', '电气维修', '图书馆', '科学(数学)', '科学(物理)', '外语'], custom: 1, era: 'Modern' }
             };
+
+            const weaponList = [
+                // 常规武器
+                { category: '常规武器', name: '弓箭', skill: '射击(弓)', damage: '1D6+一半DB', range: '30码', attacks: '1', ammo: '1', malfunction: '97', price: '7/75', era: 'All' },
+                { category: '常规武器', name: '指虎', skill: '格斗(斗殴)', damage: '1D3+1+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '1/10', era: 'All' },
+                { category: '常规武器', name: '长鞭', skill: '格斗(鞭)', damage: '1D3+一半DB', range: '10步', attacks: '1', ammo: '-', malfunction: '-', price: '5/50', era: '1920s' },
+                { category: '常规武器', name: '燃烧的火炬', skill: '格斗(斗殴)', damage: '1D6+燃烧', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '0.05/0.5', era: 'All' },
+                { category: '常规武器', name: '电锯', skill: '格斗(链锯)', damage: '2D8', range: '接触', attacks: '1', ammo: '-', malfunction: '95', price: '-/300', era: 'Modern' },
+                { category: '常规武器', name: '包皮铁棍(甩棍)', skill: '格斗(斗殴)', damage: '1D8+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '2/15', era: 'All' },
+                { category: '常规武器', name: '大型棍状物(棒球棍等)', skill: '格斗(斗殴)', damage: '1D8+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '3/35', era: 'All' },
+                { category: '常规武器', name: '小型棍状物(警棍等)', skill: '格斗(斗殴)', damage: '1D6+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '3/35', era: 'All' },
+                { category: '常规武器', name: '十字弩', skill: '火器(弓)', damage: '1D8+2', range: '50码', attacks: '1/2', ammo: '1', malfunction: '96', price: '10/100', era: 'All' },
+                { category: '常规武器', name: '绞具', skill: '格斗(绞具)', damage: '1D6+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '0.5/3', era: 'All' },
+                { category: '常规武器', name: '斧头/镰刀', skill: '格斗(斧)', damage: '1D6+1+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '3/9', era: 'All' },
+                { category: '常规武器', name: '大型刀具(大砍刀等)', skill: '格斗(斗殴)', damage: '1D8+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '4/50', era: 'All' },
+                { category: '常规武器', name: '中型刀具(雕刻刀等)', skill: '格斗(斗殴)', damage: '1D4+2+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '2/15', era: 'All' },
+                { category: '常规武器', name: '小型刀具(水果刀等)', skill: '格斗(斗殴)', damage: '1D4+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '2/6', era: 'All' },
+                { category: '常规武器', name: '220v通电导线', skill: '格斗(斗殴)', damage: '2D8+眩晕', range: '接触', attacks: '1', ammo: '-', malfunction: '95', price: '-', era: 'Modern' },
+                { category: '常规武器', name: '催泪瓦斯', skill: '格斗(斗殴)', damage: '眩晕', range: '6步', attacks: '1', ammo: '25次', malfunction: '95', price: '-/10', era: 'All' },
+                { category: '常规武器', name: '双截棍', skill: '格斗(链枷)', damage: '1D8+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '1/10', era: 'All' },
+                { category: '常规武器', name: '抛出的石块', skill: '投掷', damage: '1D4+一半DB', range: 'STR步', attacks: '1', ammo: '-', malfunction: '-', price: '-', era: 'All' },
+                { category: '常规武器', name: '苦无', skill: '投掷', damage: '1D3+一半DB', range: '20码', attacks: '2', ammo: '一次性', malfunction: '100', price: '0.5/3', era: 'All' },
+                { category: '常规武器', name: '矛(枪骑兵)', skill: '格斗(矛)', damage: '1D8+1', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '25/150', era: 'All' },
+                { category: '常规武器', name: '掷矛', skill: '投掷', damage: '1D8+一半DB', range: 'STR码', attacks: '1', ammo: '-', malfunction: '-', price: '1/25', era: 'All' },
+                { category: '常规武器', name: '大型剑(骑兵大剑)', skill: '格斗(剑)', damage: '1D8+1+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '30/75', era: 'All' },
+                { category: '常规武器', name: '中型剑(佩剑等)', skill: '格斗(剑)', damage: '1D6+1+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '15/100', era: 'All' },
+                { category: '常规武器', name: '轻剑(击剑、剑仗等)', skill: '格斗(剑)', damage: '1D6+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '25/100', era: 'All' },
+                { category: '常规武器', name: '电棍', skill: '格斗(斗殴)', damage: '1D3+眩晕', range: '接触', attacks: '1', ammo: '不定', malfunction: '97', price: '-/200', era: 'Modern' },
+                { category: '常规武器', name: '泰瑟枪(远程)', skill: '射击(手枪)', damage: '1D3+眩晕', range: '15步', attacks: '1', ammo: '3', malfunction: '95', price: '-/400', era: 'Modern' },
+                { category: '常规武器', name: '利刃回旋镖', skill: '投掷', damage: '1D8+一半STR', range: 'STR码', attacks: '1', ammo: '-', malfunction: '-', price: '2/4', era: 'All' },
+                { category: '常规武器', name: '伐木斧', skill: '格斗(斧)', damage: '1D8+2+DB', range: '接触', attacks: '1', ammo: '-', malfunction: '-', price: '5/10', era: 'All' },
+                // 手枪
+                { category: '手枪', name: '遂发枪', skill: '射击(手枪)', damage: '1D6+1', range: '10', attacks: '1/4', ammo: '1', malfunction: '95', price: '30/300', era: 'All' },
+                { category: '手枪', name: '.22短口自动手枪', skill: '射击(手枪)', damage: '1D6', range: '10', attacks: '1(3)', ammo: '6', malfunction: '100', price: '25/190', era: 'All' },
+                { category: '手枪', name: '.25短口手枪(单管)', skill: '射击(手枪)', damage: '1D6', range: '3', attacks: '1', ammo: '1', malfunction: '100', price: '12/55', era: '1920s' },
+                { category: '手枪', name: '.32or7.65mm左轮手枪', skill: '射击(手枪)', damage: '1D8', range: '15', attacks: '1(3)', ammo: '6', malfunction: '100', price: '15/200', era: 'All' },
+                { category: '手枪', name: '.32or7.65mm自动手枪', skill: '射击(手枪)', damage: '1D8', range: '15', attacks: '1(3)', ammo: '8', malfunction: '99', price: '20/350', era: 'All' },
+                { category: '手枪', name: '.357Magnum左轮手枪', skill: '射击(手枪)', damage: '1D8+1D4', range: '15', attacks: '1(3)', ammo: '6', malfunction: '100', price: '1/425', era: 'Modern' },
+                { category: '手枪', name: '.38or9mm左轮手枪', skill: '射击(手枪)', damage: '1D10', range: '15', attacks: '1(3)', ammo: '6', malfunction: '100', price: '25/200', era: 'All' },
+                { category: '手枪', name: '.38自动手枪', skill: '射击(手枪)', damage: '1D10', range: '15', attacks: '1(3)', ammo: '8', malfunction: '99', price: '30/375', era: 'All' },
+                { category: '手枪', name: '贝雷塔M9', skill: '射击(手枪)', damage: '1D10', range: '15', attacks: '1(3)', ammo: '15', malfunction: '98', price: '-/500', era: 'Modern' },
+                { category: '手枪', name: '格洛克17 9mm自动手枪', skill: '射击(手枪)', damage: '1D10', range: '15', attacks: '1(3)', ammo: '17', malfunction: '98', price: '-/500', era: 'Modern' },
+                { category: '手枪', name: '鲁格P08', skill: '射击(手枪)', damage: '1D10', range: '15', attacks: '1(3)', ammo: '8', malfunction: '99', price: '75/600', era: 'All' },
+                { category: '手枪', name: '.41左轮手枪', skill: '射击(手枪)', damage: '1D10', range: '15', attacks: '1(3)', ammo: '8', malfunction: '100', price: '30/-', era: '1920s' },
+                { category: '手枪', name: '.44马格南左轮手枪', skill: '射击(手枪)', damage: '1D10+1D4+2', range: '15', attacks: '1(3)', ammo: '6', malfunction: '100', price: '1/475', era: 'Modern' },
+                { category: '手枪', name: '.45左轮手枪', skill: '射击(手枪)', damage: '1D10+2', range: '15', attacks: '1(3)', ammo: '6', malfunction: '100', price: '30/300', era: 'All' },
+                { category: '手枪', name: '.45自动手枪', skill: '射击(手枪)', damage: '1D10+2', range: '15', attacks: '1(3)', ammo: '7', malfunction: '100', price: '40/375', era: 'All' },
+                { category: '手枪', name: '沙漠之鹰', skill: '射击(手枪)', damage: '1D10+1D6+3', range: '15', attacks: '1(3)', ammo: '7', malfunction: '94', price: '-/650', era: 'Modern' },
+                // 步枪
+                { category: '步枪', name: '.58斯普林菲尔德步枪', skill: '射击(步枪)', damage: '1D10+4', range: '60', attacks: '1/4', ammo: '1', malfunction: '95', price: '25/350', era: 'All' },
+                { category: '步枪', name: '.22杠杆式枪机步枪', skill: '射击(步枪)', damage: '1D6+1', range: '30', attacks: '1', ammo: '6', malfunction: '99', price: '13/70', era: 'All' },
+                { category: '步枪', name: '.30卡宾枪', skill: '射击(步枪)', damage: '2D6', range: '50', attacks: '1', ammo: '6', malfunction: '98', price: '19/150', era: 'All' },
+                { category: '步枪', name: '.45马提尼·亨利步枪', skill: '射击(步枪)', damage: '1D8+1D6+3', range: '80', attacks: '1/3', ammo: '1', malfunction: '100', price: '20/200', era: '1920s' },
+                { category: '步枪', name: '莫兰上校的气动步枪', skill: '射击(步枪)', damage: '2D6+1', range: '20', attacks: '1/3', ammo: '1', malfunction: '88', price: '200', era: '1920s' },
+                { category: '步枪', name: '加兰德M1、M2步枪', skill: '射击(步枪)', damage: '2D6+4', range: '110', attacks: '1', ammo: '8', malfunction: '100', price: '400', era: 'Modern' },
+                { category: '步枪', name: 'SKS半自动步枪', skill: '射击(步枪)', damage: '2D6+1', range: '90', attacks: '1(2)', ammo: '10', malfunction: '97', price: '500', era: 'Modern' },
+                { category: '步枪', name: '.303(7.7mm)李恩菲尔德', skill: '射击(步枪)', damage: '2D6+4', range: '110', attacks: '1', ammo: '5', malfunction: '100', price: '50/300', era: 'All' },
+                { category: '步枪', name: '.30-06(7.62mm)栓式枪机步枪', skill: '射击(步枪)', damage: '2D6+4', range: '110', attacks: '1', ammo: '5', malfunction: '100', price: '75/175', era: 'All' },
+                { category: '步枪', name: '.30-06(7.62mm)半自动步枪', skill: '射击(步枪)', damage: '2D6+4', range: '110', attacks: '1', ammo: '5', malfunction: '100', price: '275', era: 'Modern' },
+                { category: '步枪', name: '.444(11.28mm)马林步枪', skill: '射击(步枪)', damage: '2D8+4', range: '110', attacks: '1', ammo: '5', malfunction: '98', price: '400', era: 'Modern' },
+                { category: '步枪', name: '猎象枪(双管)', skill: '射击(步枪)', damage: '3D6+4', range: '100', attacks: '1or2', ammo: '2', malfunction: '100', price: '400/1800', era: 'All' },
+                // 霰弹枪
+                { category: '霰弹枪', name: '20号霰弹枪(双管)', skill: '射击(霰弹枪)', damage: '2D6/1D6/1D3', range: '10/20/50', attacks: '1or2', ammo: '2', malfunction: '100', price: '35/稀有', era: '1920s' },
+                { category: '霰弹枪', name: '16号霰弹枪(双管)', skill: '射击(霰弹枪)', damage: '2D6+2/1D6+1/1D4', range: '10/20/50', attacks: '1or2', ammo: '2', malfunction: '100', price: '40/稀有', era: '1920s' },
+                { category: '霰弹枪', name: '12号霰弹枪(双管)', skill: '射击(霰弹枪)', damage: '4D6/2D6/1D6', range: '10/20/50', attacks: '1or2', ammo: '2', malfunction: '100', price: '40/200', era: 'All' },
+                { category: '霰弹枪', name: '12号泵动霰弹枪', skill: '射击(霰弹枪)', damage: '4D6/2D6/1D6', range: '10/20/50', attacks: '1', ammo: '5', malfunction: '100', price: '45/100', era: 'Modern' },
+                { category: '霰弹枪', name: '12号半自动霰弹枪', skill: '射击(霰弹枪)', damage: '4D6/2D6/1D6', range: '10/20/50', attacks: '2', ammo: '5', malfunction: '100', price: '45/100', era: 'Modern' },
+                { category: '霰弹枪', name: '削短12号双管霰弹枪', skill: '射击(霰弹枪)', damage: '4D6/1D6', range: '5/10', attacks: '1or2', ammo: '2', malfunction: '100', price: 'N/A', era: '1920s' },
+                { category: '霰弹枪', name: '10号霰弹枪(双管)', skill: '射击(霰弹枪)', damage: '4D6+2/2D6+1/1D4', range: '10/20/50', attacks: '1or2', ammo: '2', malfunction: '100', price: '稀有', era: '1920s' },
+                { category: '霰弹枪', name: '12号贝里尼M3(折叠式枪托)', skill: '射击(霰弹枪)', damage: '4D6/2D6/1D6', range: '10/20/50', attacks: '1or2', ammo: '7', malfunction: '100', price: '-/895', era: 'Modern' },
+                { category: '霰弹枪', name: '12号SPAS(折叠式枪托)', skill: '射击(霰弹枪)', damage: '4D6/2D6/1D6', range: '10/20/50', attacks: '1', ammo: '8', malfunction: '98', price: '-/600', era: 'Modern' },
+                // 突击步枪
+                { category: '突击步枪', name: 'AK-47orAKM', skill: '射击(步枪)', damage: '2D6+1', range: '100', attacks: '1(2)or全自动', ammo: '30', malfunction: '100', price: '-/200', era: 'Modern' },
+                { category: '突击步枪', name: 'AK-74', skill: '射击(步枪)', damage: '2D6', range: '110', attacks: '1(2)or全自动', ammo: '30', malfunction: '97', price: '-/1000', era: 'Modern' },
+                { category: '突击步枪', name: '巴雷特M82', skill: '射击(步枪)', damage: '2D10+1D8+6', range: '250', attacks: '1', ammo: '11', malfunction: '96', price: '-/3000', era: 'Modern' },
+                { category: '突击步枪', name: 'FN FAL Light Automatic', skill: '射击(步枪)', damage: '2D6+4', range: '110', attacks: '1(2)or3', ammo: '20', malfunction: '97', price: '-/1500', era: 'Modern' },
+                { category: '突击步枪', name: 'Galil Assault Rifle', skill: '射击(步枪)', damage: '2D6', range: '110', attacks: '1(2)or3', ammo: '20', malfunction: '98', price: '-/2000', era: 'Modern' },
+                { category: '突击步枪', name: 'M16A2', skill: '射击(步枪)', damage: '2D6', range: '110', attacks: '1(2)or3', ammo: '30', malfunction: '97', price: 'N/A', era: 'Modern' },
+                { category: '突击步枪', name: 'M4', skill: '射击(步枪)', damage: '2D6', range: '90', attacks: '1(2)or3', ammo: '30', malfunction: '97', price: 'N/A', era: 'Modern' },
+                { category: '突击步枪', name: 'Steyr AUG', skill: '射击(步枪)', damage: '2D6', range: '110', attacks: '1(2)or全自动', ammo: '30', malfunction: '99', price: '-/1100', era: 'Modern' },
+                { category: '突击步枪', name: '巴雷特M70/90', skill: '射击(步枪)', damage: '2D6', range: '110', attacks: '1or全自动', ammo: '30', malfunction: '99', price: '-/2800', era: 'Modern' },
+                // 冲锋枪
+                { category: '冲锋枪', name: '贝格曼MP181/MP2811', skill: '射击(冲锋枪)', damage: '1D10', range: '20', attacks: '1(2)or全自动', ammo: '20/30/32', malfunction: '96', price: '1000/20000', era: '1920s' },
+                { category: '冲锋枪', name: '黑克勒-科赫MP5', skill: '射击(冲锋枪)', damage: '1D10', range: '20', attacks: '1(2)or全自动', ammo: '15/30', malfunction: '97', price: 'N/A', era: 'Modern' },
+                { category: '冲锋枪', name: 'MAC-11', skill: '射击(冲锋枪)', damage: '1D10', range: '15', attacks: '1(3)or全自动', ammo: '32', malfunction: '96', price: '-/750', era: 'Modern' },
+                { category: '冲锋枪', name: '蝎式冲锋枪', skill: '射击(冲锋枪)', damage: '1D8', range: '15', attacks: '1(3)or全自动', ammo: '20', malfunction: '96', price: 'N/A', era: 'Modern' },
+                { category: '冲锋枪', name: '汤普森冲锋枪', skill: '射击(冲锋枪)', damage: '1D10+2', range: '20', attacks: '1or全自动', ammo: '20/30/50', malfunction: '96', price: '200/1600', era: '1920s' },
+                { category: '冲锋枪', name: '乌兹微型冲锋枪', skill: '射击(冲锋枪)', damage: '1D10', range: '20', attacks: '1(2)or全自动', ammo: '32', malfunction: '98', price: '-/1000', era: 'Modern' },
+                // 机枪
+                { category: '机枪', name: 'M1882加特林机枪', skill: '射击(机枪)', damage: '2D6+4', range: '100', attacks: '全自动', ammo: '200', malfunction: '96', price: '2000/14000', era: '1920s' },
+                { category: '机枪', name: 'M1918式勃朗宁自动步枪', skill: '射击(机枪)', damage: '2D6+4', range: '90', attacks: '1(2)or全自动', ammo: '20', malfunction: '100', price: '800/1500', era: '1920s' },
+                { category: '机枪', name: 'M1917A1式勃朗宁重机枪', skill: '射击(机枪)', damage: '2D6+4', range: '150', attacks: '全自动', ammo: '250', malfunction: '96', price: '3000/30000', era: '1920s' },
+                { category: '机枪', name: '布伦式轻机枪', skill: '射击(机枪)', damage: '2D6+4', range: '110', attacks: '1or全自动', ammo: '30/100', malfunction: '96', price: '3000/50000', era: '1920s' },
+                { category: '机枪', name: '刘易斯式轻机枪', skill: '射击(机枪)', damage: '2D6+4', range: '110', attacks: '全自动', ammo: '27/97', malfunction: '96', price: '3000/20000', era: '1920s' },
+                { category: '机枪', name: 'Minigun', skill: '射击(机枪)', damage: '2D6+4', range: '200', attacks: '全自动', ammo: '4000', malfunction: '98', price: 'N/A', era: 'Modern' },
+                { category: '机枪', name: 'FN Minimi 5.56mm轻机枪', skill: '射击(机枪)', damage: '2D6', range: '110', attacks: '全自动', ammo: '30/200', malfunction: '99', price: 'N/A', era: 'Modern' },
+                { category: '机枪', name: '维克斯MK1式机枪', skill: '射击(机枪)', damage: '2D6+4', range: '110', attacks: '全自动', ammo: '250', malfunction: '99', price: 'N/A', era: '1920s' },
+                // 爆炸物和重武器
+                { category: '爆炸物和重武器', name: '燃烧瓶', skill: '投掷', damage: '2D6+燃烧', range: 'STR码', attacks: '1/2', ammo: '一次性', malfunction: '95', price: 'N/A', era: 'All' },
+                { category: '爆炸物和重武器', name: '信号枪', skill: '射击(手枪)', damage: '1D10+1D3+燃烧', range: '10', attacks: '1/2', ammo: '1', malfunction: '100', price: '15/75', era: 'All' },
+                { category: '爆炸物和重武器', name: 'M79榴弹发射器', skill: '射击(重武器)', damage: '3D10/2码', range: '20', attacks: '1/3', ammo: '1', malfunction: '99', price: 'N/A', era: 'Modern' },
+                { category: '爆炸物和重武器', name: '土制炸药', skill: '投掷', damage: '4D10/3码', range: 'STR步', attacks: '1/2', ammo: '一次性', malfunction: '99', price: '2/5', era: 'All' },
+                { category: '爆炸物和重武器', name: '雷管', skill: '电器维修', damage: '2D10/1码', range: 'N/A', attacks: 'N/A', ammo: '一次性', malfunction: '100', price: '20/box', era: 'All' },
+                { category: '爆炸物和重武器', name: '管状炸弹', skill: '爆破', damage: '1D10/3码', range: '布置', attacks: '一次使用', ammo: '一次性', malfunction: '95', price: 'N/A', era: 'All' },
+                { category: '爆炸物和重武器', name: '塑胶炸弹(C4)100克', skill: '爆破', damage: '6D10/3码', range: '布置', attacks: '一次使用', ammo: '一次性', malfunction: '99', price: 'N/A', era: 'Modern' },
+                { category: '爆炸物和重武器', name: '手榴弹', skill: '投掷', damage: '4D10/3码', range: 'STR步', attacks: '1/2', ammo: '一次性', malfunction: '99', price: 'N/A', era: 'All' },
+                { category: '爆炸物和重武器', name: '81mm迫击炮', skill: '炮术', damage: '6D10/6码', range: '500码', attacks: '2', ammo: '独立', malfunction: '100', price: 'N/A', era: 'Modern' },
+                { category: '爆炸物和重武器', name: '75mm野战炮', skill: '炮术', damage: '10D10/2码', range: '500码', attacks: '1/4', ammo: '独立', malfunction: '99', price: '1500', era: 'All' },
+                { category: '爆炸物和重武器', name: '120mm坦克炮(稳定)', skill: '炮术', damage: '15D10/4码', range: '2000码', attacks: '1', ammo: '独立', malfunction: '100', price: 'N/A', era: 'Modern' },
+                { category: '爆炸物和重武器', name: '5英寸舰载炮(稳定)', skill: '炮术', damage: '12D10/4码', range: '3000码', attacks: '2', ammo: '自动', malfunction: '98', price: 'N/A', era: 'Modern' },
+                { category: '爆炸物和重武器', name: '反步兵地雷', skill: '爆破', damage: '4D10/5码', range: '布置', attacks: '布置', ammo: '一次性', malfunction: '99', price: 'N/A', era: 'All' },
+                { category: '爆炸物和重武器', name: '阔剑地雷', skill: '爆破', damage: '6D6/20码', range: '布置', attacks: '布置', ammo: '一次性', malfunction: '99', price: 'N/A', era: 'Modern' },
+                { category: '爆炸物和重武器', name: '火焰喷射器', skill: '射击(火焰喷射器)', damage: '2D6+燃烧', range: '25码', attacks: '1', ammo: '至少10', malfunction: '93', price: 'N/A', era: 'All' },
+                { category: '爆炸物和重武器', name: '轻型反坦克武器', skill: '射击(重武器)', damage: '8d10/1码', range: '150码', attacks: '1', ammo: '1', malfunction: '98', price: 'N/A', era: 'Modern' }
+            ];
 
             const standardSkills = [
                 {name: '会计', base: 5}, {name: '人类学', base: 1}, {name: '估价', base: 5}, {name: '考古学', base: 1},
@@ -2385,6 +2686,70 @@
                     return 0; // Maintain insertion order otherwise (or alphabetical?)
                 });
             });
+
+            // Filtered Jobs
+            const filteredJobs = computed(() => {
+                const era = coc.era || '1920s';
+                const jobs = {};
+                for (const [job, data] of Object.entries(cocJobs)) {
+                    if (!data.era || data.era === era) {
+                        jobs[job] = data;
+                    }
+                }
+                return jobs;
+            });
+
+            // Filtered Weapons
+            const filteredWeapons = computed(() => {
+                const groups = {};
+                const term = weaponSearch.value.toLowerCase();
+                const currentEra = coc.era || '1920s';
+
+                weaponList.forEach(w => {
+                    // Era Filter
+                    if (w.era !== 'All' && w.era !== currentEra) return;
+                    
+                    // Search Filter
+                    if (term && !w.name.toLowerCase().includes(term) && !w.category.toLowerCase().includes(term)) return;
+
+                    if (!groups[w.category]) groups[w.category] = [];
+                    groups[w.category].push(w);
+                });
+                return groups;
+            });
+
+            const addWeapon = (weapon) => {
+                if (!coc.weapons) coc.weapons = [];
+                coc.weapons.push({ ...weapon });
+                showToast(`已添加: ${weapon.name}`, 'success');
+                
+                // Auto add skill if not present?
+                // Extract skill name inside parentheses if possible, e.g. "射击(手枪)" -> "射击(手枪)"
+                // Actually standard skills are like "射击(手枪)".
+                // Let's check if we should add it.
+                const skillName = weapon.skill;
+                if (skillName && !coc.skills.some(s => s.name === skillName)) {
+                    // Check if it's a standard skill or needs custom add
+                    // Most weapon skills are standard or specializations
+                    // We can try adding it as a standard skill
+                    addStandardSkill(skillName);
+                    // If not in standard list, maybe add as custom?
+                    if (!coc.skills.some(s => s.name === skillName)) {
+                         coc.skills.push({
+                            name: skillName,
+                            base: 0, // Unknown base for exotic stuff
+                            occupation: 0,
+                            interest: 0,
+                            growth: 0,
+                            value: 0
+                        });
+                    }
+                }
+            };
+
+            const removeWeapon = (index) => {
+                coc.weapons.splice(index, 1);
+            };
 
             const removeSkill = (skill) => {
                 const idx = coc.skills.indexOf(skill);
@@ -3285,8 +3650,10 @@ return {
     requestDeleteCharacter,
     requestDeleteAllCharacters,
     importInput,
+    reportInput,
     triggerImport,
     handleImportCharacter,
+    handleImportReport,
     confirmModal,
     confirmAction,
     promptInput,
@@ -3335,12 +3702,16 @@ return {
     radarGrid,
     radarStatsPoints,
     skillGrowth,
-    inventoryTab
+    inventoryTab,
+    showWeaponModal,
+    weaponSearch,
+    filteredJobs,
+    filteredWeapons,
+    addWeapon,
+    removeWeapon
 };
 }
 }).mount('#app');
 </script>
 </body>
 </html>
-
-
