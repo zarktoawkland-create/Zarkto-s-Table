@@ -2,18 +2,18 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>密大图书馆 - Zarkto's Table</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <!-- 引入衬线字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;600;700&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -77,13 +77,549 @@
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+
+        /* Zarkto System UI 2026 */
+        :root {
+            color-scheme: dark;
+            --z-canvas: #03070c;
+            --z-surface: rgba(15, 23, 32, .95);
+            --z-line: rgba(174, 163, 142, .14);
+            --z-highlight: rgba(255, 255, 255, .055);
+            --z-purple: #a998bb;
+            --z-red: #b96768;
+            --z-gold: #c8aa62;
+            --z-ease: cubic-bezier(.2,.8,.2,1);
+            --z-shadow: 0 20px 58px rgba(0,0,0,.3), inset 0 1px 0 var(--z-highlight);
+        }
+        body.z-system-ui { background: var(--z-canvas); -webkit-font-smoothing: antialiased; }
+        body.z-system-ui #app {
+            background:
+                radial-gradient(840px 540px at 50% -12%, rgba(62, 92, 116, .15), transparent 65%),
+                radial-gradient(620px 520px at 100% 90%, rgba(128, 63, 45, .11), transparent 68%),
+                var(--z-canvas);
+        }
+        .z-system-ui ::-webkit-scrollbar { width: 7px; height: 7px; }
+        .z-system-ui ::-webkit-scrollbar-track { background: transparent; }
+        .z-system-ui ::-webkit-scrollbar-thumb { background: rgba(100,116,139,.48); border: 2px solid transparent; background-clip: padding-box; border-radius: 999px; }
+        .z-system-ui .rounded { border-radius: 10px; }
+        .z-system-ui .rounded-lg { border-radius: 14px; }
+        .z-system-ui .rounded-xl { border-radius: 18px; }
+        .z-system-ui .rounded-2xl { border-radius: 22px; }
+        .z-system-ui .glass-panel {
+            background:
+                linear-gradient(145deg, rgba(20,29,40,.94), rgba(7,13,21,.94)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 460px 460px repeat;
+            background-blend-mode: normal, soft-light;
+            border-color: var(--z-line);
+            box-shadow: var(--z-shadow);
+            backdrop-filter: blur(22px) saturate(125%);
+            -webkit-backdrop-filter: blur(22px) saturate(125%);
+        }
+        .z-system-ui .library-header {
+            margin: 10px 12px 0;
+            height: 58px;
+            border: 1px solid var(--z-line);
+            border-radius: 20px;
+            background: rgba(13,21,36,.7);
+            box-shadow: 0 16px 44px rgba(0,0,0,.28), inset 0 1px 0 var(--z-highlight);
+            backdrop-filter: blur(26px) saturate(140%);
+            -webkit-backdrop-filter: blur(26px) saturate(140%);
+        }
+        .z-system-ui .library-header a { width: 38px; height: 38px; justify-content: center; border-radius: 12px; }
+        .z-system-ui .library-header a:hover { background: rgba(148,163,184,.08); }
+        .z-system-ui .library-main { padding-top: 1.35rem; }
+        .z-system-ui .library-segmented {
+            border-radius: 16px;
+            border-color: var(--z-line);
+            background: rgba(7,12,23,.72);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 10px 28px rgba(0,0,0,.18);
+            backdrop-filter: blur(18px);
+        }
+        .z-system-ui .library-segmented > div { border-radius: 12px; }
+        .z-system-ui .library-segmented button { border-radius: 12px; }
+        .z-system-ui .library-index-slider {
+            background: linear-gradient(135deg, rgba(88,72,102,.46), rgba(24,34,46,.82)) !important;
+            border-color: rgba(200,170,98,.18) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 8px 20px rgba(0,0,0,.2);
+        }
+        .z-system-ui input, .z-system-ui select, .z-system-ui textarea {
+            border-radius: 12px !important;
+            border-color: rgba(100,116,139,.34) !important;
+            background-color: rgba(3,8,18,.82) !important;
+            transition: border-color .22s ease, box-shadow .22s ease, transform .22s var(--z-ease);
+        }
+        .z-system-ui input:focus, .z-system-ui select:focus, .z-system-ui textarea:focus { border-color: rgba(181,140,255,.62) !important; box-shadow: 0 0 0 3px rgba(181,140,255,.09); outline: none; }
+        .z-system-ui button, .z-system-ui a { -webkit-tap-highlight-color: transparent; transition-timing-function: var(--z-ease); }
+        .z-system-ui button:focus-visible, .z-system-ui a:focus-visible, .z-system-ui input:focus-visible, .z-system-ui textarea:focus-visible { outline: 2px solid rgba(216,184,78,.72); outline-offset: 2px; }
+        .z-system-ui button:active { transform: scale(.97); }
+        .z-system-ui .library-module-card {
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(18,27,44,.94), rgba(7,13,24,.96));
+            border-color: var(--z-line);
+            box-shadow: 0 14px 38px rgba(0,0,0,.2), inset 0 1px 0 var(--z-highlight);
+            transition: transform .28s var(--z-ease), border-color .28s ease, box-shadow .28s ease;
+        }
+        .z-system-ui .library-module-card:nth-child(even) {
+            background: linear-gradient(145deg, rgba(18,27,44,.94), rgba(7,13,24,.96));
+        }
+        .z-system-ui .library-module-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 18px auto;
+            height: 1px;
+            z-index: 2;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent, rgba(181,140,255,.3), transparent);
+            opacity: .7;
+        }
+        .z-system-ui .library-module-card::after { display: none; }
+        .z-system-ui .library-module-card:hover { transform: translateY(-4px); box-shadow: 0 24px 54px rgba(0,0,0,.3), 0 0 30px rgba(126,34,206,.08), inset 0 1px 0 var(--z-highlight); }
+        .z-system-ui .library-module-card > .p-4 {
+            background-color: rgba(2,6,15,.32);
+            padding-top: 1rem;
+        }
+        .library-empty-art {
+            position: relative;
+            min-height: 200px;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 50% 46%, rgba(126,34,206,.08), transparent 46%),
+                linear-gradient(145deg, rgba(15,23,42,.28), rgba(3,7,16,.16));
+        }
+        .library-empty-art::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: min(54%, 360px);
+            height: 1px;
+            transform: translate(-50%,-50%);
+            background: linear-gradient(90deg, transparent, rgba(148,163,184,.16), transparent);
+            pointer-events: none;
+        }
+        .library-empty-art::after {
+            content: "";
+            position: absolute;
+            inset: 18px;
+            border: 1px solid rgba(148,163,184,.045);
+            border-radius: 15px;
+            pointer-events: none;
+        }
+        .library-empty-art > * { position: relative; z-index: 1; }
+        .library-empty-art p { color: rgba(148,163,184,.68) !important; text-shadow: 0 2px 14px rgba(0,0,0,.52); }
+        body.z-system-ui::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+            background: url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 560px 560px repeat;
+            opacity: .052;
+            mix-blend-mode: soft-light;
+        }
+        .library-art-banner {
+            position: relative;
+            height: clamp(168px, 24vw, 260px);
+            margin-bottom: 1.45rem;
+            overflow: hidden;
+            isolation: isolate;
+            border: 1px solid rgba(148,163,184,.14);
+            border-radius: 24px;
+            background:
+                linear-gradient(90deg, rgba(3,7,16,.9) 0%, rgba(3,7,16,.43) 52%, rgba(3,7,16,.18) 100%),
+                linear-gradient(0deg, rgba(3,7,16,.8) 0%, transparent 62%),
+                url("../assets/art/generated/library-reading-room-night.webp") center 54% / cover no-repeat;
+            box-shadow: 0 24px 70px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05);
+            filter: grayscale(.13) sepia(.06) saturate(.68) contrast(1.08) brightness(.82);
+        }
+        .library-art-banner::before {
+            content: "";
+            position: absolute;
+            inset: -4%;
+            z-index: -1;
+            background: inherit;
+            filter: grayscale(.16) sepia(.055) saturate(.66) contrast(1.08) brightness(.82);
+            transform: scale(1.025);
+            animation: librarySceneBreathe 18s ease-in-out infinite alternate;
+        }
+        .library-art-banner::after {
+            content: "MISKATONIC ARCHIVE  /  READING ROOM";
+            position: absolute;
+            left: 22px;
+            bottom: 18px;
+            color: rgba(226,232,240,.72);
+            font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+            letter-spacing: .24em;
+            text-shadow: 0 2px 12px #000;
+        }
+        .library-archive-inset {
+            position: absolute;
+            right: 26px;
+            top: 21px;
+            width: 186px;
+            height: 132px;
+            border: 6px solid rgba(218,213,198,.9);
+            border-bottom-width: 22px;
+            border-radius: 2px;
+            background: url("../assets/art/public-domain/loc-reading-room-1920.webp") center / cover no-repeat;
+            box-shadow: 0 14px 28px rgba(0,0,0,.5);
+            filter: grayscale(1) sepia(.18) contrast(1.08) brightness(.82);
+            transform: rotate(1.4deg);
+            opacity: .72;
+        }
+        .library-archive-inset::after {
+            content: "LC  /  c.1920";
+            position: absolute;
+            left: 5px;
+            bottom: -17px;
+            color: rgba(25,31,38,.75);
+            font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+            letter-spacing: .12em;
+        }
+        .library-catalog-label {
+            position: absolute;
+            left: 18px;
+            top: 16px;
+            width: 164px;
+            height: 62px;
+            display: grid;
+            place-items: center;
+            padding: 0 25px 1px;
+            color: rgba(17,24,33,.72);
+            background: url("../assets/art/generated/museum-label-holder.webp") center / contain no-repeat;
+            font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+            letter-spacing: .12em;
+            filter: grayscale(.08) sepia(.06) saturate(.72) brightness(.78);
+            opacity: .74;
+            transform: rotate(-.8deg);
+            z-index: 2;
+        }
+        @keyframes librarySceneBreathe { from { transform: scale(1.025); } to { transform: scale(1.055) translateY(-3px); } }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div {
+            border-radius: 26px !important;
+            border-color: rgba(148,163,184,.17) !important;
+            background: linear-gradient(150deg, rgba(20,30,49,.98), rgba(6,12,23,.98)) !important;
+            box-shadow: 0 34px 96px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.06) !important;
+        }
+        @media (max-width: 767px) {
+            .z-system-ui .library-header { margin: 7px 8px 0; height: 52px; border-radius: 18px; padding-left: .45rem; padding-right: .75rem; }
+            .z-system-ui .library-main { padding: 14px 12px 24px; }
+            .z-system-ui .library-segmented { width: 100%; }
+            .z-system-ui .library-segmented button { flex: 1; padding-left: .75rem; padding-right: .75rem; }
+            .z-system-ui .library-module-grid { gap: 14px; }
+            .z-system-ui .library-module-card { border-radius: 18px; }
+            .library-art-banner { height: 126px; margin-bottom: 14px; border-radius: 18px; background-position: center, center, 42% 55%; }
+            .library-art-banner::after { left: 15px; bottom: 13px; font-size: 8px; letter-spacing: .17em; }
+            .library-archive-inset { display: none; }
+            .library-catalog-label { width: 124px; height: 47px; left: 10px; top: 8px; padding: 0 20px; font-size: 6px; opacity: .64; }
+            .z-system-ui .library-module-card::before { inset-inline: 14px; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center { align-items: center; padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)); }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div { width: 100%; max-height: calc(100dvh - 20px); border-radius: 26px !important; }
+        }
+        @media (prefers-reduced-motion: reduce) { .z-system-ui *, .z-system-ui *::before, .z-system-ui *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .library-art-banner::before { transform: none !important; } }
+
+        /* Occult editorial system v3 */
+        body.z-system-ui {
+            --lib-ink:#020609;
+            --lib-panel:rgba(12,19,25,.94);
+            --lib-paper:#e7ddc5;
+            --lib-brass:#c3a15a;
+            --lib-teal:#4da897;
+            --lib-rust:#945245;
+            background:#020609;
+        }
+        .z-system-ui #app {
+            background:
+                linear-gradient(180deg,rgba(2,6,9,.54),rgba(2,6,9,.78) 58%,rgba(2,6,9,.9)),
+                radial-gradient(780px 520px at 78% -12%,rgba(29,102,95,.12),transparent 66%),
+                radial-gradient(680px 520px at 8% 108%,rgba(148,82,69,.075),transparent 68%),
+                url("../assets/art/generated/library-forbidden-archive-v1.webp") center 48%/cover no-repeat !important;
+        }
+        .z-system-ui .library-header {
+            color:#c6ceca;
+            border-color:rgba(174,163,142,.16) !important;
+            background:
+                linear-gradient(90deg,rgba(11,18,24,.97),rgba(7,14,19,.92)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/460px 460px repeat !important;
+            background-blend-mode:normal,soft-light !important;
+        }
+        .z-system-ui .library-header .text-purple-400 { color:var(--lib-paper) !important; }
+        .z-system-ui .library-header .text-purple-400 svg { color:var(--lib-brass) !important; }
+        .library-art-banner {
+            height:clamp(180px,21vw,270px);
+            border-radius:16px;
+            border-color:rgba(195,161,90,.2);
+            box-shadow:0 28px 82px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.035);
+            background:
+                linear-gradient(90deg,rgba(2,6,9,.68),transparent 34%,rgba(2,6,9,.26) 70%,rgba(2,6,9,.66)),
+                linear-gradient(0deg,rgba(2,6,9,.84),transparent 64%),
+                url("../assets/art/generated/library-reading-room-night.webp") center 55%/cover no-repeat;
+        }
+        .library-art-banner::before { opacity:.86; filter:grayscale(.12) sepia(.08) saturate(.7) contrast(1.13) brightness(.82); }
+        .library-art-banner::after { color:rgba(231,221,197,.72); content:"MISKATONIC ARCHIVE  /  READING ROOM  /  ACCESSION 1926"; }
+        .library-archive-inset { opacity:.58; border-color:rgba(218,213,198,.7); }
+        .library-catalog-label { opacity:.62; }
+        .z-system-ui .library-segmented {
+            padding:4px;
+            border-radius:11px;
+            border-color:rgba(174,163,142,.16) !important;
+            background:rgba(3,9,13,.72) !important;
+            box-shadow:inset 0 1px 5px rgba(0,0,0,.4);
+        }
+        .z-system-ui .library-index-slider {
+            border-radius:8px !important;
+            border-color:rgba(195,161,90,.24) !important;
+            background:linear-gradient(90deg,rgba(195,161,90,.12),rgba(77,168,151,.055)) !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 22px rgba(0,0,0,.2) !important;
+        }
+        .z-system-ui .text-purple-400,.z-system-ui .hover\:text-purple-400:hover { color:#cdb777 !important; }
+        .z-system-ui .text-blue-400,.z-system-ui .hover\:text-blue-400:hover { color:#7fa5b1 !important; }
+        .z-system-ui .text-teal-400 { color:#68b7a8 !important; }
+        .z-system-ui .bg-purple-600,.z-system-ui .hover\:bg-purple-500:hover {
+            color:#10130f !important;
+            background:linear-gradient(135deg,#d4b665,#aa8744) !important;
+            border-color:rgba(224,194,117,.52) !important;
+            box-shadow:0 10px 25px rgba(92,68,25,.2),inset 0 1px 0 rgba(255,255,255,.24) !important;
+        }
+        .z-system-ui input,.z-system-ui select,.z-system-ui textarea {
+            color:#d0d5ce !important;
+            border-color:rgba(128,142,143,.26) !important;
+            border-radius:9px !important;
+            background:linear-gradient(180deg,rgba(2,7,10,.9),rgba(7,13,17,.84)) !important;
+            box-shadow:inset 0 1px 5px rgba(0,0,0,.4) !important;
+        }
+        .z-system-ui input:focus,.z-system-ui select:focus,.z-system-ui textarea:focus {
+            border-color:rgba(77,168,151,.58) !important;
+            box-shadow:0 0 0 3px rgba(77,168,151,.075),inset 0 1px 4px rgba(0,0,0,.42) !important;
+        }
+        .z-system-ui button,.z-system-ui a { border-radius:9px; }
+        .z-system-ui .library-module-card,
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div {
+            border-color:rgba(174,163,142,.15) !important;
+            border-radius:14px !important;
+            background:
+                linear-gradient(145deg,rgba(17,26,33,.96),rgba(5,11,16,.975)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/520px 520px repeat !important;
+            background-blend-mode:normal,soft-light !important;
+            box-shadow:0 22px 64px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.035) !important;
+        }
+        .z-system-ui .library-module-card:hover { border-color:rgba(195,161,90,.25) !important; transform:translateY(-3px); }
+        .z-system-ui .library-module-card::before { background:linear-gradient(90deg,transparent,var(--lib-brass),var(--lib-teal),transparent); opacity:.26; }
+        .library-empty-art {
+            min-height:210px;
+            border-radius:14px !important;
+            border-color:rgba(174,163,142,.16) !important;
+            background:
+                linear-gradient(90deg,rgba(2,6,9,.84),rgba(2,6,9,.42),rgba(2,6,9,.84)),
+                url("../assets/art/generated/library-reading-room-night.webp") center 52%/cover no-repeat !important;
+            box-shadow:inset 0 0 70px rgba(0,0,0,.58);
+        }
+        .library-empty-art p,.library-empty-art .font-serif { color:rgba(215,211,198,.64) !important; text-shadow:0 2px 12px #000; }
+        @keyframes libraryEditorialReveal { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .library-main > div { animation:libraryEditorialReveal .55s cubic-bezier(.16,1,.3,1) both; }
+        @media (max-width:767px) {
+            .library-art-banner { height:148px; border-radius:12px; }
+            .z-system-ui .library-segmented { border-radius:10px; }
+            .z-system-ui .library-module-card { border-radius:12px !important; }
+            .library-empty-art { min-height:200px; }
+        }
+
+        /* Archive material pass: tactile controls, legible mobile typography */
+        :root {
+            --z-ui-gothic:'Grenze Gotisch','Noto Serif SC','Songti SC',serif;
+            --z-ui-reading:'Noto Serif SC','Songti SC',serif;
+            --lib-ivory:#e5dcc6;
+            --lib-muted:#8e9b9b;
+            --lib-line:rgba(193,165,102,.18);
+        }
+        .z-system-ui .library-header,
+        .z-system-ui .library-segmented,
+        .z-system-ui button,
+        .z-system-ui h2,
+        .z-system-ui h3,
+        .z-system-ui h4,
+        .z-system-ui label { font-family:var(--z-ui-gothic); }
+        .z-system-ui input,
+        .z-system-ui textarea,
+        .z-system-ui .library-module-card p { font-family:var(--z-ui-reading); }
+        .z-system-ui .library-header { overflow:hidden; isolation:isolate; }
+        .z-system-ui .library-header::after {
+            content:"Z-COC / MISKATONIC ACCESS";
+            position:absolute;
+            right:21%; bottom:5px;
+            color:rgba(195,161,90,.24);
+            font:600 7px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+            letter-spacing:.22em;
+            pointer-events:none;
+        }
+        .z-system-ui .library-header .font-serif { font-family:var(--z-ui-gothic)!important; letter-spacing:.045em; }
+        .z-system-ui .library-segmented button { min-height:42px; font-size:15px; letter-spacing:.05em; }
+        .z-system-ui .library-module-card { isolation:isolate; }
+        .z-system-ui .library-module-card::after {
+            content:"";
+            display:block;
+            position:absolute;
+            inset:0 0 auto auto;
+            width:42%; height:100%;
+            z-index:0;
+            opacity:.07;
+            pointer-events:none;
+            background:
+                linear-gradient(90deg,rgba(5,11,16,1),transparent 45%),
+                url("../assets/art/generated/cephalopod-archive-plate.webp") 64% 42%/165% auto no-repeat;
+            filter:grayscale(.5) sepia(.18) saturate(.65) contrast(1.1);
+            -webkit-mask-image:linear-gradient(90deg,transparent,#000 38%,#000);
+            mask-image:linear-gradient(90deg,transparent,#000 38%,#000);
+        }
+        .z-system-ui .library-module-card > * { position:relative; z-index:1; }
+        .z-system-ui .library-module-card .absolute.top-0.right-0.p-4 { display:none!important; }
+        .z-system-ui :is(.library-module-card,.library-modal-shell,.library-alchemy-shell) .absolute:has(> svg[class*="w-24"]),
+        .z-system-ui :is(.library-module-card,.library-modal-shell,.library-alchemy-shell) .absolute:has(> svg[class*="w-64"]) { display:none!important; }
+        .z-system-ui .library-module-card > .p-4 {
+            border-top:1px solid rgba(195,161,90,.08);
+            background:rgba(2,7,10,.64)!important;
+        }
+        .z-system-ui .library-module-card button {
+            min-height:38px;
+            border-color:rgba(195,161,90,.2)!important;
+            background:
+                linear-gradient(180deg,rgba(28,37,42,.95),rgba(8,14,18,.96)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/320px 320px repeat!important;
+            background-blend-mode:normal,soft-light!important;
+            box-shadow:inset 0 1px rgba(255,255,255,.035),0 7px 18px rgba(0,0,0,.16);
+        }
+        .library-empty-art {
+            display:flex;
+            min-height:250px;
+            align-items:flex-end;
+            justify-content:center;
+            padding:42px 24px!important;
+            isolation:isolate;
+            border-style:solid!important;
+            background:
+                linear-gradient(0deg,rgba(2,6,9,.96) 0%,rgba(2,6,9,.5) 52%,rgba(2,6,9,.7) 100%),
+                linear-gradient(90deg,rgba(2,6,9,.72),transparent 48%,rgba(2,6,9,.7)),
+                url("../assets/art/generated/library-reading-room-night.webp") center 52%/cover no-repeat!important;
+        }
+        .library-empty-art::before {
+            left:18px; right:18px; top:18px;
+            width:auto; height:1px;
+            transform:none;
+            background:linear-gradient(90deg,transparent,var(--lib-brass),var(--lib-teal),transparent);
+            opacity:.32;
+        }
+        .library-empty-art::after {
+            content:"CATALOGUE · NO ACCESSION RECORD";
+            inset:22px auto auto 24px;
+            border:0;
+            color:rgba(226,216,190,.45);
+            font:600 8px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+            letter-spacing:.18em;
+        }
+        .library-empty-art > div {
+            width:min(100%,520px);
+            margin:0!important;
+            padding:16px 18px;
+            color:var(--lib-ivory)!important;
+            border:1px solid rgba(195,161,90,.16);
+            border-radius:10px;
+            background:rgba(3,9,13,.78);
+            box-shadow:0 14px 38px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.035);
+            backdrop-filter:blur(12px);
+        }
+        .library-empty-art p,.library-empty-art .font-serif { color:rgba(226,220,204,.78)!important; line-height:1.7; }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center { background:rgba(0,4,7,.86)!important; }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div { isolation:isolate; overflow:hidden; }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div::before {
+            content:"";
+            position:absolute;
+            inset:0 0 auto;
+            height:5px;
+            z-index:40;
+            pointer-events:none;
+            background:linear-gradient(90deg,transparent 2%,rgba(195,161,90,.65) 18%,rgba(77,168,151,.42) 72%,transparent 98%);
+            opacity:.55;
+        }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div::after {
+            content:"";
+            position:absolute;
+            width:250px; height:250px;
+            right:-92px; bottom:-96px;
+            z-index:0;
+            opacity:.035;
+            pointer-events:none;
+            background:url("../assets/art/generated/observatory-chart-1890s.webp") center/cover no-repeat;
+            border-radius:50%;
+            filter:grayscale(1) sepia(.25) contrast(1.2);
+        }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div > * { position:relative; z-index:1; }
+        .z-system-ui .fixed.inset-0.flex.items-center.justify-center button:not(.rounded-full) {
+            border:1px solid rgba(195,161,90,.2);
+            box-shadow:inset 0 1px rgba(255,255,255,.035),0 8px 22px rgba(0,0,0,.18);
+        }
+        .z-system-ui .bg-gradient-to-r.from-purple-600 {
+            color:#12140f!important;
+            background-image:linear-gradient(135deg,#d8bb6b,#a98644)!important;
+            border-color:rgba(226,196,119,.45)!important;
+            box-shadow:0 10px 28px rgba(83,62,22,.24),inset 0 1px rgba(255,255,255,.22)!important;
+        }
+        .z-system-ui .library-modal-shell {
+            border-color:rgba(195,161,90,.3)!important;
+            background:
+                linear-gradient(180deg,rgba(12,20,25,.96),rgba(4,10,14,.985)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/420px repeat!important;
+            background-blend-mode:normal,soft-light!important;
+        }
+        .z-system-ui .library-modal-mark {
+            color:#d7bd78!important;
+            border:1px solid rgba(195,161,90,.24);
+            background:linear-gradient(145deg,rgba(195,161,90,.13),rgba(77,168,151,.055))!important;
+            box-shadow:inset 0 1px rgba(255,255,255,.05),0 7px 18px rgba(0,0,0,.22);
+        }
+        @media (max-width:767px) {
+            .z-system-ui .library-header::after { display:none; }
+            .z-system-ui .library-header > .w-1\/4 { width:42px!important; }
+            .z-system-ui .library-header .font-serif { font-size:14px!important; letter-spacing:0; white-space:nowrap; overflow:visible; }
+            .z-system-ui .library-header .font-serif > span { overflow:visible; text-overflow:clip; }
+            .z-system-ui .library-main { padding-inline:10px; }
+            .library-art-banner { height:132px; margin-bottom:12px; }
+            .library-art-banner::after { max-width:66%; line-height:1.45; }
+            .z-system-ui .library-main .flex.justify-center.mb-8 { margin-bottom:14px!important; }
+            .z-system-ui .library-main .flex.flex-col.md\:flex-row.justify-between { margin-bottom:16px!important; }
+            .z-system-ui .library-main .flex.gap-3.w-full { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+            .z-system-ui .library-main .flex.gap-3.w-full > .relative { min-width:0; }
+            .z-system-ui .library-main .flex.gap-3.w-full > button { min-width:44px; padding-inline:13px; }
+            .z-system-ui .library-main .flex.gap-3.w-full > button span { white-space:nowrap; }
+            .z-system-ui .library-segmented button { min-width:0; padding-inline:10px; white-space:nowrap; }
+            .library-empty-art { min-height:230px; padding:32px 14px 16px!important; }
+            .library-empty-art > div { padding:13px 14px; font-size:14px; }
+            .z-system-ui .library-module-card h3 { white-space:normal!important; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.5; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center {
+                align-items:center!important;
+                justify-content:center!important;
+                padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom))!important;
+            }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div {
+                max-height:calc(100dvh - max(28px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;
+                margin:auto!important;
+                border-radius:18px!important;
+            }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center .px-6 { padding-left:16px!important; padding-right:16px!important; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center .p-6 { padding:16px!important; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center h3 { min-width:0; font-size:17px!important; line-height:1.35; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center h3 + p { white-space:normal; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center .flex-1.overflow-hidden.flex.flex-col.md\:flex-row { overflow-y:auto; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center .md\:w-80 { width:100%; max-height:none; overflow:visible; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center .flex-1.flex.flex-col.min-w-0 { min-height:320px; }
+            .z-system-ui .fixed.inset-0.flex.items-center.justify-center .p-5.border-t { padding:12px 14px calc(12px + env(safe-area-inset-bottom))!important; }
+        }
     </style>
 </head>
-<body class="selection:bg-purple-900 selection:text-purple-100">
-    <div id="app" v-cloak class="h-full flex flex-col relative bg-dark-950 text-slate-300 bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]">
+<body class="z-system-ui selection:bg-purple-900 selection:text-purple-100">
+    <div id="app" v-cloak class="h-full flex flex-col relative bg-dark-950 text-slate-300">
         
         <!-- Header -->
-        <div class="h-14 md:h-16 border-b border-dark-800 bg-dark-900/80 backdrop-blur flex items-center justify-between px-3 md:px-6 z-10 shrink-0 safe-pt">
+        <div class="library-header h-14 md:h-16 border-b border-dark-800 bg-dark-900/80 backdrop-blur flex items-center justify-between px-3 md:px-6 z-10 shrink-0 safe-pt">
             <!-- Left: Back Button -->
             <div class="flex items-center shrink-0 w-1/4">
                 <a href="../index.html" class="flex items-center text-slate-400 hover:text-mystic-gold transition-colors whitespace-nowrap">
@@ -99,7 +635,7 @@
             <!-- Right: User Avatar -->
             <div class="flex items-center justify-end shrink-0 w-1/4">
                 <div v-if="user.name" class="flex items-center gap-2 text-xs text-slate-500">
-                    <img v-if="user.avatar" :src="user.avatar" class="w-6 h-6 rounded-full border border-dark-600">
+                    <img v-if="user.avatar" :src="user.avatar" :alt="`${user.name}的头像`" class="w-6 h-6 rounded-full border border-dark-600">
                     <div v-else class="w-6 h-6 rounded-full bg-dark-800 flex items-center justify-center font-bold">{{ user.name.charAt(0) }}</div>
                     <span class="max-w-[70px] md:max-w-[100px] truncate hidden sm:inline-block">{{ user.name }}</span>
                 </div>
@@ -123,13 +659,13 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 animate-fade-in custom-scrollbar">
+        <div class="library-main flex-1 overflow-y-auto p-4 md:p-8 animate-fade-in custom-scrollbar">
             <div class="max-w-6xl mx-auto">
                 <!-- Section Navigation -->
                 <div class="flex justify-center mb-8">
-                    <div class="flex bg-dark-900/50 p-1.5 rounded-2xl border border-dark-800 backdrop-blur-sm relative">
+                    <div class="library-segmented flex bg-dark-900/50 p-1.5 rounded-2xl border border-dark-800 backdrop-blur-sm relative">
                         <!-- Sliding Background -->
-                        <div class="absolute top-1.5 bottom-1.5 rounded-xl transition-all duration-300 ease-out bg-dark-800 border"
+                        <div class="library-index-slider absolute top-1.5 bottom-1.5 rounded-xl transition-all duration-300 ease-out bg-dark-800 border"
                              :class="libraryState.currentSection === 'reading' ? 'left-1.5 w-[calc(50%-6px)] border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.15)]' : 'left-[50%] w-[calc(50%-6px)] border-red-500/30 shadow-[0_0_15px_rgba(220,38,38,0.15)]'">
                         </div>
 
@@ -161,7 +697,7 @@
                                    :placeholder="libraryState.currentSection === 'reading' ? '搜索公开典籍...' : '搜索禁忌知识...'"
                                    class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-2.5 text-sm text-slate-300 outline-none transition-colors"
                                    :class="libraryState.currentSection === 'reading' ? 'focus:border-purple-500' : 'focus:border-red-500'">
-                            <button @click="fetchLibraryModules" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 transition-colors"
+                            <button @click="fetchLibraryModules" aria-label="搜索藏书" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 transition-colors"
                                     :class="libraryState.currentSection === 'reading' ? 'hover:text-purple-400' : 'hover:text-red-400'">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </button>
@@ -182,14 +718,14 @@
                 <div v-if="libraryState.loading" class="text-center py-20 text-purple-400 animate-pulse">
                     正在从书架上取书...
                 </div>
-                <div v-else-if="libraryState.modules.length === 0" class="text-center py-20 border border-dashed border-dark-700 rounded bg-dark-900/30">
+                <div v-else-if="libraryState.modules.length === 0" class="library-empty-art text-center py-20 border border-dashed border-dark-700 rounded bg-dark-900/30">
                     <div class="text-slate-500 font-serif italic mb-4">
                         {{ libraryState.currentSection === 'restricted' ? '禁书区尚未有任何记录...' : '图书馆空空如也，也许你该贡献第一本藏书？' }}
                     </div>
                 </div>
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-else class="library-module-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div v-for="mod in libraryState.modules" :key="mod.id"
-                         :class="['group relative bg-dark-900 border rounded-lg overflow-hidden transition-all duration-300 flex flex-col transform hover:-translate-y-1',
+                         :class="['library-module-card group relative bg-dark-900 border rounded-lg overflow-hidden transition-all duration-300 flex flex-col transform hover:-translate-y-1',
                                   libraryState.currentSection === 'restricted' ? 'border-red-900/30 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(220,38,38,0.15)]' : 'border-dark-700 hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]']">
                         
                         <div v-if="libraryState.currentSection === 'restricted'" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -237,7 +773,7 @@
                             <p class="text-sm text-slate-400 line-clamp-3 mb-4 h-[4.5em] leading-relaxed relative z-10">{{ mod.description || '暂无简介...' }}</p>
                             <div class="flex gap-4 text-xs text-slate-600 border-t border-dark-800 pt-3 justify-between">
                                 <div class="flex gap-4">
-                                    <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> {{ Math.ceil(mod.content.length / 1000) }}k 字</span>
+                                    <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> {{ Math.ceil((mod.content_length || (mod.content ? mod.content.length : 0)) / 1000) }}k 字</span>
                                     <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> {{ mod.downloads || 0 }}</span>
                                 </div>
                                 <div class="flex gap-3">
@@ -265,11 +801,11 @@
 
         <!-- Upload Modal (Refined) -->
         <div v-if="libraryState.showUpload" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm safe-pt safe-pb">
-            <div class="bg-dark-900 border border-purple-500/30 rounded-xl shadow-2xl max-w-4xl w-full flex flex-col h-[85vh] md:h-[90vh] animate-fade-in ring-1 ring-white/5">
+            <div class="library-modal-shell bg-dark-900 border border-purple-500/30 rounded-xl shadow-2xl max-w-4xl w-full flex flex-col h-[85vh] md:h-[90vh] animate-fade-in ring-1 ring-white/5">
                 <!-- Header -->
                 <div class="px-6 py-5 border-b border-white/5 flex justify-between items-center flex-shrink-0 bg-white/5">
                     <h3 class="text-xl font-bold text-slate-100 font-serif flex items-center gap-3">
-                        <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                        <div class="library-modal-mark p-2 bg-purple-500/10 rounded-lg text-purple-400">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </div>
                         贡献新藏书
@@ -308,9 +844,9 @@
                         <div class="space-y-2">
                             <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">建议人数</label>
                             <div class="flex items-center gap-2">
-                                <input type="number" v-model="libraryState.uploadForm.min_players" placeholder="最小" min="1" class="w-full bg-dark-950 border border-white/10 rounded-lg px-3 py-2 text-slate-200 focus:border-purple-500 outline-none transition-colors text-center">
+                                <input type="number" v-model="libraryState.uploadForm.min_players" placeholder="最小" min="1" max="20" class="w-full bg-dark-950 border border-white/10 rounded-lg px-3 py-2 text-slate-200 focus:border-purple-500 outline-none transition-colors text-center">
                                 <span class="text-slate-500">-</span>
-                                <input type="number" v-model="libraryState.uploadForm.max_players" placeholder="最大" min="1" class="w-full bg-dark-950 border border-white/10 rounded-lg px-3 py-2 text-slate-200 focus:border-purple-500 outline-none transition-colors text-center">
+                                <input type="number" v-model="libraryState.uploadForm.max_players" placeholder="最大" min="1" max="20" class="w-full bg-dark-950 border border-white/10 rounded-lg px-3 py-2 text-slate-200 focus:border-purple-500 outline-none transition-colors text-center">
                             </div>
                         </div>
 
@@ -543,12 +1079,6 @@
                     temperature: 1.0
                 });
                 
-                // 默认配置 - 公益项目预设值，强制使用
-                const DEFAULT_API_CONFIG = {
-                    apiUrl: '',
-                    apiKey: '',
-                    model: ''
-                };
                 const toasts = ref([]);
                 const libraryState = reactive({
                     modules: [],
@@ -619,16 +1149,16 @@
                     return token;
                 };
 
-                const libraryApiRequest = async (action, body = null, query = {}) => {
+                const libraryApiRequest = async (action, body = null, query = {}, bearerToken = '') => {
                     const params = new URLSearchParams({ action });
                     Object.entries(query).forEach(([key, value]) => {
                         if (value !== undefined && value !== null && value !== '') params.set(key, value);
                     });
-                    const options = body ? {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    } : {};
+                    const headers = {};
+                    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+                    const options = body
+                        ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+                        : { headers };
                     if (!window.AbortController) {
                         const res = await fetch(`${LIBRARY_API_URL}?${params.toString()}`, options);
                         const data = await res.json().catch(() => ({}));
@@ -652,6 +1182,20 @@
                     }
                 };
 
+                const normalizeApiBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
+                const buildOpenAiEndpoint = (apiUrl, path) => {
+                    const baseUrl = normalizeApiBaseUrl(apiUrl);
+                    const cleanPath = String(path || '').replace(/^\/+/, '');
+                    if (!baseUrl || !cleanPath) return '';
+                    if (baseUrl.endsWith(`/${cleanPath}`)) return baseUrl;
+                    if (cleanPath === 'models' && baseUrl.endsWith('/chat/completions')) {
+                        return baseUrl.replace(/\/chat\/completions$/, '/models');
+                    }
+                    if (cleanPath === 'chat/completions' && baseUrl.endsWith('/models')) {
+                        return baseUrl.replace(/\/models$/, '/chat/completions');
+                    }
+                    return baseUrl.endsWith('/v1') ? `${baseUrl}/${cleanPath}` : `${baseUrl}/v1/${cleanPath}`;
+                };
                 const hasApiConfig = () => Boolean(settings.apiUrl && settings.apiKey && settings.model);
 
                 // Init Logic
@@ -666,9 +1210,9 @@
                     if (lSettings) {
                         try {
                             const saved = JSON.parse(lSettings);
-                            settings.apiUrl = saved.usePublicApi ? DEFAULT_API_CONFIG.apiUrl : (saved.customApiUrl || saved.apiUrl || '');
-                            settings.apiKey = saved.usePublicApi ? DEFAULT_API_CONFIG.apiKey : (saved.customApiKey || saved.apiKey || '');
-                            settings.model = saved.usePublicApi ? DEFAULT_API_CONFIG.model : (saved.customModel || saved.model || '');
+                            settings.apiUrl = saved.customApiUrl || saved.apiUrl || '';
+                            settings.apiKey = saved.customApiKey || saved.apiKey || '';
+                            settings.model = saved.customModel || saved.model || '';
                         } catch (e) {
                             localStorage.removeItem('coc_settings');
                         }
@@ -684,11 +1228,12 @@
                 const fetchLibraryModules = async () => {
                     libraryState.loading = true;
                     try {
+                        const ownerToken = libraryState.currentSection === 'restricted' ? ensureLibraryIdentity() : '';
                         const data = await libraryApiRequest('list', null, {
                             section: libraryState.currentSection,
                             q: libraryState.searchQuery,
                             user_id: user.uuid
-                        });
+                        }, ownerToken);
                         libraryState.modules = data.modules || [];
                     } catch (err) {
                         console.error('Library Fetch Error:', err);
@@ -696,6 +1241,18 @@
                     } finally {
                         libraryState.loading = false;
                     }
+                };
+
+                const fetchLibraryModuleDetail = async (mod) => {
+                    if (typeof mod?.content === 'string') return mod;
+                    const ownerToken = mod?.type === 'ai_adapt_private' ? ensureLibraryIdentity() : '';
+                    const data = await libraryApiRequest('detail', null, {
+                        id: mod.id,
+                        user_id: user.uuid
+                    }, ownerToken);
+                    Object.assign(mod, data.module || {});
+                    if (typeof mod.content !== 'string') throw new Error('Module content is unavailable');
+                    return mod;
                 };
 
                 const deleteModule = (mod) => {
@@ -733,6 +1290,13 @@
 
                 const uploadToLibrary = async () => {
                     if (!libraryState.uploadForm.title || !libraryState.uploadForm.content) return showToast('标题和内容不能为空', 'warning');
+                    const hasMinPlayers = libraryState.uploadForm.min_players !== null && libraryState.uploadForm.min_players !== '';
+                    const hasMaxPlayers = libraryState.uploadForm.max_players !== null && libraryState.uploadForm.max_players !== '';
+                    const minPlayers = Number(libraryState.uploadForm.min_players);
+                    const maxPlayers = Number(libraryState.uploadForm.max_players);
+                    if (hasMinPlayers && hasMaxPlayers && minPlayers > maxPlayers) {
+                        return showToast('最少人数不能大于最多人数', 'warning');
+                    }
                     
                     libraryState.isUploading = true;
                     try {
@@ -766,24 +1330,27 @@
                 };
 
                 const useLibraryModule = async (mod, mode) => {
-                    // Try to increment download count
-                    mod.downloads = (mod.downloads || 0) + 1;
-                    libraryApiRequest('increment_downloads', { id: mod.id }).catch((error) => {
-                        console.warn('Failed to increment downloads', error);
-                    });
-                    
-                    // Store module in localStorage for main app to pick up
-                    const moduleData = {
-                        name: mod.title,
-                        content: mod.content,
-                        mode: mode // 'single' or 'multi'
-                    };
-                    localStorage.setItem('coc_pending_module', JSON.stringify(moduleData));
-                    
-                    showToast(`已借阅《${mod.title}》，正在返回...`, 'success');
-                    setTimeout(() => {
-                        window.location.href = '../index.html';
-                    }, 800);
+                    try {
+                        const fullModule = await fetchLibraryModuleDetail(mod);
+                        fullModule.downloads = (fullModule.downloads || 0) + 1;
+                        libraryApiRequest('increment_downloads', { id: fullModule.id }).catch((error) => {
+                            console.warn('Failed to increment downloads', error);
+                        });
+
+                        localStorage.setItem('coc_pending_module', JSON.stringify({
+                            name: fullModule.title,
+                            content: fullModule.content,
+                            mode
+                        }));
+
+                        showToast(`已借阅《${fullModule.title}》，正在返回...`, 'success');
+                        setTimeout(() => {
+                            window.location.href = '../index.html';
+                        }, 800);
+                    } catch (error) {
+                        console.error('Module detail error:', error);
+                        showToast('无法读取模组正文：' + error.message, 'error');
+                    }
                 };
 
                 const generateModuleSummary = async (content) => {
@@ -797,7 +1364,7 @@
                             { role: 'user', content: `请为以下模组生成简介：\n\n${content.slice(0, 5000)}` }
                         ];
 
-                        const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
+                        const res = await fetch(buildOpenAiEndpoint(settings.apiUrl, 'chat/completions'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
                             body: JSON.stringify({
@@ -921,7 +1488,7 @@
                             { role: 'user', content: `请依据上述规则，将以下长篇内容改编为一部宏大的 COC 战役模组书。请务必保留丰富的细节，宁可写不完也不要概括：\n\n${novelContent.slice(0, 100000)}` }
                         ];
 
-                        const res = await fetch(`${settings.apiUrl}/v1/chat/completions`, {
+                        const res = await fetch(buildOpenAiEndpoint(settings.apiUrl, 'chat/completions'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
                             body: JSON.stringify({
@@ -957,8 +1524,9 @@
                     }
                 };
 
-                const exportModuleToWord = (mod) => {
+                const exportModuleToWord = async (mod) => {
                     try {
+                        mod = await fetchLibraryModuleDetail(mod);
                         const htmlContent = sanitizeHtml(marked.parse(String(mod.content || '')));
                         const safeTitle = escapeHtml(mod.title || '未命名模组');
                         const safeAuthor = escapeHtml(mod.author_name || '佚名');

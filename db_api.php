@@ -25,23 +25,34 @@ function ensure_auth_schema($conn) {
         investigators LONGTEXT NULL,
         saves LONGTEXT NULL,
         tavern_novels LONGTEXT NULL,
+        revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $stmt = $conn->prepare("SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
     $table = 'users';
-    $column = 'auth_token';
-    $stmt->bind_param('ss', $table, $column);
+    $authColumn = 'auth_token';
+    $revisionColumn = 'revision';
+    $stmt->bind_param('ss', $table, $authColumn);
     $stmt->execute();
     $row = app_stmt_fetch_assoc($stmt);
     if ((int)($row['n'] ?? 0) === 0) {
         $conn->query("ALTER TABLE users ADD COLUMN auth_token VARCHAR(128) NULL");
     }
+
+    $stmt = $conn->prepare("SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+    $userDataTable = 'user_data';
+    $stmt->bind_param('ss', $userDataTable, $revisionColumn);
+    $stmt->execute();
+    $row = app_stmt_fetch_assoc($stmt);
+    if ((int)($row['n'] ?? 0) === 0) {
+        $conn->query("ALTER TABLE user_data ADD COLUMN revision BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER tavern_novels");
+    }
 }
 
 function sanitize_cloud_settings($settings) {
-    if (!is_array($settings)) return $settings;
+    if (!is_array($settings)) return [];
 
     if (isset($settings['api']) && is_array($settings['api'])) {
         unset($settings['api']['customApiKey'], $settings['api']['imageGenApiKey']);
@@ -60,6 +71,30 @@ function json_column($value) {
     if ($value === null || $value === '') return null;
     $decoded = json_decode($value, true);
     return json_last_error() === JSON_ERROR_NONE ? $decoded : null;
+}
+
+function list_json_column($value, $field) {
+    if ($value === null || $value === '') return [];
+    $decoded = json_decode($value, true);
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+        app_json_response(['status' => 'error', 'message' => 'Stored ' . $field . ' data is invalid'], 500);
+    }
+    return $decoded;
+}
+
+function encode_json_or_fail($value, $field) {
+    $encoded = json_encode($value, JSON_UNESCAPED_UNICODE);
+    if ($encoded === false) {
+        app_json_response(['status' => 'error', 'message' => $field . ' contains invalid text'], 400);
+    }
+    return $encoded;
+}
+
+function require_cloud_list($value, $field) {
+    if (!is_array($value)) {
+        app_json_response(['status' => 'error', 'message' => $field . ' must be an array'], 400);
+    }
+    return $value;
 }
 
 function hash_auth_token($token) {
@@ -84,7 +119,9 @@ function require_user_token($conn, $userId) {
     if (hash_equals((string)$user['auth_token'], $token)) {
         $stmt = $conn->prepare("UPDATE users SET auth_token = ? WHERE user_uuid = ?");
         $stmt->bind_param('ss', $tokenHash, $userId);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            app_json_response(['status' => 'error', 'message' => 'Token migration failed'], 500);
+        }
     }
 }
 
@@ -98,11 +135,11 @@ if ($action === 'register') {
     $email = trim((string)($data['email'] ?? ''));
     $password = (string)($data['password'] ?? '');
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         app_json_response(['status' => 'error', 'message' => '邮箱格式不正确'], 400);
     }
-    if (strlen($password) < 6) {
-        app_json_response(['status' => 'error', 'message' => '密码至少需要 6 位'], 400);
+    if (strlen($password) < 8 || strlen($password) > 4096) {
+        app_json_response(['status' => 'error', 'message' => '密码需要 8 至 4096 位'], 400);
     }
 
     $hashedPass = password_hash($password, PASSWORD_DEFAULT);
@@ -113,7 +150,10 @@ if ($action === 'register') {
     $stmt = $conn->prepare("INSERT INTO users (email, password, user_uuid, auth_token) VALUES (?, ?, ?, ?)");
     $stmt->bind_param('ssss', $email, $hashedPass, $userId, $authTokenHash);
     if (!$stmt->execute()) {
-        app_json_response(['status' => 'error', 'message' => '邮箱已被注册'], 409);
+        if ((int)$stmt->errno === 1062) {
+            app_json_response(['status' => 'error', 'message' => '邮箱已被注册'], 409);
+        }
+        app_json_response(['status' => 'error', 'message' => '注册暂时不可用'], 500);
     }
 
     app_json_response(['status' => 'success', 'user_id' => $userId, 'auth_token' => $authToken]);
@@ -126,6 +166,10 @@ if ($action === 'login') {
     $data = app_read_json_body();
     $email = trim((string)($data['email'] ?? ''));
     $password = (string)($data['password'] ?? '');
+
+    if (strlen($email) > 254 || strlen($password) > 4096) {
+        app_json_response(['status' => 'error', 'message' => '账号或密码错误'], 400);
+    }
 
     $stmt = $conn->prepare("SELECT password, user_uuid FROM users WHERE email = ? LIMIT 1");
     $stmt->bind_param('s', $email);
@@ -140,7 +184,9 @@ if ($action === 'login') {
     $authTokenHash = hash_auth_token($authToken);
     $stmt = $conn->prepare("UPDATE users SET auth_token = ? WHERE user_uuid = ?");
     $stmt->bind_param('ss', $authTokenHash, $user['user_uuid']);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        app_json_response(['status' => 'error', 'message' => '登录暂时不可用'], 500);
+    }
 
     app_json_response(['status' => 'success', 'user_id' => $user['user_uuid'], 'auth_token' => $authToken]);
 }
@@ -151,7 +197,7 @@ if ($action === 'pull') {
     $userId = app_normalize_user_id($_GET['user_id'] ?? '');
     require_user_token($conn, $userId);
 
-    $stmt = $conn->prepare("SELECT settings, investigators, saves, tavern_novels FROM user_data WHERE user_id = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT settings, investigators, saves, tavern_novels, revision, updated_at FROM user_data WHERE user_id = ? LIMIT 1");
     $stmt->bind_param('s', $userId);
     $stmt->execute();
     $row = app_stmt_fetch_assoc($stmt);
@@ -160,9 +206,11 @@ if ($action === 'pull') {
     $settings = sanitize_cloud_settings(json_column($row['settings']));
     app_json_response([
         'settings' => $settings,
-        'investigators' => json_column($row['investigators']),
-        'saves' => json_column($row['saves']),
-        'tavern_novels' => json_column($row['tavern_novels']),
+        'investigators' => list_json_column($row['investigators'], 'investigators'),
+        'saves' => list_json_column($row['saves'], 'saves'),
+        'tavern_novels' => list_json_column($row['tavern_novels'], 'tavern_novels'),
+        'revision' => (int)($row['revision'] ?? 0),
+        'updated_at' => $row['updated_at'] ?? null,
     ]);
 }
 
@@ -175,18 +223,55 @@ if ($action === 'sync') {
     require_user_token($conn, $userId);
 
     $settings = sanitize_cloud_settings($data['settings'] ?? []);
-    $investigators = $data['investigators'] ?? [];
-    $saves = $data['saves'] ?? [];
-    $tavernNovels = $data['tavern_novels'] ?? [];
+    $investigators = require_cloud_list($data['investigators'] ?? [], 'investigators');
+    $saves = require_cloud_list($data['saves'] ?? [], 'saves');
+    $tavernNovels = require_cloud_list($data['tavern_novels'] ?? [], 'tavern_novels');
+    $baseRevision = filter_var($data['base_revision'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    if ($baseRevision === false) {
+        app_json_response(['status' => 'error', 'message' => 'base_revision is required'], 400);
+    }
 
-    $stmt = $conn->prepare("REPLACE INTO user_data (user_id, settings, investigators, saves, tavern_novels) VALUES (?, ?, ?, ?, ?)");
-    $settingsJson = json_encode($settings, JSON_UNESCAPED_UNICODE);
-    $investigatorsJson = json_encode($investigators, JSON_UNESCAPED_UNICODE);
-    $savesJson = json_encode($saves, JSON_UNESCAPED_UNICODE);
-    $tavernNovelsJson = json_encode($tavernNovels, JSON_UNESCAPED_UNICODE);
-    $stmt->bind_param('sssss', $userId, $settingsJson, $investigatorsJson, $savesJson, $tavernNovelsJson);
+    $settingsJson = encode_json_or_fail($settings, 'settings');
+    $investigatorsJson = encode_json_or_fail($investigators, 'investigators');
+    $savesJson = encode_json_or_fail($saves, 'saves');
+    $tavernNovelsJson = encode_json_or_fail($tavernNovels, 'tavern_novels');
 
-    app_json_response(['status' => $stmt->execute() ? 'success' : 'error']);
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare("SELECT revision, updated_at FROM user_data WHERE user_id = ? FOR UPDATE");
+        $stmt->bind_param('s', $userId);
+        $stmt->execute();
+        $current = app_stmt_fetch_assoc($stmt);
+        $currentRevision = (int)($current['revision'] ?? 0);
+
+        if ((int)$baseRevision !== $currentRevision) {
+            $conn->rollback();
+            app_json_response([
+                'status' => 'conflict',
+                'message' => 'Cloud data changed on another device',
+                'revision' => $currentRevision,
+                'updated_at' => $current['updated_at'] ?? null,
+            ], 409);
+        }
+
+        $nextRevision = $currentRevision + 1;
+        if ($current) {
+            $stmt = $conn->prepare("UPDATE user_data SET settings = ?, investigators = ?, saves = ?, tavern_novels = ?, revision = ? WHERE user_id = ?");
+            $stmt->bind_param('ssssis', $settingsJson, $investigatorsJson, $savesJson, $tavernNovelsJson, $nextRevision, $userId);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO user_data (user_id, settings, investigators, saves, tavern_novels, revision) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('sssssi', $userId, $settingsJson, $investigatorsJson, $savesJson, $tavernNovelsJson, $nextRevision);
+        }
+
+        if (!$stmt->execute()) {
+            throw new RuntimeException('Cloud write failed');
+        }
+        $conn->commit();
+        app_json_response(['status' => 'success', 'revision' => $nextRevision]);
+    } catch (Throwable $error) {
+        $conn->rollback();
+        app_json_response(['status' => 'error', 'message' => '云端数据保存失败'], 500);
+    }
 }
 
 if ($action === 'logout') {
@@ -199,7 +284,9 @@ if ($action === 'logout') {
 
     $stmt = $conn->prepare("UPDATE users SET auth_token = NULL WHERE user_uuid = ?");
     $stmt->bind_param('s', $userId);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        app_json_response(['status' => 'error', 'message' => '退出登录失败'], 500);
+    }
     app_json_response(['status' => 'success']);
 }
 

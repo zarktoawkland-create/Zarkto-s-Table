@@ -1,20 +1,29 @@
+.git
+.gitignore
+.agents
+.codex
+.well-known
+.idea
+.vscode
+
 config.local.php
 *-claimed-*.json
 *.cpa.*.json
-.well-known/
-.env
-.env.*
-!.env.example
-*.log
 
-# Local image-generation intermediates and source masters are not deployment assets.
-tmp/
+tmp
+tools
+SECURITY_NOTES.md
+DEPLOY_ZEABUR.md
+assets/art/PROMPTS.md
+assets/art/README.md
 assets/art/**/*.png
 assets/art/**/*.tif
-
-# Retained design alternatives that are not referenced by the production pages.
 assets/art/generated/archive-index-tab.webp
 assets/art/generated/brass-calibration-rule.webp
 assets/art/generated/mode-multiplayer-occult-link-v1.webp
 assets/art/generated/stitched-archive-patch.webp
 assets/art/user-edited/tavern-candle-archive-edited.webp
+
+*.log
+Dockerfile*
+!Dockerfile

@@ -1,6 +1,14 @@
 <?php
 ini_set('display_errors', '0');
 
+function app_first_env($names) {
+    foreach ((array)$names as $name) {
+        $value = getenv((string)$name);
+        if ($value !== false && $value !== '') return $value;
+    }
+    return null;
+}
+
 function app_config() {
     static $config = null;
     if ($config !== null) return $config;
@@ -16,6 +24,28 @@ function app_config() {
         }
     }
 
+    // Production platforms such as Zeabur inject MySQL credentials as
+    // environment variables. Environment values take precedence over files so
+    // secrets never need to be committed or baked into the container image.
+    $environmentDb = [
+        'host' => app_first_env(['MYSQL_HOST', 'DB_HOST']),
+        'port' => app_first_env(['MYSQL_PORT', 'DB_PORT']),
+        'user' => app_first_env(['MYSQL_USERNAME', 'MYSQL_USER', 'DB_USER']),
+        'password' => app_first_env(['MYSQL_PASSWORD', 'DB_PASSWORD']),
+        'database' => app_first_env(['MYSQL_DATABASE', 'DB_NAME', 'DB_DATABASE']),
+    ];
+    foreach ($environmentDb as $key => $value) {
+        if ($value !== null) $config['db'][$key] = $value;
+    }
+
+    $allowedOrigins = getenv('APP_ALLOWED_ORIGINS');
+    if ($allowedOrigins !== false) {
+        $config['allowed_origins'] = array_values(array_filter(array_map(
+            'trim',
+            explode(',', $allowedOrigins)
+        )));
+    }
+
     return is_array($config) ? $config : [];
 }
 
@@ -26,9 +56,7 @@ function app_send_cors_headers($methods = 'GET, POST, OPTIONS') {
 
     if ($origin !== '') {
         header('Vary: Origin');
-        if (in_array('*', $allowedOrigins, true)) {
-            header('Access-Control-Allow-Origin: *');
-        } elseif (in_array($origin, $allowedOrigins, true)) {
+        if (in_array($origin, $allowedOrigins, true)) {
             header('Access-Control-Allow-Origin: ' . $origin);
         }
     }
@@ -53,7 +81,11 @@ function app_json_response($data, $status = 200) {
 }
 
 function app_read_json_body() {
-    $raw = file_get_contents('php://input');
+    $maxBytes = max(1024, (int)($GLOBALS['app_max_request_bytes'] ?? (1024 * 1024)));
+    $raw = file_get_contents('php://input', false, null, 0, $maxBytes + 1);
+    if ($raw !== false && strlen($raw) > $maxBytes) {
+        app_json_response(['status' => 'error', 'message' => 'Request body too large'], 413);
+    }
     if ($raw === false || trim($raw) === '') return [];
 
     $data = json_decode($raw, true);
@@ -65,6 +97,7 @@ function app_read_json_body() {
 
 function app_require_content_length($maxBytes) {
     $maxBytes = max(1, (int)$maxBytes);
+    $GLOBALS['app_max_request_bytes'] = $maxBytes;
     $length = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
     if ($length > $maxBytes) {
         app_json_response(['status' => 'error', 'message' => 'Request body too large'], 413);
@@ -85,7 +118,24 @@ function app_db() {
         }
     }
 
-    $conn = new mysqli($db['host'], $db['user'], $db['password'] ?? '', $db['database']);
+    $port = filter_var($db['port'] ?? 3306, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => 65535],
+    ]);
+    if ($port === false) {
+        app_json_response(['status' => 'error', 'message' => 'Database port is invalid'], 500);
+    }
+
+    try {
+        $conn = new mysqli(
+            $db['host'],
+            $db['user'],
+            $db['password'] ?? '',
+            $db['database'],
+            (int)$port
+        );
+    } catch (Throwable $error) {
+        app_json_response(['status' => 'error', 'message' => 'Database connection failed'], 500);
+    }
     if ($conn->connect_error) {
         app_json_response(['status' => 'error', 'message' => 'Database connection failed'], 500);
     }
@@ -183,19 +233,78 @@ function app_client_ip() {
     return substr($ip, 0, 45);
 }
 
+function app_run_periodically($key, $intervalSeconds, $callback) {
+    static $completed = [];
+    $intervalSeconds = max(10, (int)$intervalSeconds);
+    $db = app_config()['db'] ?? [];
+    $identity = implode('|', [
+        (string)($db['host'] ?? ''),
+        (string)($db['database'] ?? ''),
+        (string)$key,
+    ]);
+    $cacheKey = 'z_coc_maintenance_' . hash('sha256', $identity);
+
+    if (isset($completed[$cacheKey])) return false;
+
+    if (function_exists('apcu_fetch')) {
+        $cached = apcu_fetch($cacheKey, $hit);
+        if ($hit && $cached) {
+            $completed[$cacheKey] = true;
+            return false;
+        }
+    }
+
+    $markerPath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+        . DIRECTORY_SEPARATOR . $cacheKey . '.stamp';
+    $handle = @fopen($markerPath, 'c+');
+    if ($handle && @flock($handle, LOCK_EX)) {
+        rewind($handle);
+        $lastRun = (int)trim((string)stream_get_contents($handle));
+        if ($lastRun > 0 && (time() - $lastRun) < $intervalSeconds) {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+            $completed[$cacheKey] = true;
+            if (function_exists('apcu_store')) apcu_store($cacheKey, 1, $intervalSeconds);
+            return false;
+        }
+
+        $succeeded = call_user_func($callback) !== false;
+        if ($succeeded) {
+            ftruncate($handle, 0);
+            rewind($handle);
+            fwrite($handle, (string)time());
+            fflush($handle);
+        }
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    } else {
+        if ($handle) fclose($handle);
+        $succeeded = call_user_func($callback) !== false;
+    }
+
+    if (!empty($succeeded)) {
+        $completed[$cacheKey] = true;
+        if (function_exists('apcu_store')) apcu_store($cacheKey, 1, $intervalSeconds);
+        return true;
+    }
+    return false;
+}
+
 function app_rate_limit($conn, $scope, $limit, $windowSeconds) {
     $scope = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$scope);
     $limit = max(1, (int)$limit);
     $windowSeconds = max(10, (int)$windowSeconds);
     $bucket = app_client_ip() . ':' . $scope;
 
-    $conn->query("CREATE TABLE IF NOT EXISTS api_rate_limits (
-        bucket VARCHAR(128) NOT NULL,
-        hits INT UNSIGNED NOT NULL DEFAULT 0,
-        window_start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (bucket),
-        KEY idx_window_start (window_start)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    app_run_periodically('api_rate_limits_schema_v1', 3600, function () use ($conn) {
+        return (bool)$conn->query("CREATE TABLE IF NOT EXISTS api_rate_limits (
+            bucket VARCHAR(128) NOT NULL,
+            hits INT UNSIGNED NOT NULL DEFAULT 0,
+            window_start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (bucket),
+            KEY idx_window_start (window_start)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    });
 
     if (mt_rand(1, 100) === 1) {
         $conn->query("DELETE FROM api_rate_limits WHERE window_start < (NOW() - INTERVAL 1 DAY)");

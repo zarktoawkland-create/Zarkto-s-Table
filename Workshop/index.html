@@ -2,13 +2,13 @@
 <html lang="zh-CN" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>COC 调查员生成器</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;600;700&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script>
         tailwind.config = {
@@ -213,9 +213,513 @@
             border: 1px solid #5c4033;
             border-left: none;
         }
+
+        /* Zarkto System UI 2026 */
+        :root {
+            color-scheme: dark;
+            --z-ui-gothic: 'Grenze Gotisch', 'Noto Serif SC', 'Songti SC', serif;
+            --z-canvas: #03070c;
+            --z-surface: rgba(15, 23, 32, .95);
+            --z-line: rgba(174, 163, 142, .14);
+            --z-highlight: rgba(255, 255, 255, .055);
+            --z-gold: #c8aa62;
+            --z-teal: #4bb9a8;
+            --z-ease: cubic-bezier(.2,.8,.2,1);
+            --z-shadow: 0 20px 58px rgba(0,0,0,.3), inset 0 1px 0 var(--z-highlight);
+        }
+        body.z-system-ui { background: var(--z-canvas); -webkit-font-smoothing: antialiased; }
+        body.z-system-ui #app,
+        .z-system-ui .drawer-content {
+            background:
+                radial-gradient(880px 600px at 92% -8%, rgba(24,111,105,.15), transparent 64%),
+                radial-gradient(700px 560px at 12% 105%, rgba(128,63,45,.11), transparent 68%),
+                var(--z-canvas);
+        }
+        .z-system-ui ::-webkit-scrollbar { width: 7px; height: 7px; }
+        .z-system-ui ::-webkit-scrollbar-track { background: transparent; border: 0; }
+        .z-system-ui ::-webkit-scrollbar-thumb { background: rgba(100,116,139,.48); border: 2px solid transparent; background-clip: padding-box; border-radius: 999px; }
+        .z-system-ui .rounded { border-radius: 10px; }
+        .z-system-ui .rounded-lg { border-radius: 14px; }
+        .z-system-ui .rounded-xl { border-radius: 18px; }
+        .z-system-ui .rounded-2xl { border-radius: 22px; }
+        .z-system-ui .glass-panel,
+        .z-system-ui .card {
+            background:
+                linear-gradient(145deg, rgba(20,29,40,.95), rgba(7,13,21,.94)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 460px 460px repeat;
+            background-blend-mode: normal, soft-light;
+            border: 1px solid var(--z-line);
+            box-shadow: var(--z-shadow);
+            backdrop-filter: blur(20px) saturate(120%);
+            -webkit-backdrop-filter: blur(20px) saturate(120%);
+        }
+        .z-system-ui .workshop-header {
+            margin: 10px 12px 0;
+            width: calc(100% - 24px);
+            border: 1px solid var(--z-line);
+            border-radius: 20px;
+            background: rgba(12,20,34,.72);
+            box-shadow: 0 16px 44px rgba(0,0,0,.28), inset 0 1px 0 var(--z-highlight);
+            backdrop-filter: blur(26px) saturate(140%);
+            -webkit-backdrop-filter: blur(26px) saturate(140%);
+        }
+        .z-system-ui .workshop-main { padding-top: 1.35rem; }
+        .z-system-ui .drawer-side > .menu {
+            margin: 10px;
+            height: calc(100dvh - 20px);
+            min-height: 0;
+            border: 1px solid var(--z-line);
+            border-radius: 24px;
+            background:
+                linear-gradient(180deg, rgba(13,21,30,.95) 0%, rgba(5,10,17,.97) 62%, rgba(4,8,14,.99) 100%),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 430px 430px repeat;
+            background-blend-mode: normal, soft-light;
+            box-shadow: 0 24px 72px rgba(0,0,0,.38), inset 0 1px 0 var(--z-highlight);
+            backdrop-filter: blur(28px) saturate(125%);
+            -webkit-backdrop-filter: blur(28px) saturate(125%);
+        }
+        .z-system-ui .drawer-side .menu li > a { border-radius: 15px; }
+        .z-system-ui .z-character-index {
+            isolation: isolate;
+            background:
+                linear-gradient(90deg, rgba(216,184,78,.1), rgba(15,23,42,.78) 46%, rgba(15,23,42,.42)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 360px 360px repeat !important;
+            background-blend-mode: normal, soft-light !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 9px 22px rgba(0,0,0,.18) !important;
+        }
+        .z-system-ui .z-character-index::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 24%;
+            bottom: 24%;
+            width: 3px;
+            z-index: 2;
+            pointer-events: none;
+            border-radius: 999px;
+            background: var(--z-gold);
+            box-shadow: 0 0 13px rgba(216,184,78,.58);
+        }
+        .z-system-ui .z-character-index > * { position: relative; z-index: 1; }
+        .z-system-ui .btn {
+            min-height: 2.5rem;
+            height: auto;
+            border-radius: 13px;
+            border-color: rgba(100,116,139,.28);
+            transition: transform .22s var(--z-ease), background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .22s ease;
+            text-transform: none;
+        }
+        .z-system-ui .workshop-header,
+        .z-system-ui .drawer-side > .menu > div:first-child,
+        .z-system-ui .card h1,
+        .z-system-ui .card h2,
+        .z-system-ui .card h3,
+        .z-system-ui .card h4,
+        .z-system-ui .btn,
+        .z-system-ui .tab,
+        .z-system-ui .badge,
+        .z-system-ui .label {
+            font-family: var(--z-ui-gothic);
+        }
+        .z-system-ui .btn-circle, .z-system-ui .btn-square { border-radius: 13px; }
+        .z-system-ui .btn:active { transform: scale(.96); }
+        .z-system-ui .input, .z-system-ui .select, .z-system-ui .textarea,
+        .z-system-ui input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+        .z-system-ui select, .z-system-ui textarea {
+            border-radius: 12px !important;
+            border-color: rgba(100,116,139,.34) !important;
+            background-color: rgba(3,8,18,.82) !important;
+            transition: border-color .22s ease, box-shadow .22s ease, transform .22s var(--z-ease);
+        }
+        .z-system-ui input:focus, .z-system-ui select:focus, .z-system-ui textarea:focus { border-color: rgba(69,216,194,.58) !important; box-shadow: 0 0 0 3px rgba(69,216,194,.09); outline: none; }
+        .z-system-ui button, .z-system-ui a, .z-system-ui label { -webkit-tap-highlight-color: transparent; }
+        .z-system-ui button:focus-visible, .z-system-ui a:focus-visible, .z-system-ui input:focus-visible, .z-system-ui select:focus-visible, .z-system-ui textarea:focus-visible { outline: 2px solid rgba(216,184,78,.72); outline-offset: 2px; }
+        .z-system-ui .join, .z-system-ui .tabs { padding: 3px; border-radius: 14px; background: rgba(3,8,18,.68); border: 1px solid var(--z-line); }
+        .z-system-ui .join > *, .z-system-ui .tab { border-radius: 10px !important; }
+        .z-system-ui .modal { background: rgba(0,0,0,.58); backdrop-filter: blur(12px); }
+        .z-system-ui .modal-box {
+            border-radius: 26px;
+            border: 1px solid rgba(148,163,184,.17);
+            background: linear-gradient(150deg, rgba(20,30,49,.99), rgba(6,12,23,.99));
+            box-shadow: 0 34px 96px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.06);
+        }
+        .z-system-ui .alert { border-radius: 999px; background: rgba(10,16,28,.78); backdrop-filter: blur(24px) saturate(135%); box-shadow: 0 16px 42px rgba(0,0,0,.34), inset 0 1px 0 var(--z-highlight); }
+        body.z-system-ui::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+            background: url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 560px 560px repeat;
+            opacity: .052;
+            mix-blend-mode: soft-light;
+        }
+        .workshop-art-banner {
+            position: relative;
+            height: clamp(160px, 22vw, 250px);
+            overflow: hidden;
+            isolation: isolate;
+            border: 1px solid rgba(212,175,55,.16);
+            border-radius: 24px;
+            background:
+                linear-gradient(90deg, rgba(3,7,16,.25), rgba(3,7,16,.08) 42%, rgba(3,7,16,.78) 100%),
+                linear-gradient(0deg, rgba(3,7,16,.9), transparent 68%),
+                url("../assets/art/generated/workshop-investigator-dossier.webp") 46% 46% / cover no-repeat;
+            box-shadow: 0 24px 70px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.045);
+            filter: grayscale(.1) sepia(.07) saturate(.74) contrast(1.08) brightness(.84);
+        }
+        .workshop-card-decor {
+            background-image:
+                linear-gradient(145deg, rgba(13,22,37,.93), rgba(5,11,21,.96)),
+                url("../assets/art/generated/observatory-chart-1890s.webp");
+            background-size: auto, min(52vw, 600px) auto;
+            background-position: center, right -150px top 180px;
+            background-repeat: no-repeat;
+        }
+        .z-system-ui .card::before {
+            content: "";
+            position: absolute;
+            inset: 0 24px auto;
+            height: 1px;
+            z-index: 2;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent, rgba(216,184,78,.28), transparent);
+            opacity: .75;
+        }
+        .z-system-ui .card::after { display: none; }
+        .z-system-ui .card > .card-body {
+            background-image: none;
+        }
+        .z-system-ui .progress {
+            background-color: rgba(15,23,42,.92);
+            background-image: none;
+        }
+        .skill-ledger-card {
+            isolation: isolate;
+        }
+        .skill-ledger-card::after {
+            content: "" !important;
+            display: block !important;
+            position: absolute;
+            right: -58px;
+            bottom: -72px;
+            width: 250px;
+            height: 250px;
+            z-index: 0;
+            pointer-events: none;
+            opacity: .085;
+            background: url("../assets/art/generated/observatory-chart-1890s.webp") center / cover no-repeat;
+            filter: grayscale(.7) sepia(.35) saturate(.55) contrast(1.12);
+            -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 72%);
+            mask-image: radial-gradient(circle, #000 18%, transparent 72%);
+        }
+        .skill-ledger-card > .card-body { position: relative; z-index: 1; }
+        .skill-toolbar,
+        .skill-points-dashboard,
+        .skill-table-shell {
+            border-color: rgba(174,163,142,.17) !important;
+            background:
+                linear-gradient(150deg, rgba(7,14,19,.88), rgba(3,8,12,.94)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 420px 420px repeat !important;
+            background-blend-mode: normal, soft-light !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.028), 0 12px 32px rgba(0,0,0,.18) !important;
+        }
+        .skill-table-shell thead tr {
+            background: linear-gradient(180deg, rgba(37,48,61,.92), rgba(15,24,31,.96)) !important;
+        }
+        .skill-table-shell tbody tr { background: rgba(3,9,13,.3); }
+        .skill-table-shell tbody tr:nth-child(even) { background: rgba(15,26,31,.34); }
+        .skill-table-shell tbody tr:hover { background: rgba(77,168,151,.055) !important; }
+        .skill-table-shell .skill-name-input { min-width: 7rem; }
+        .skill-table-shell .skill-number-input { min-width: 3.1rem; }
+        .skill-table-shell .skill-growth-join { min-width: 5.6rem; }
+        .skill-table-shell .skill-growth-roll,
+        .skill-table-shell .skill-remove {
+            color: rgba(231,221,197,.72);
+            border: 1px solid rgba(174,163,142,.18);
+            background: linear-gradient(145deg, rgba(20,30,37,.92), rgba(5,11,16,.96));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+        }
+        .skill-table-shell .skill-growth-roll:hover { color: #07100e; border-color: rgba(104,183,168,.64); }
+        .skill-table-shell .skill-remove:hover { border-color: rgba(180,78,67,.52); background: rgba(82,25,23,.42); }
+        .z-medallion {
+            background-color: transparent !important;
+            background-image: url("../assets/art/generated/instrument-status-medallion.webp") !important;
+            background-position: center !important; background-size: 128% 128% !important; background-repeat: no-repeat !important;
+            border-color: transparent !important; box-shadow: 0 8px 18px rgba(0,0,0,.26) !important;
+        }
+        .z-history-panel {
+            background-image:
+                radial-gradient(circle at 88% 48%, rgba(69,216,194,.035), transparent 34%),
+                linear-gradient(rgba(5,10,20,.78), rgba(5,10,20,.84));
+        }
+        .workshop-catalog-label {
+            position: absolute;
+            left: 18px;
+            top: 16px;
+            width: 170px;
+            height: 64px;
+            display: grid;
+            place-items: center;
+            padding: 0 27px 1px;
+            color: rgba(17,24,33,.72);
+            background: url("../assets/art/generated/museum-label-holder.webp") center / contain no-repeat;
+            font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+            letter-spacing: .12em;
+            filter: grayscale(.08) sepia(.06) saturate(.72) brightness(.78);
+            opacity: .72;
+            transform: rotate(-.8deg);
+            z-index: 2;
+        }
+        .workshop-art-banner::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 24% 28%, rgba(216,184,78,.1), transparent 25%),
+                linear-gradient(112deg, transparent 34%, rgba(69,216,194,.045) 48%, transparent 60%);
+            mix-blend-mode: screen;
+            animation: dossierScan 9s ease-in-out infinite;
+        }
+        .workshop-art-banner::after {
+            content: "ARKHAM FIELD OFFICE  /  INVESTIGATOR DOSSIER";
+            position: absolute;
+            right: 22px;
+            bottom: 18px;
+            max-width: calc(100% - 44px);
+            color: rgba(226,232,240,.72);
+            font: 600 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+            letter-spacing: .2em;
+            text-align: right;
+            text-shadow: 0 2px 12px #000;
+        }
+        @keyframes dossierScan { 0%, 28% { transform: translateX(-42%); opacity: 0; } 52% { opacity: .8; } 72%, 100% { transform: translateX(42%); opacity: 0; } }
+        @media (min-width: 768px) {
+            .z-system-ui .drawer-side > .menu { margin: 12px 0 12px 12px; height: calc(100dvh - 24px); }
+        }
+        @media (max-width: 767px) {
+            .z-system-ui .workshop-header { margin: 7px 8px 0; width: calc(100% - 16px); min-height: 52px; height: 52px; border-radius: 18px; }
+            .z-system-ui .workshop-main { padding: 14px 12px 24px; }
+            .z-system-ui .card { border-radius: 20px; }
+            .z-system-ui .card-body { padding: 1rem; }
+            .workshop-art-banner { height: 116px; border-radius: 18px; background-position: center, center, 40% 45%; }
+            .workshop-art-banner::after { right: 14px; bottom: 12px; font-size: 8px; letter-spacing: .14em; }
+            .workshop-catalog-label { width: 122px; height: 46px; left: 9px; top: 8px; padding: 0 19px; font-size: 6px; opacity: .62; }
+            .z-system-ui .card::before { inset-inline: 16px; }
+            .z-system-ui .modal { align-items: flex-end; padding: 10px; }
+            .z-system-ui .modal-box { width: 100%; max-height: calc(100dvh - 20px); border-radius: 26px; }
+            .skill-ledger-card > .card-body { padding: 14px 12px !important; gap: 14px !important; }
+            .skill-ledger-card::after { width: 180px; height: 180px; right: -58px; bottom: -32px; opacity: .06; }
+            .skill-toolbar { padding: 10px; border: 1px solid rgba(174,163,142,.16); border-radius: 12px; }
+            .skill-toolbar-head { align-items: flex-start !important; gap: 10px; }
+            .skill-toolbar-actions { width: 100%; display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 8px !important; }
+            .skill-toolbar-actions .select,
+            .skill-toolbar-actions .btn { width: 100%; max-width: none; min-height: 40px; height: 40px; }
+            .skill-points-dashboard { padding: 10px !important; border-radius: 12px !important; }
+            .skill-table-shell { overflow: visible !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+            .skill-table-shell table,
+            .skill-table-shell tbody { display: block; width: 100%; }
+            .skill-table-shell thead { display: none; }
+            .skill-table-shell tbody { display: grid; gap: 10px; }
+            .skill-table-shell tbody tr {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 8px;
+                padding: 11px;
+                border: 1px solid rgba(174,163,142,.16) !important;
+                border-radius: 12px;
+                background:
+                    linear-gradient(145deg, rgba(14,23,29,.93), rgba(3,9,13,.96)),
+                    url("../assets/art/generated/dark-archive-cloth-texture.webp") center / 360px 360px repeat !important;
+                background-blend-mode: normal, soft-light !important;
+                box-shadow: 0 11px 25px rgba(0,0,0,.17), inset 0 1px 0 rgba(255,255,255,.028);
+            }
+            .skill-table-shell tbody td { min-width: 0; padding: 0 !important; border: 0; }
+            .skill-table-shell tbody td::before {
+                display: block;
+                margin: 0 0 4px;
+                color: rgba(151,163,159,.66);
+                font: 600 9px/1 var(--z-ui-gothic);
+                letter-spacing: .12em;
+            }
+            .skill-table-shell tbody td:nth-child(1) { grid-column: 1 / -1; padding-bottom: 8px !important; border-bottom: 1px solid rgba(174,163,142,.1); }
+            .skill-table-shell tbody td:nth-child(1)::before { content: "技能名称 / SKILL"; }
+            .skill-table-shell tbody td:nth-child(2)::before { content: "基础"; }
+            .skill-table-shell tbody td:nth-child(3)::before { content: "本职"; }
+            .skill-table-shell tbody td:nth-child(4)::before { content: "兴趣"; }
+            .skill-table-shell tbody td:nth-child(5)::before { content: "成长检定"; }
+            .skill-table-shell tbody td:nth-child(6)::before { content: "总值"; }
+            .skill-table-shell tbody td:nth-child(7)::before { content: "移除"; }
+            .skill-table-shell tbody td:nth-child(5) { grid-column: span 2; }
+            .skill-table-shell tbody td:nth-child(7) { text-align: left !important; }
+            .skill-table-shell .skill-name-input {
+                min-width: 0;
+                height: 40px;
+                padding: 0 10px !important;
+                border: 1px solid rgba(128,142,143,.24) !important;
+            }
+            .skill-table-shell .skill-number-input { width: 100% !important; min-width: 0; height: 40px; font-size: 14px; }
+            .skill-table-shell .skill-growth-join { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; }
+            .skill-table-shell .skill-growth-join .skill-number-input { flex: 1; min-width: 0; }
+            .skill-table-shell .skill-growth-roll,
+            .skill-table-shell .skill-remove { width: 40px !important; height: 40px !important; min-height: 40px !important; border-radius: 9px !important; }
+            .skill-table-shell .skill-remove { font-size: 20px; }
+            .skill-table-shell tbody td:nth-child(6) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+            .skill-table-shell tbody td:nth-child(6) { font-size: 16px !important; line-height: 40px; }
+            .skill-table-shell .tooltip .btn { width: 32px; height: 32px; min-height: 32px; }
+        }
+        @media (prefers-reduced-motion: reduce) { .z-system-ui *, .z-system-ui *::before, .z-system-ui *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .workshop-art-banner::before { animation: none !important; } }
+
+        /* Occult editorial system v3 */
+        body.z-system-ui {
+            --ws-ink:#020609;
+            --ws-panel:rgba(12,19,25,.94);
+            --ws-paper:#e7ddc5;
+            --ws-brass:#c3a15a;
+            --ws-teal:#4da897;
+            --ws-rust:#945245;
+            background:#020609;
+        }
+        .z-system-ui .drawer-content {
+            background:
+                radial-gradient(820px 560px at 80% -10%,rgba(29,102,95,.12),transparent 65%),
+                radial-gradient(640px 520px at 5% 106%,rgba(148,82,69,.075),transparent 68%),
+                linear-gradient(180deg,#03080c,#020609 72%) !important;
+        }
+        .z-system-ui .workshop-main { position:relative; isolation:isolate; background:#020609; }
+        .workshop-page-background {
+            position:fixed;
+            inset:0 0 0 20rem;
+            z-index:0;
+            pointer-events:none;
+            background:
+                radial-gradient(circle at 28% 24%,rgba(195,161,90,.08),transparent 32%),
+                linear-gradient(90deg,rgba(2,6,9,.82),rgba(2,6,9,.46) 34%,rgba(2,6,9,.58) 72%,rgba(2,6,9,.9)),
+                linear-gradient(180deg,rgba(2,6,9,.32),rgba(2,6,9,.82) 88%),
+                url("../assets/art/generated/workshop-investigator-dossier.webp") center 48%/cover no-repeat;
+            filter:grayscale(.16) sepia(.1) saturate(.72) contrast(1.08) brightness(.78);
+            box-shadow:inset 0 0 160px rgba(0,0,0,.7);
+        }
+        .workshop-page-background::after {
+            content:"";
+            position:absolute;
+            inset:0;
+            background:
+                linear-gradient(180deg,rgba(2,6,9,.2),transparent 22%,transparent 68%,rgba(2,6,9,.68)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/520px 520px repeat;
+            background-blend-mode:normal,soft-light;
+            opacity:.42;
+        }
+        .z-system-ui .workshop-main > .max-w-5xl { position:relative; z-index:1; }
+        .z-system-ui .workshop-header {
+            border-color:rgba(174,163,142,.16) !important;
+            background:
+                linear-gradient(90deg,rgba(11,18,24,.97),rgba(7,14,19,.92)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/460px 460px repeat !important;
+            background-blend-mode:normal,soft-light !important;
+        }
+        .z-system-ui .workshop-header h1,.z-system-ui .workshop-header h2 { color:var(--ws-paper) !important; }
+        .z-system-ui .drawer-side > .menu {
+            border-color:rgba(174,163,142,.16) !important;
+            border-radius:18px;
+            background:
+                linear-gradient(180deg,rgba(10,17,22,.96),rgba(3,8,12,.985)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/460px 460px repeat !important;
+            background-blend-mode:normal,soft-light !important;
+        }
+        .z-system-ui .drawer-side .menu li > a { border-radius:9px; border:1px solid transparent; }
+        .z-system-ui .drawer-side .menu li > a:hover { color:#d7d3c6; background:rgba(77,168,151,.045); border-color:rgba(77,168,151,.08); }
+        .z-system-ui .z-character-index {
+            color:var(--ws-paper) !important;
+            border-color:rgba(195,161,90,.13) !important;
+            background:linear-gradient(90deg,rgba(195,161,90,.115),rgba(77,168,151,.04),transparent) !important;
+        }
+        .workshop-art-banner {
+            height:clamp(190px,22vw,285px);
+            border-radius:16px;
+            border-color:rgba(195,161,90,.2);
+            box-shadow:0 28px 82px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.035);
+            background:
+                linear-gradient(90deg,rgba(2,6,9,.7),transparent 36%,rgba(2,6,9,.25) 70%,rgba(2,6,9,.7)),
+                linear-gradient(0deg,rgba(2,6,9,.84),transparent 64%),
+                url("../assets/art/generated/workshop-investigator-dossier.webp") center 48%/cover no-repeat;
+        }
+        .workshop-art-banner::before { opacity:.86; filter:grayscale(.1) sepia(.08) saturate(.72) contrast(1.12) brightness(.83); }
+        .workshop-art-banner::after { color:rgba(231,221,197,.72); content:"INVESTIGATOR WORKSHOP  /  FIELD DOSSIER  /  CABINET 07"; }
+        .z-system-ui .card,
+        .z-system-ui .glass-panel,
+        .z-system-ui .modal-box {
+            border-color:rgba(174,163,142,.15) !important;
+            border-radius:14px !important;
+            box-shadow:0 22px 64px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.035) !important;
+        }
+        .z-system-ui .card,
+        .z-system-ui .glass-panel {
+            background:
+                linear-gradient(145deg,rgba(15,24,30,.78),rgba(3,9,13,.86)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/520px 520px repeat !important;
+            background-blend-mode:normal,soft-light !important;
+            backdrop-filter:blur(18px) saturate(112%);
+            -webkit-backdrop-filter:blur(18px) saturate(112%);
+        }
+        .z-system-ui .modal-box {
+            background:
+                linear-gradient(145deg,rgba(17,26,33,.95),rgba(5,11,16,.975)),
+                url("../assets/art/generated/dark-archive-cloth-texture.webp") center/520px 520px repeat !important;
+            background-blend-mode:normal,soft-light !important;
+        }
+        .z-system-ui .card:hover { border-color:rgba(195,161,90,.23) !important; }
+        .z-system-ui .card > [class~="absolute"][class~="top-0"][class~="left-0"][class~="w-full"][class~="h-1"] {
+            height: 1px !important;
+            opacity: .66 !important;
+            background: linear-gradient(90deg, transparent, rgba(195,161,90,.72) 22%, rgba(77,168,151,.34) 74%, transparent) !important;
+        }
+        .z-system-ui .btn { border-radius:9px; letter-spacing:.015em; }
+        .z-system-ui .btn.bg-mystic-gold,.z-system-ui .bg-mystic-gold {
+            color:#10130f !important;
+            border-color:rgba(224,194,117,.54) !important;
+            background:linear-gradient(135deg,#d4b665,#aa8744) !important;
+            box-shadow:0 10px 25px rgba(92,68,25,.2),inset 0 1px 0 rgba(255,255,255,.24) !important;
+        }
+        .z-system-ui .bg-mystic-green { color:#e2eee8 !important; background:linear-gradient(135deg,#276f67,#174d49) !important; }
+        .z-system-ui .text-mystic-gold { color:#dfc276 !important; }
+        .z-system-ui .text-mystic-green,.z-system-ui .text-teal-400 { color:#68b7a8 !important; }
+        .z-system-ui .text-blue-400 { color:#7fa5b1 !important; }
+        .z-system-ui .text-purple-400 { color:#b5a37d !important; }
+        .z-system-ui input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+        .z-system-ui select,.z-system-ui textarea,.z-system-ui .input,.z-system-ui .select,.z-system-ui .textarea {
+            color:#d0d5ce !important;
+            border-color:rgba(128,142,143,.26) !important;
+            border-radius:9px !important;
+            background:linear-gradient(180deg,rgba(2,7,10,.9),rgba(7,13,17,.84)) !important;
+            box-shadow:inset 0 1px 5px rgba(0,0,0,.4) !important;
+        }
+        .z-system-ui input:focus,.z-system-ui select:focus,.z-system-ui textarea:focus {
+            border-color:rgba(77,168,151,.58) !important;
+            box-shadow:0 0 0 3px rgba(77,168,151,.075),inset 0 1px 4px rgba(0,0,0,.42) !important;
+        }
+        .z-system-ui .join,.z-system-ui .tabs { border-radius:11px; border-color:rgba(174,163,142,.15); background:rgba(3,9,13,.72); }
+        .z-system-ui .join > *,.z-system-ui .tab { border-radius:8px !important; }
+        .z-system-ui .badge { border-radius:6px; }
+        /* Keep the scroll-area wrapper free of transforms so fixed descendants stay viewport-fixed. */
+        @keyframes workshopEditorialReveal { from { opacity:0; } to { opacity:1; } }
+        .workshop-main > * { animation:workshopEditorialReveal .55s cubic-bezier(.16,1,.3,1) both; }
+        @media(max-width:767px) {
+            .workshop-page-background { inset:0; background-position:center,center,center,38% 48%; filter:grayscale(.2) sepia(.12) saturate(.65) contrast(1.08) brightness(.68); }
+            .workshop-art-banner { height:152px; border-radius:12px; }
+            .z-system-ui .drawer-side > .menu { border-radius:16px; }
+            .z-system-ui .card,.z-system-ui .modal-box { border-radius:12px !important; }
+            .z-system-ui button,
+            .z-system-ui a.tab,
+            .z-system-ui select,
+            .z-system-ui input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]) {
+                min-height:36px !important;
+            }
+            .z-system-ui .toggle { width:34px !important; height:20px !important; min-height:20px !important; }
+        }
     </style>
 </head>
-<body class="h-[100dvh] flex overflow-hidden bg-dark-950 text-slate-300">
+<body class="z-system-ui h-[100dvh] flex overflow-hidden bg-dark-950 text-slate-300">
 
     <div id="app" class="flex w-full h-full bg-void-noise" v-cloak>
         <!-- Drawer Wrapper -->
@@ -225,7 +729,7 @@
             <!-- Page Content -->
             <div class="drawer-content flex flex-col h-full overflow-hidden bg-dark-950/50">
                 <!-- Navbar -->
-                <header class="navbar bg-dark-900/80 backdrop-blur-md shadow-2xl z-20 px-3 md:px-4 shrink-0 min-h-14 h-14 md:h-16 border-b border-dark-800 sticky top-0">
+                <header class="workshop-header navbar bg-dark-900/80 backdrop-blur-md shadow-2xl z-20 px-3 md:px-4 shrink-0 min-h-14 h-14 md:h-16 border-b border-dark-800 sticky top-0">
                     <div class="absolute inset-0 bg-gradient-to-r from-mystic-gold/5 via-transparent to-transparent pointer-events-none"></div>
                     
                     <!-- Back Button -->
@@ -261,15 +765,13 @@
 
                 </header>
                 <!-- Main Scroll Area -->
-                <div class="flex-1 overflow-y-auto p-4 md:p-8">
+                <div class="workshop-main flex-1 overflow-y-auto p-4 md:p-8">
+                    <div class="workshop-page-background" aria-hidden="true"></div>
                     <div class="max-w-5xl mx-auto w-full">
 
     <!-- Main COC Card Content -->
     <div class="flex flex-col gap-6 animate-fade-in pb-32 md:pb-40">
-        <div class="card glass-panel shadow-2xl rounded-2xl relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                <svg class="w-64 h-64 text-mystic-gold" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.48,2,2,6.48,2,12c0,5.52,4.48,10,10,10s10-4.48,10-10C22,6.48,17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8 c0-4.41,3.59-8,8-8s8,3.59,8,8C20,16.41,16.41,20,12,20z M12,6c-3.31,0-6,2.69-6,6c0,1.36,0.46,2.61,1.23,3.62l1.46-1.46 C8.26,13.61,8,12.84,8,12c0-2.21,1.79-4,4-4s4,1.79,4,4c0,0.84-0.26,1.61-0.69,2.16l1.46,1.46C17.54,14.61,18,13.36,18,12 C18,8.69,15.31,6,12,6z M12,10c-1.1,0-2,0.9-2,2c0,0.55,0.22,1.05,0.59,1.41l2.83-2.83C13.05,10.22,12.55,10,12,10z"/></svg>
-            </div>
+        <div class="workshop-card-decor card glass-panel shadow-2xl rounded-2xl relative overflow-hidden">
             <div class="card-body p-4 md:p-8 gap-6 relative z-10">
                 
                 <!-- Basic Info with Avatar -->
@@ -284,7 +786,7 @@
                                     <span class="loading loading-spinner loading-md text-mystic-gold"></span>
                                 </div>
                                 
-                                <img v-if="coc.avatar" :src="coc.avatar" crossorigin="anonymous" @load="onAvatarLoad" @error="onAvatarError" class="object-cover w-full h-full grayscale-[10%] group-hover:grayscale-0 transition-all duration-500" />
+                                <img v-if="coc.avatar" :src="coc.avatar" :alt="`${coc.name || '调查员'}的头像`" @load="onAvatarLoad" @error="onAvatarError" class="object-cover w-full h-full grayscale-[10%] group-hover:grayscale-0 transition-all duration-500" />
                                 <div v-else class="w-full h-full bg-dark-800 flex items-center justify-center">
                                     <span class="text-5xl font-bold text-dark-700 font-serif">{{ (coc.name || 'A').charAt(0).toUpperCase() }}</span>
                                 </div>
@@ -598,18 +1100,18 @@
     </div>
 
     <!-- Skills Card -->
-    <div class="card glass-panel shadow-2xl rounded-2xl relative overflow-hidden">
+    <div class="skill-ledger-card card glass-panel shadow-2xl rounded-2xl relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-mystic-gold to-mystic-green opacity-50"></div>
         <div class="card-body p-4 md:p-8 gap-6 relative z-10">
                 <!-- Skills -->
                 <div>
-                    <div class="flex flex-col gap-2 mb-3">
-                        <div class="flex justify-between items-end">
+                    <div class="skill-toolbar flex flex-col gap-2 mb-3">
+                        <div class="skill-toolbar-head flex flex-col sm:flex-row justify-between sm:items-end">
                             <div class="flex items-center gap-2">
                                 <div class="w-1 h-4 bg-mystic-gold rounded-full shadow-glow-gold"></div>
                                 <span class="text-sm font-bold text-mystic-gold font-serif">技能列表</span>
                             </div>
-                            <div class="flex gap-2">
+                            <div class="skill-toolbar-actions flex gap-2">
                                 <select ref="skillSelect" class="select select-bordered select-xs max-w-[120px] bg-dark-900 border-dark-700 text-slate-300 font-serif focus:border-mystic-gold" @change="addStandardSkill($event.target.value); $event.target.value=''">
                                     <option value="" disabled selected>+ 添加技能</option>
                                     <option v-for="s in standardSkills" :key="s.name" :value="s.name">{{ s.name }} ({{s.base}})</option>
@@ -619,7 +1121,7 @@
                         </div>
                         
                         <!-- Skill Points Dashboard -->
-                        <div class="bg-dark-900/50 border border-dark-700 rounded-xl p-3 flex flex-col gap-2 shadow-inner">
+                        <div class="skill-points-dashboard bg-dark-900/50 border border-dark-700 rounded-xl p-3 flex flex-col gap-2 shadow-inner">
                             <div class="flex flex-col md:flex-row gap-2 md:gap-4 md:items-center">
                                 <div class="flex-1 flex flex-col gap-1">
                                     <div class="flex justify-between items-center text-xs">
@@ -648,7 +1150,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto rounded-xl border border-dark-700 shadow-lg bg-dark-900/30">
+                    <div class="skill-table-shell overflow-x-auto rounded-xl border border-dark-700 shadow-lg bg-dark-900/30">
                         <table class="table table-xs w-full">
                             <thead>
                                 <tr class="bg-dark-800 text-slate-500 font-serif border-b border-dark-700">
@@ -665,11 +1167,12 @@
                                 <tr v-for="skill in sortedSkills" :key="skill.name" class="hover:bg-dark-800/50 transition-colors border-b border-dark-700/50 last:border-none" :class="{'bg-mystic-gold/5': isJobSkill(skill.name)}">
                                     <td class="p-2">
                                         <div class="flex items-center gap-2">
-                                            <input v-model="skill.name" class="input input-ghost input-xs w-full min-w-[80px] font-bold focus:bg-transparent px-0 text-slate-300 font-serif" placeholder="技能名" />
+                                            <input v-model="skill.name" class="skill-name-input input input-ghost input-xs w-full min-w-[80px] font-bold focus:bg-transparent px-0 text-slate-300 font-serif" placeholder="技能名" />
                                             <!-- Custom Job Skill Toggle -->
                                             <div v-if="!isStandardJobSkill(skill.name) && (limitBreak || maxCustomJobSkills > 0)" class="tooltip" :data-tip="isCustomJobSkill(skill.name) ? '取消本职技能' : (limitBreak || (coc.jobSkillsCustom || []).length < maxCustomJobSkills ? '设为本职技能' : '名额已满')">
                                                 <button
                                                     @click="toggleCustomJobSkill(skill.name)"
+                                                    :aria-label="isCustomJobSkill(skill.name) ? '取消本职技能：' + skill.name : '设为本职技能：' + skill.name"
                                                     class="btn btn-circle btn-xs w-5 h-5 min-h-0 border-0"
                                                     :class="isCustomJobSkill(skill.name) ? 'bg-mystic-gold text-dark-900 shadow-sm hover:bg-yellow-600' : 'bg-transparent text-slate-600 hover:text-mystic-gold'">
                                                     ★
@@ -682,27 +1185,27 @@
                                     </td>
                                     <td class="text-center opacity-40 p-2 font-mono text-[10px] text-slate-500">{{ skill.base }}</td>
                                     <td class="p-2">
-                                        <input type="number" v-model.number="skill.occupation" class="input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 transition-colors"
+                                        <input type="number" v-model.number="skill.occupation" class="skill-number-input input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 transition-colors"
                                                :class="{'input-error': skill.occupation > 0 && !isJobSkill(skill.name)}"
                                                :disabled="!isJobSkill(skill.name)"
                                                @input="updateSkillTotal(skill)" placeholder="0" />
                                     </td>
                                     <td class="p-2">
-                                        <input type="number" v-model.number="skill.interest" class="input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-green focus:ring-1 focus:ring-mystic-green/50 transition-colors"
+                                        <input type="number" v-model.number="skill.interest" class="skill-number-input input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-green focus:ring-1 focus:ring-mystic-green/50 transition-colors"
                                                @input="updateSkillTotal(skill)" placeholder="0" />
                                     </td>
                                     <td class="p-2">
-                                        <div class="join w-full justify-center">
-                                            <input type="number" v-model.number="skill.growth" class="input input-bordered input-xs w-10 text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-teal focus:ring-1 focus:ring-mystic-teal/50 transition-colors join-item"
+                                        <div class="skill-growth-join join w-full justify-center">
+                                            <input type="number" v-model.number="skill.growth" class="skill-number-input input input-bordered input-xs w-10 text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-teal focus:ring-1 focus:ring-mystic-teal/50 transition-colors join-item"
                                                    @input="updateSkillTotal(skill)" placeholder="0" />
-                                            <button @click="skillGrowth(skill)" class="btn btn-xs btn-square join-item border-dark-700 bg-dark-800 hover:bg-mystic-teal hover:text-dark-900 hover:border-mystic-teal transition-all" title="成长检定 (1d100 > 技能值 ? +1d10)">
+                                            <button @click="skillGrowth(skill)" class="skill-growth-roll btn btn-xs btn-square join-item border-dark-700 bg-dark-800 hover:bg-mystic-teal hover:text-dark-900 hover:border-mystic-teal transition-all" title="成长检定 (1d100 > 技能值 ? +1d10)" :aria-label="'进行成长检定：' + skill.name">
                                                 🎲
                                             </button>
                                         </div>
                                     </td>
                                     <td class="font-black text-center p-2 text-mystic-gold text-sm font-mono">{{ skill.value }}</td>
                                     <td class="p-2 text-right">
-                                        <button @click="removeSkill(skill)" class="btn btn-ghost btn-xs text-slate-600 hover:text-red-500 w-6 h-6 min-h-0 p-0 rounded-full">×</button>
+                                        <button @click="removeSkill(skill)" class="skill-remove btn btn-ghost btn-xs text-slate-600 hover:text-red-500 w-6 h-6 min-h-0 p-0 rounded-full" aria-label="移除此技能">×</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -814,7 +1317,7 @@
                         
                         <div v-for="(badge, idx) in coc.badges" :key="idx"
                              class="flex flex-col items-center group w-14 animate-fade-in relative z-10">
-                            <div class="relative w-12 h-12 flex items-center justify-center bg-gradient-to-b from-dark-800 to-dark-900 rounded-full border border-mystic-gold/40 cursor-help shadow-lg hover:bg-dark-700 transition-colors shrink-0 z-20">
+                            <div class="z-medallion relative w-12 h-12 flex items-center justify-center bg-gradient-to-b from-dark-800 to-dark-900 rounded-full border border-mystic-gold/40 cursor-help shadow-lg hover:bg-dark-700 transition-colors shrink-0 z-20">
                                 <div class="w-7 h-7 text-mystic-gold/90 drop-shadow-[0_0_5px_rgba(212,175,55,0.6)] medal-icon">
                                     <span v-if="badge.icon && badge.icon.startsWith('<svg')" class="text-xl select-none">馃弲</span>
                                     <span v-else class="text-xl select-none">{{ badge.icon || '🏅' }}</span>
@@ -845,7 +1348,7 @@
                         
                         <!-- Add Badge Button (Always Visible) -->
                         <div class="flex flex-col items-center gap-1.5 w-14">
-                            <button @click="addBadge" class="w-12 h-12 flex items-center justify-center rounded-full border border-dashed border-dark-600 text-dark-500 hover:text-mystic-gold hover:border-mystic-gold/50 transition-colors group relative shrink-0 z-10" title="添加勋章">
+                            <button @click="addBadge" class="z-medallion w-12 h-12 flex items-center justify-center rounded-full border border-dashed border-dark-600 text-dark-500 hover:text-mystic-gold hover:border-mystic-gold/50 transition-colors group relative shrink-0 z-10" title="添加勋章">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
                             </button>
                             <span v-if="!coc.badges || coc.badges.length === 0" class="text-[10px] text-slate-600 text-center font-serif whitespace-nowrap absolute left-20 top-4 pointer-events-none">点击添加首枚勋章</span>
@@ -859,7 +1362,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
                         调查员履历 History
                     </div>
-                    <div class="bg-dark-900/50 border border-dark-700 rounded-xl p-4 h-48 overflow-y-auto custom-scrollbar font-serif text-sm leading-relaxed text-slate-300 shadow-inner relative group">
+                    <div class="z-history-panel bg-dark-900/50 border border-dark-700 rounded-xl p-4 h-48 overflow-y-auto custom-scrollbar font-serif text-sm leading-relaxed text-slate-300 shadow-inner relative group">
                         <div v-if="!coc.history || coc.history.length === 0" class="text-center text-slate-600 text-xs italic mt-16">
                             尚无冒险记录...
                         </div>
@@ -942,7 +1445,7 @@
 
     <!-- Confirmation Modal -->
     <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': confirmModal.show }">
-        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-lg text-red-500 flex items-center gap-2 font-serif">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
                 确认操作
@@ -1082,7 +1585,7 @@
 
     <!-- Badge Modal -->
     <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': showBadgeModal }">
-        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-lg text-mystic-gold flex items-center gap-2 font-serif mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
                 {{ editingBadgeIndex > -1 ? '编辑勋章' : '添加勋章' }}
@@ -1145,7 +1648,7 @@
 
     <!-- Avatar Prompt Modal -->
     <dialog class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm" :class="{ 'modal-open': showAvatarModal }">
-        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl">
+        <div class="modal-box bg-dark-900 border border-dark-700 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-lg text-mystic-gold flex items-center gap-2 font-serif mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
                 头像生成设置
@@ -1163,16 +1666,75 @@
                     <span>生图 API 地址</span>
                     <span class="text-[10px] text-slate-600 normal-case font-normal">覆盖全局设置</span>
                 </label>
-                <input v-model="settings.imageGenApiUrl" type="text" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" placeholder="https://your-domain/generate?prompt={prompt}&key={key}" />
+                <input v-model="settings.imageGenApiUrl" type="text" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" placeholder="https://your-domain.com 或 https://your-domain.com/generate" />
                 <label class="label text-[10px] text-slate-600 leading-relaxed">
-                    支持 {prompt}/{tag} 和 {key}/{token} 模板；不写模板会自动追加 prompt 和 key 参数。
+                    默认按 Nai2API /generate 直链生成；支持 {prompt}/{tag}/{token}/{key} 等模板。
                 </label>
             </div>
             <div class="form-control mt-2">
                 <label class="label text-xs font-bold text-slate-500">
                     <span>生图 API Key</span>
                 </label>
-                <input v-model="settings.imageGenApiKey" type="password" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" placeholder="请填写您自己的生图 API Key" />
+                <input v-model="settings.imageGenApiKey" type="password" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" placeholder="Nai2API 用户密钥，如 STA1N-..." />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">模型</label>
+                    <input v-model="settings.imageGenModel" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" placeholder="nai-diffusion-4-5-full" />
+                </div>
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">尺寸</label>
+                    <select v-model="settings.imageGenSize" class="select select-bordered select-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold">
+                        <option value="方图">方图 1024x1024</option>
+                        <option value="竖图">竖图 832x1216</option>
+                        <option value="横图">横图 1216x832</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">步数</label>
+                    <input v-model.number="settings.imageGenSteps" type="number" min="1" max="50" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" />
+                </div>
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">采样器</label>
+                    <select v-model="settings.imageGenSampler" class="select select-bordered select-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono">
+                        <option value="k_euler_ancestral">k_euler_ancestral</option>
+                        <option value="k_euler">k_euler</option>
+                        <option value="k_dpmpp_2m">k_dpmpp_2m</option>
+                        <option value="k_dpmpp_2m_sde">k_dpmpp_2m_sde</option>
+                        <option value="k_dpmpp_sde">k_dpmpp_sde</option>
+                        <option value="k_dpmpp_2s_ancestral">k_dpmpp_2s_ancestral</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">噪声调度</label>
+                    <select v-model="settings.imageGenNoiseSchedule" class="select select-bordered select-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono">
+                        <option value="karras">karras</option>
+                        <option value="native">native</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">Prompt guidance</label>
+                    <input v-model.number="settings.imageGenScale" type="number" min="1" max="20" step="0.5" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" />
+                </div>
+                <div class="form-control">
+                    <label class="label py-1 text-[10px] font-bold text-slate-500">CFG Rescale</label>
+                    <input v-model.number="settings.imageGenCfg" type="number" min="0" max="1" step="0.05" class="input input-bordered input-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold font-mono" />
+                </div>
+            </div>
+            <div class="form-control mt-3">
+                <label class="label py-1 text-[10px] font-bold text-slate-500">质量前缀</label>
+                <select v-model="settings.imageGenArtistPreset" @change="applyImageGenArtistPreset" class="select select-bordered select-sm bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold mb-2">
+                    <option v-for="preset in imageGenArtistPresetOptions" :key="preset.id" :value="preset.id">{{ preset.label }}</option>
+                    <option value="custom">自定义</option>
+                </select>
+                <textarea v-model="settings.imageGenArtist" :readonly="!isImageGenArtistCustom" :class="!isImageGenArtistCustom ? 'opacity-70 cursor-default' : ''" class="textarea textarea-bordered bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold text-xs h-24 font-mono leading-relaxed" placeholder="输入自定义画师串或质量前缀"></textarea>
+                <label class="label text-[10px] text-slate-600 leading-relaxed">
+                    预设来自 Nai2API；选择“自定义”后可自由编辑。
+                </label>
+            </div>
+            <div class="form-control mt-3">
+                <label class="label py-1 text-[10px] font-bold text-slate-500">负面提示词</label>
+                <textarea v-model="settings.imageGenNegative" class="textarea textarea-bordered bg-dark-800 border-dark-600 text-slate-200 focus:border-mystic-gold text-xs h-20 font-mono leading-relaxed" placeholder="bad anatomy, bad hands, text, watermark, worst quality"></textarea>
             </div>
 
             <div class="modal-action">
@@ -1279,13 +1841,10 @@
                             <a @click="switchCharacter(index)"
                                :title="char.name"
                                class="flex items-center gap-3 py-3 px-3 rounded-xl transition-all border w-full max-w-full overflow-hidden relative group"
-                               :class="{ 'bg-dark-800 border-mystic-gold/30 shadow-glow-gold': activeIndex === index, 'border-transparent hover:bg-dark-800/50 hover:border-dark-700': activeIndex !== index }">
-                                <!-- Active Indicator -->
-                                <div v-if="activeIndex === index" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-mystic-gold rounded-r-full shadow-[0_0_10px_rgba(212,175,55,0.8)]"></div>
-                                
+                               :class="{ 'z-character-index bg-dark-800 border-mystic-gold/30 shadow-glow-gold': activeIndex === index, 'border-transparent hover:bg-dark-800/50 hover:border-dark-700': activeIndex !== index }">
                                 <div class="avatar placeholder shrink-0">
                                     <div class="bg-dark-950 text-slate-400 rounded-xl w-10 h-10 shadow-inner border border-dark-700 group-hover:border-mystic-gold/50 transition-colors">
-                                        <img v-if="char.avatar" :src="char.avatar" :key="char.avatar" class="w-full h-full object-cover rounded-xl" />
+                                        <img v-if="char.avatar" :src="char.avatar" :key="char.avatar" :alt="`${char.name || '调查员'}的头像`" class="w-full h-full object-cover rounded-xl" />
                                         <span v-else class="text-lg font-bold font-serif">{{ (char.name || 'A').charAt(0).toUpperCase() }}</span>
                                     </div>
                                 </div>
@@ -1407,49 +1966,87 @@
                 url: '',
                 key: '',
                 model: '',
-                stream: true // Add stream property
+                stream: true
             });
 
-            // 默认配置 - 公益项目预设值，强制使用
-            const DEFAULT_API_CONFIG = {
-                url: '',
-                key: '',
-                model: ''
+            const syncApiFromMainSettings = () => {
+                const savedSettings = localStorage.getItem('coc_settings');
+                if (!savedSettings) return;
+                try {
+                    const parsed = JSON.parse(savedSettings);
+                    api.url = parsed.customApiUrl || parsed.apiUrl || '';
+                    api.key = parsed.customApiKey || parsed.apiKey || '';
+                    api.model = parsed.customModel || parsed.model || '';
+                } catch (e) {
+                    console.error('Failed to load main API settings', e);
+                }
+            };
+            syncApiFromMainSettings();
+
+            const normalizeApiBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
+            const chatCompletionsUrl = () => {
+                const baseUrl = normalizeApiBaseUrl(api.url);
+                if (!baseUrl) return '';
+                if (baseUrl.endsWith('/chat/completions')) return baseUrl;
+                if (baseUrl.endsWith('/models')) return baseUrl.replace(/\/models$/, '/chat/completions');
+                return baseUrl.endsWith('/v1') ? `${baseUrl}/chat/completions` : `${baseUrl}/v1/chat/completions`;
+            };
+            const ensureApiReady = () => {
+                syncApiFromMainSettings();
+                if (!api.url || !api.key || !api.model) {
+                    showToast('请先在主页面设置 API 地址、Key 和模型', 'warning');
+                    return false;
+                }
+                return true;
             };
 
-            // Load API settings
-            const savedApi = localStorage.getItem('ai_chargen_api_settings');
-            if (savedApi) {
-                try {
-                    const parsed = JSON.parse(savedApi);
-                    // Only copy relevant fields, ignore stream if not needed or keep it
-                    if (parsed.url) api.url = parsed.url;
-                    if (parsed.key) api.key = parsed.key;
-                    if (parsed.model) api.model = parsed.model;
-                } catch(e) {
-                    console.error('Failed to load API settings', e);
-                }
-            }
-
-            // 强制刷新API配置为默认值
-            api.url = DEFAULT_API_CONFIG.url;
-            api.key = DEFAULT_API_CONFIG.key;
-            api.model = DEFAULT_API_CONFIG.model;
-
-            // Save API settings
-            watch(api, (newVal) => {
-                localStorage.setItem('ai_chargen_api_settings', JSON.stringify(newVal));
-            }, { deep: true });
-
             // Global Settings (Shared with index.html)
+            const IMAGE_GEN_ARTIST_PRESETS = {
+                '2.5d': {
+                    label: '2.5D唯美风',
+                    value: "0.9::misaka_12003-gou ::, dino_(dinoartforame), wanke, liduke, year 2025, realistic, 4k, -2::green ::, textless version, The image is highly intricate finished drawn. Only the character's face is in anime style, but their body is in realistic style. 1.35::A highly finished photo-style artwork that has lively color, graphic texture, realistic skin surface, and lifelike flesh with little obliques::. 1.63::photorealistic::, 1.63::photo(medium)::, \\\\n20::best quality, absurdres, very aesthetic, detailed, masterpiece::,, very aesthetic, masterpiece, no text,"
+                },
+                fresh: {
+                    label: '韩漫小清新风',
+                    value: '[[[artist:dishwasher1910]]], {{yd_(orange_maru)}}, [artist:ciloranko], [artist:sho_(sho_lwlw)], [ningen mame], year 2024,'
+                },
+                doujin: {
+                    label: '本子动漫风',
+                    value: '1.4::asanagi::,{{{{{artist:asanagi}}}}},1.2::xiaoluo_xl::,1.3::Artist: misaka_12003-gou::,1.2::Artist:shexyo::,0.7::Artist:b.sa_(bbbs)::,1::Artist:qiandaiyiyu::,1.05::artist:natedecock::,1.05::artist:kunaboto::,0.75::artist:kandata_nijou::,1.05::artist:zer0.zer0 ::,1.05::artist:jasony::,0.75::misaka_12003-gou ::, dino_(dinoartforame), wanke, liduke, year 2025, realistic, 4k, -2::green ::, {textless version, The image is highly intricate finished drawn,write realistically,true to life}, 1.35::A highly finished photo-style artwork that has lively color, graphic texture, realistic skin surface, and lifelike flesh with little obliques::, 1.63::photorealistic::,3::age slider::,1.63::photo(medium)::, 2::best quality, absurdres, very aesthetic, detailed, masterpiece::,-4::Muscle definition, abs::'
+                },
+                galgame: {
+                    label: 'GalGame风',
+                    value: 'artist:ningen_mame,, noyu_(noyu23386566),, toosaka asagi,, location,\\\\n20::best quality, absurdres, very aesthetic, detailed, masterpiece::,:,, very aesthetic, masterpiece, no text,'
+                },
+                animeOld: {
+                    label: '动漫风（旧）',
+                    value: 'artist collaboration, 0.70::artist:necomi ::, 0.80::artist:tan (tangent) ::, 1.38::artist:kanda done ::, 1.22::artist:quasarcake ::, 1.22::artist:atdan ::, 0.94::artist:fuumi (radial engine) ::, 1.70::artist:john kafka ::, 0.60::artist:meisansan ::, 0.98::artist:ogipote ::, 0.44::artist:nixeu ::, 0.74::artist:mignon ::, 0.94::artist:rangu ::, 1.18::artist:hiten (hitenkei) ::, 1.24::artist:freng ::, 0.56::artist:miwabe sakura ::, year 2024, perspective'
+                }
+            };
+            const imageGenArtistPresetOptions = Object.entries(IMAGE_GEN_ARTIST_PRESETS).map(([id, preset]) => ({ id, label: preset.label }));
+            const defaultImageGenArtistPreset = '2.5d';
             const savedSettings = localStorage.getItem('coc_settings');
             let initialSettings = {
                 imageGenApiUrl: '',
-                imageGenApiKey: ''
+                imageGenApiKey: '',
+                imageGenModel: 'nai-diffusion-4-5-full',
+                imageGenSize: '方图',
+                imageGenSteps: 28,
+                imageGenScale: 6,
+                imageGenCfg: 0,
+                imageGenSampler: 'k_euler_ancestral',
+                imageGenNoiseSchedule: 'karras',
+                imageGenArtistPreset: defaultImageGenArtistPreset,
+                imageGenArtist: IMAGE_GEN_ARTIST_PRESETS[defaultImageGenArtistPreset].value,
+                imageGenNegative: 'bad anatomy, bad hands, text, watermark, worst quality, low quality, blurry, deformed'
             };
             if (savedSettings) {
                 try {
-                    initialSettings = { ...initialSettings, ...JSON.parse(savedSettings) };
+                    const parsed = JSON.parse(savedSettings);
+                    initialSettings = { ...initialSettings, ...parsed };
+                    if (parsed.imageGenArtist !== undefined && parsed.imageGenArtistPreset === undefined) {
+                        initialSettings.imageGenArtistPreset = '';
+                    }
                 } catch (e) {
                     localStorage.removeItem('coc_settings');
                 }
@@ -1457,6 +2054,37 @@
             const settings = reactive(initialSettings);
             if (settings.imageGenApiUrl === undefined) settings.imageGenApiUrl = '';
             if (settings.imageGenApiKey === undefined) settings.imageGenApiKey = '';
+            if (settings.imageGenModel === undefined) settings.imageGenModel = 'nai-diffusion-4-5-full';
+            if (settings.imageGenSize === undefined) settings.imageGenSize = '方图';
+            if (settings.imageGenSteps === undefined) settings.imageGenSteps = 28;
+            if (settings.imageGenScale === undefined) settings.imageGenScale = 6;
+            if (settings.imageGenCfg === undefined) settings.imageGenCfg = 0;
+            if (settings.imageGenSampler === undefined) settings.imageGenSampler = 'k_euler_ancestral';
+            if (settings.imageGenNoiseSchedule === undefined) settings.imageGenNoiseSchedule = 'karras';
+            if (settings.imageGenArtistPreset === undefined) settings.imageGenArtistPreset = '';
+            if (settings.imageGenArtist === undefined) settings.imageGenArtist = 'best quality, very aesthetic, detailed, masterpiece';
+            if (settings.imageGenNegative === undefined) settings.imageGenNegative = 'bad anatomy, bad hands, text, watermark, worst quality, low quality, blurry, deformed';
+            const isImageGenArtistCustom = computed(() => settings.imageGenArtistPreset === 'custom');
+            const normalizeImageGenArtistSettings = () => {
+                const current = String(settings.imageGenArtist || '').trim();
+                const matched = Object.entries(IMAGE_GEN_ARTIST_PRESETS).find(([, preset]) => preset.value === current);
+                if (!settings.imageGenArtistPreset) {
+                    settings.imageGenArtistPreset = matched ? matched[0] : (current ? 'custom' : defaultImageGenArtistPreset);
+                }
+                if (settings.imageGenArtistPreset !== 'custom' && IMAGE_GEN_ARTIST_PRESETS[settings.imageGenArtistPreset]) {
+                    settings.imageGenArtist = IMAGE_GEN_ARTIST_PRESETS[settings.imageGenArtistPreset].value;
+                } else if (settings.imageGenArtistPreset !== 'custom') {
+                    settings.imageGenArtistPreset = 'custom';
+                }
+                if (!settings.imageGenArtist && settings.imageGenArtistPreset === defaultImageGenArtistPreset) {
+                    settings.imageGenArtist = IMAGE_GEN_ARTIST_PRESETS[defaultImageGenArtistPreset].value;
+                }
+            };
+            const applyImageGenArtistPreset = () => {
+                const preset = IMAGE_GEN_ARTIST_PRESETS[settings.imageGenArtistPreset];
+                if (preset) settings.imageGenArtist = preset.value;
+            };
+            normalizeImageGenArtistSettings();
             watch(settings, (newVal) => {
                 localStorage.setItem('coc_settings', JSON.stringify(newVal));
             }, { deep: true });
@@ -1581,36 +2209,35 @@
                         
                         Object.assign(coc, loadedCoc);
 
-                        // Fix: Reset arrays if not present in loaded data to prevent bleeding from previous character
+                        // 缺失字段使用空数组，避免沿用上一角色的数据
                         coc.badges = loadedCoc.badges || [];
                         coc.history = loadedCoc.history || [];
                         if (!loadedCoc.skills) coc.skills = [];
 
-                        // Ensure status object exists (Migration)
+                        // 兼容缺少状态字段的旧角色卡
                         if (!coc.status) {
                             coc.status = { majorWound: false, unconscious: false, dead: false, tempInsanity: false, indefInsanity: false, permInsanity: false };
                         }
 
-                        // Sync Avatar from root char if not present in COC but present in root
+                        // COC 数据缺少头像时从角色根对象补充
                         if (!coc.avatar && char.avatar) {
                             coc.avatar = char.avatar;
                         }
-                        // Also check avatar_prompt
+                        // Restore the saved avatar prompt when the current record has none.
                         if (!coc.avatar_prompt && char.avatar_prompt) {
                             coc.avatar_prompt = char.avatar_prompt;
                         }
 
-                        // Ensure stats are numbers
+                        // Normalize restored attributes before recalculating derived values.
                         for (const key in coc.stats) coc.stats[key] = Number(coc.stats[key]);
                         
-                        // Recalculate bases and distribute if needed
                         recalcSkillBases();
-                        // If points are all 0 but value > base, we need to distribute
+                        // Migrate older records that stored only final skill values.
                         if (coc.skills.some(s => s.value > s.base && !s.occupation && !s.interest)) {
                              autoDistributePoints();
                         }
                     } else {
-                        // Reset to default if no COC data
+                        // Initialize a clean COC record when imported data has no COC section.
                         const defaultCoc = {
                             name: char.name || '',
                             job: '',
@@ -1725,7 +2352,7 @@
                         if (report.newItems && Array.isArray(report.newItems) && report.newItems.length > 0) {
                             const itemsStr = report.newItems.join(', ');
                             // Append to inventory_key (props) or normal inventory?
-                            // Let's append to normal inventory for safety
+                            // 未分类物品归入普通随身物品
                             if (coc.inventory) coc.inventory += `\n[新增] ${itemsStr}`;
                             else coc.inventory = itemsStr;
                         }
@@ -1820,38 +2447,27 @@
                                 throw new Error('未在 PNG 中找到角色数据');
                             }
                             
-                            // Decode Base64 -> UTF-8 String -> JSON
-                            // Using decodeURIComponent(escape(atob(str))) for proper UTF-8 handling matching export
+                            // Decode the embedded UTF-8 JSON payload.
                             const jsonStr = decodeURIComponent(escape(atob(extractedData)));
                             json = JSON.parse(jsonStr);
 
-                            // 2. Use the PNG itself as avatar
-                            // We need to convert ArrayBuffer to base64 dataURL for display/storage
-                            // Re-use file object is easier but we have ArrayBuffer here.
-                            // Let's just create a Blob URL or Data URL.
-                            // For persistence, Data URL is better for localforage.
+                            // Persist the imported PNG itself as the investigator avatar.
                             const bytes = new Uint8Array(arrayBuffer);
                             let binary = '';
                             const len = bytes.byteLength;
-                            // Chunk processing to avoid stack overflow on large images
+                            // Process in chunks to avoid overflowing the argument stack.
                             for (let i = 0; i < len; i += 1024) {
                                 binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 1024, len)));
                             }
                             avatarUrl = 'data:image/png;base64,' + btoa(binary);
 
                         } else {
-                            // Handle JSON Import
-                            const jsonStr = e.target.result; // For JSON readAsText is used, but we can detect mode
-                            // Wait, if we use readAsArrayBuffer for everything, we need to decode JSON text manually
-                            // Or we split logic. To keep it simple, let's switch reader method based on type.
-                            // But here we are inside onload.
-                            // Let's adjust reader call below.
-                            
-                            // If we read as text (for JSON)
+                            // JSON files are read as text by the branch below.
+                            const jsonStr = e.target.result;
                             json = JSON.parse(jsonStr);
                         }
                         
-                        // Basic validation check
+                        // Reject malformed imports before they reach reactive state.
                         if (!json || typeof json !== 'object') {
                             throw new Error('无效的数据格式');
                         }
@@ -2065,32 +2681,93 @@
                 // console.error('Avatar load error:', e);
             };
 
+            const clampImageNumber = (value, fallback, min, max) => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return fallback;
+                return Math.max(min, Math.min(max, number));
+            };
+
+            const buildAvatarImageParams = (tag) => {
+                const prompt = String(tag || '').trim();
+                const token = String(settings.imageGenApiKey || '').trim();
+                const noiseSchedule = String(settings.imageGenNoiseSchedule || 'karras').trim() || 'karras';
+                return {
+                    prompt,
+                    tag: prompt,
+                    key: token,
+                    token,
+                    model: String(settings.imageGenModel || 'nai-diffusion-4-5-full').trim() || 'nai-diffusion-4-5-full',
+                    artist: String(settings.imageGenArtist || '').trim(),
+                    size: String(settings.imageGenSize || '方图').trim() || '方图',
+                    steps: clampImageNumber(settings.imageGenSteps, 28, 1, 50),
+                    scale: clampImageNumber(settings.imageGenScale, 6, 1, 20),
+                    cfg: clampImageNumber(settings.imageGenCfg, 0, 0, 1),
+                    sampler: String(settings.imageGenSampler || 'k_euler_ancestral').trim() || 'k_euler_ancestral',
+                    negative: String(settings.imageGenNegative || '').trim(),
+                    nocache: '1',
+                    noise_schedule: noiseSchedule,
+                    noiseSchedule,
+                    seed: Math.floor(Math.random() * 2147483647)
+                };
+            };
+
+            const templateImageUrl = (endpoint, params) => {
+                return endpoint.replace(/\{([a-zA-Z_]+)\}/g, (match, rawKey) => {
+                    const lowerKey = rawKey.toLowerCase();
+                    const key = lowerKey === 'noiseschedule' ? 'noiseSchedule' : lowerKey;
+                    const value = params[key] ?? params[rawKey];
+                    return value === undefined ? match : encodeURIComponent(String(value));
+                });
+            };
+
+            const maybeAppendGeneratePath = (url) => {
+                const path = url.pathname || '/';
+                if (path === '/' || path.endsWith('/')) {
+                    url.pathname = `${path.replace(/\/+$/, '')}/generate`;
+                }
+                return url;
+            };
+
             const generateAvatarUrl = (tag) => {
                 const endpoint = (settings.imageGenApiUrl || '').trim();
-                const token = (settings.imageGenApiKey || '').trim();
                 if (!endpoint) {
                     showToast('请先填写生图 API 地址', 'warning');
                     return '';
                 }
-                if (!token) {
+
+                const params = buildAvatarImageParams(tag);
+                if (!params.token) {
                     showToast('请先填写生图 API Key', 'warning');
                     return '';
                 }
 
-                const prompt = String(tag || '').trim();
-                const hasTemplate = /\{(?:prompt|tag|key|token)\}/i.test(endpoint);
+                const hasTemplate = /\{(?:prompt|tag|key|token|model|artist|size|steps|scale|cfg|sampler|negative|nocache|noise_schedule|noiseSchedule|seed)\}/i.test(endpoint);
                 if (hasTemplate) {
-                    return endpoint
-                        .replace(/\{prompt\}/gi, encodeURIComponent(prompt))
-                        .replace(/\{tag\}/gi, encodeURIComponent(prompt))
-                        .replace(/\{key\}/gi, encodeURIComponent(token))
-                        .replace(/\{token\}/gi, encodeURIComponent(token));
+                    return templateImageUrl(endpoint, params);
                 }
 
                 try {
-                    const url = new URL(endpoint, window.location.href);
-                    url.searchParams.set('prompt', prompt);
-                    url.searchParams.set('key', token);
+                    const url = maybeAppendGeneratePath(new URL(endpoint, window.location.href));
+                    const query = {
+                        tag: params.prompt,
+                        token: params.token,
+                        model: params.model,
+                        artist: params.artist,
+                        size: params.size,
+                        steps: params.steps,
+                        scale: params.scale,
+                        cfg: params.cfg,
+                        sampler: params.sampler,
+                        negative: params.negative,
+                        nocache: params.nocache,
+                        noise_schedule: params.noise_schedule,
+                        seed: params.seed
+                    };
+                    Object.entries(query).forEach(([key, value]) => {
+                        if (value !== undefined && value !== null && String(value) !== '') {
+                            url.searchParams.set(key, value);
+                        }
+                    });
                     return url.toString();
                 } catch (e) {
                     showToast('生图 API 地址格式不正确', 'error');
@@ -2400,19 +3077,13 @@
                 if (newJob && cocJobs[newJob]) {
                     const jobData = cocJobs[newJob];
                     
-                    // 1. Add Job Skills if not present
+                    // Add missing skills from the selected occupation template.
                     jobData.skills.forEach(skillName => {
                         addStandardSkill(skillName);
                     });
 
-                    // 2. Reset custom job skills selection if job changes?
-                    // Maybe keep them but filter? Let's keep simpler logic for now.
-                    // Ideally we should warn if existing skills don't match.
-
-                    // Clear occupation points for non-job skills (since job changed)
+                    // Remove occupation points from skills outside the new template.
                     coc.skills.forEach(s => {
-                         // We need to defer this slightly or ensure isJobSkill uses new job
-                         // isJobSkill uses coc.job which is already updated by v-model
                          if (!isJobSkill(s.name) && s.occupation > 0) {
                              s.occupation = 0;
                              updateSkillTotal(s);
@@ -2426,28 +3097,22 @@
             const isJobSkill = (skillName) => {
                 if (!coc.job || !cocJobs[coc.job]) return false;
                 const jobData = cocJobs[coc.job];
-                // Standard job skills
+                // Standard and user-selected occupation skills share the same point pool.
                 if (jobData.skills.includes(skillName)) return true;
-                // Custom selected skills
                 if (coc.jobSkillsCustom && coc.jobSkillsCustom.includes(skillName)) return true;
-                // Credit Rating is always a job skill contextually for points, but handled separately usually.
-                // In this logic, we treat it specially.
                 return false;
             };
 
             const autoDistributePoints = () => {
-                // Reset points first? No, we try to fit existing values into points
-                // This is for migration or AI generation where we only have 'value'
+                // Reconstruct point components for migrated or generated records.
+                let occPointsPool = maxOccupationPoints.value;
+                let intPointsPool = maxInterestPoints.value;
                 
-                let occPointsPool = maxOccupationPoints.value; // Total available
-                let intPointsPool = maxInterestPoints.value; // Total available
-                
-                // 1. Deduct Credit Rating first (must come from Occupation)
-                // Credit Rating is stored in coc.creditRating, not necessarily in skills list
+                // Credit Rating is paid from occupation points and stored separately.
                 const crCost = coc.creditRating || 0;
                 occPointsPool -= crCost;
 
-                // 2. Calculate costs for skills
+                // Calculate the spend represented by each final skill value.
                 const costs = coc.skills.map(s => {
                     const base = getSkillBase(s.name);
                     s.base = base; // Update base just in case
@@ -2495,25 +3160,22 @@
                     }
                 });
                 
-                // Note: pools might go negative, which is fine, UI will show red
+                // Negative pools remain visible so the user can rebalance them.
             };
 
             const autoBalancePoints = () => {
-                // 1. Run distribution first to see where we stand
+                // Reconstruct point assignments before calculating deficits.
                 autoDistributePoints();
                 
-                // 2. Check deficits
                 const occDeficit = occupationPointsRemaining.value < 0 ? Math.abs(occupationPointsRemaining.value) : 0;
                 const intDeficit = interestPointsRemaining.value < 0 ? Math.abs(interestPointsRemaining.value) : 0;
                 
                 if (occDeficit === 0 && intDeficit === 0) return;
 
-                // 3. Reduce Interest Skills first (easiest)
+                // Resolve interest-point deficits from the largest allocations first.
                 if (intDeficit > 0) {
                     const intSkills = coc.skills.filter(s => s.interest > 0);
                     if (intSkills.length > 0) {
-                        // Simple approach: reduce proportionally or from highest?
-                        // Let's reduce from highest interest investment
                         intSkills.sort((a, b) => b.interest - a.interest);
                         
                         let remainingDeficit = intDeficit;
@@ -2527,9 +3189,7 @@
                     }
                 }
 
-                // 4. Reduce Occupation Skills (if Occ pool is negative)
-                // Note: autoDistributePoints prioritizes Occ points for Job skills.
-                // If Occ pool is negative, it means we spent too much on Job skills (and CR).
+                // Resolve occupation-point deficits from the largest allocations first.
                 if (occDeficit > 0) {
                     const jobSkills = coc.skills.filter(s => s.occupation > 0);
                     if (jobSkills.length > 0) {
@@ -2743,21 +3403,15 @@
                 coc.weapons.push({ ...weapon });
                 showToast(`已添加: ${weapon.name}`, 'success');
                 
-                // Auto add skill if not present?
-                // Extract skill name inside parentheses if possible, e.g. "射击(手枪)" -> "射击(手枪)"
-                // Actually standard skills are like "射击(手枪)".
-                // Let's check if we should add it.
+                // 武器引用的技能尚不存在时自动补充
                 const skillName = weapon.skill;
                 if (skillName && !coc.skills.some(s => s.name === skillName)) {
-                    // Check if it's a standard skill or needs custom add
-                    // Most weapon skills are standard or specializations
-                    // We can try adding it as a standard skill
                     addStandardSkill(skillName);
-                    // If not in standard list, maybe add as custom?
+                    // 标准列表未包含的武器技能按自定义技能创建
                     if (!coc.skills.some(s => s.name === skillName)) {
                          coc.skills.push({
                             name: skillName,
-                            base: 0, // Unknown base for exotic stuff
+                            base: 0,
                             occupation: 0,
                             interest: 0,
                             growth: 0,
@@ -2793,75 +3447,45 @@
             };
 
             const updateSkillTotal = (skill) => {
-                // Enforce job points only on job skills
+                // Occupation points are valid only on occupation skills.
                 if (!isJobSkill(skill.name) && skill.occupation > 0) {
                     skill.occupation = 0;
                 }
 
-                // Calculate base total without growth
+                // Creation points exclude post-session growth.
                 let baseTotal = (skill.base || 0) + (skill.occupation || 0) + (skill.interest || 0);
                 
-                // Limit Logic:
-                // 1. Unless limitBreak is on, the starting points (base + occ + int) should ideally not exceed 80 (soft cap),
-                //    but we enforce a hard cap of 99 overall.
-                //    However, user requirement says: "If original total + growth > 80, allow it, but max 99".
-                //    This implies the 80 limit applies to the "original total" (creation points).
-                
-                // Let's enforce the creation limit (80) on the points part if limitBreak is OFF.
+                // Normal creation is capped at 80 before growth is applied.
                 const creationLimit = limitBreak.value ? 999 : 80;
-                
-                // If creation points exceed limit, we clamp them by reducing interest/occupation
-                // BUT, if the user manually inputs a high value, we might want to allow it but clamp the *result*?
-                // The previous logic clamped the *values*.
-                // Let's try to clamp the *components* if they exceed the creation limit.
                 
                 if (baseTotal > creationLimit) {
                     let excess = baseTotal - creationLimit;
-                    // Reduce Interest first
+                    // Trim interest points before occupation points.
                     if (skill.interest >= excess) {
                         skill.interest -= excess;
                         excess = 0;
                     } else {
                         excess -= skill.interest;
                         skill.interest = 0;
-                        // Then Occupation
                         if (skill.occupation >= excess) {
                             skill.occupation -= excess;
                             excess = 0;
                         } else {
-                            // If base itself is high (e.g. 99), we can't reduce base here easily without changing rules data.
-                            // So we just zero out points.
+                            // Preserve the rules-defined base and remove remaining allocations.
                             skill.occupation = 0;
                         }
                     }
-                    // Re-calculate baseTotal after clamping
                     baseTotal = (skill.base || 0) + (skill.occupation || 0) + (skill.interest || 0);
                 }
 
-                // Now add growth
+                // Apply post-session growth after creation-point limits.
                 let total = baseTotal + (skill.growth || 0);
-                
-                // Final Hard Cap: 99 (unless limitBreak is on, maybe allow more? User said "any case max 99")
-                // User said "any case skill total not exceed 99".
-                // Even with limitBreak? Usually limitBreak implies breaking ALL limits.
-                // But the specific feedback was "any case not exceed 99".
-                // I will respect "limitBreak" to allow >99 (for pulp/godlike), but for normal mode enforce 99.
-                // Wait, user said "any case". Let's stick to 99 unless limitBreak is EXPLICITLY for breaking 99.
-                // In my previous code, limitBreak allowed 999.
-                // I will keep limitBreak as 999, but for non-limitBreak, enforce 99.
-                // But the feedback says "If original... > 80, allow it, but ... not > 99".
-                // This implies a special handling for the 80 limit vs 99 limit.
-                
+                // Limit-break mode deliberately permits pulp-style values above 99.
                 const hardCap = limitBreak.value ? 999 : 99;
                 
                 if (total > hardCap) {
-                    // If total exceeds hard cap, we don't reduce points automatically (it might be growth),
-                    // we just clamp the visual value? Or should we clamp growth?
-                    // Let's clamp the final value.
+                    // Preserve allocation history while clamping the displayed total.
                     skill.value = hardCap;
-                    
-                    // Optional: If we want to be strict, we could reduce growth to fit.
-                    // But just clamping value is safer for data preservation.
                 } else {
                     skill.value = total;
                 }
@@ -2900,17 +3524,14 @@
                 return `职业范围: ${min} - ${max}`;
             });
 const validateStat = (key) => {
-    // Handle empty input immediately
+    // Normalize empty input before enforcing the active ruleset cap.
     if (coc.stats[key] === '' || coc.stats[key] === null || isNaN(coc.stats[key])) {
         coc.stats[key] = 0;
     }
 
-    // Now enforces limit for both Random and PointBuy if not broken
-    // Or maybe only PointBuy? Usually Random rolls are naturally limited by dice unless custom.
-    // But request says "unless toggle break limit... cannot be > 85"
     const max = limitBreak.value ? 99 : 85;
     
-    // Enforce max limit for all modes if manual editing happens or point buy
+    // Apply the same manual-entry cap in random and point-buy modes.
     if (coc.stats[key] > max) coc.stats[key] = max;
     
     if (cocGenMode.value === 'pointBuy') {
@@ -3074,6 +3695,7 @@ const generateCOC = async () => {
         showToast('请输入描述', 'warning');
         return;
     }
+    if (!ensureApiReady()) return;
 
     if (isGenerating.value) return;
 
@@ -3141,7 +3763,7 @@ JSON 结构如下：
 }`;
 
                 try {
-                    const response = await fetch(`${api.url}/chat/completions`, {
+                    const response = await fetch(chatCompletionsUrl(), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3290,14 +3912,7 @@ JSON 结构如下：
 
             const exportJSON = () => {
                 const exportData = JSON.parse(JSON.stringify(coc));
-                // 保留 avatar_prompt，但 avatar (图片数据) 太大通常不放在纯JSON里，或者可以选择性保留
-                // 用户要求完美保存每一个信息，所以我们保留 avatar (Base64) 如果它存在
-                // 但是为了文件大小考虑，通常JSON不含大图。不过既然要求“完美保存”，我们保留它。
-                // 如果 avatar 是 blob url，则无法保存，需要确保是 base64
-                // coc.avatar 在生成时是 URL，在上传时是 Base64。
-                // 之前的代码删除了 avatar，现在我们保留它，但要注意大小。
-                
-                // 为了兼容性，我们只删除 blob: 开头的临时 URL，保留 Base64
+                // blob URL 无法跨会话恢复；Base64 头像随角色数据导出
                 if (exportData.avatar && exportData.avatar.startsWith('blob:')) {
                     delete exportData.avatar;
                 }
@@ -3424,6 +4039,7 @@ JSON 结构如下：
                     showToast('请输入修改要求', 'error');
                     return;
                 }
+                if (!ensureApiReady()) return;
                 if (isGenerating.value) return;
 
                 showDiffInputModal.value = false;
@@ -3472,7 +4088,7 @@ JSON 结构如下：
     请根据用户的具体指令，生成 Diff 补丁。`;
 
                 try {
-                    const response = await fetch(`${api.url}/chat/completions`, {
+                    const response = await fetch(chatCompletionsUrl(), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3717,6 +4333,9 @@ return {
     regenerateAvatar,
     showAvatarModal,
     tempAvatarPrompt,
+    imageGenArtistPresetOptions,
+    isImageGenArtistCustom,
+    applyImageGenArtistPreset,
     onAvatarLoad,
     onAvatarError,
     radarLabels,

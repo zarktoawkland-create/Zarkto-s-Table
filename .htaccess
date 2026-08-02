@@ -2,7 +2,18 @@ Options -Indexes
 
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
-<FilesMatch "^(config\.local|config\.example|api_bootstrap)\.php$">
+<FilesMatch "^(config\.(local|example)|api_bootstrap)\.php$|^(Dockerfile|\.dockerignore|DEPLOY_ZEABUR\.md|SECURITY_NOTES\.md|apache-z-coc\.conf|php-production\.ini)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+        Satisfy All
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "(^|[-.])(claimed|credentials?|tokens?|secrets?)([-.]|$)|\.cpa\..*\.json$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
@@ -18,4 +29,14 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+    Header always set Content-Security-Policy "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'"
+
+    <FilesMatch "\.(?:css|js|svg|webp|png|jpg|jpeg|gif|woff2?|mp3)$">
+        Header set Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml
 </IfModule>

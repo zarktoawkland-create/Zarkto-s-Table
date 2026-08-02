@@ -5,9 +5,10 @@ app_send_cors_headers('GET, POST, OPTIONS');
 
 $conn = app_db();
 $roomConfig = app_config()['room'] ?? [];
-$roomTtlHours = max(1, (int)($roomConfig['ttl_hours'] ?? 12));
-$maxPayloadBytes = max(1024, (int)($roomConfig['max_payload_bytes'] ?? (8 * 1024 * 1024)));
-$pollLimit = min(300, max(1, (int)($roomConfig['poll_limit'] ?? 100)));
+$roomTtlHours = min(6, max(1, (int)($roomConfig['ttl_hours'] ?? 2)));
+$maxPayloadBytes = min(512 * 1024, max(16 * 1024, (int)($roomConfig['max_payload_bytes'] ?? (512 * 1024))));
+$maxRoomMessages = min(500, max(50, (int)($roomConfig['max_room_messages'] ?? 240)));
+$pollLimit = min(100, max(1, (int)($roomConfig['poll_limit'] ?? 80)));
 
 function respond($data, $status = 200) {
     app_json_response($data, $status);
@@ -34,16 +35,30 @@ function normalize_sender_id($senderId) {
 }
 
 function ensure_room_schema($conn) {
-    $conn->query("CREATE TABLE IF NOT EXISTS coc_rooms (
+    $roomsReady = $conn->query("CREATE TABLE IF NOT EXISTS coc_rooms (
         room_id VARCHAR(32) NOT NULL,
         host_id VARCHAR(64) NOT NULL,
+        host_token_hash CHAR(64) NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (room_id),
         KEY idx_updated_at (updated_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if (!$roomsReady) return false;
 
-    $conn->query("CREATE TABLE IF NOT EXISTS coc_room_messages (
+    $stmt = $conn->prepare("SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+    $table = 'coc_rooms';
+    $column = 'host_token_hash';
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $row = app_stmt_fetch_assoc($stmt);
+    if ((int)($row['n'] ?? 0) === 0) {
+        if (!$conn->query("ALTER TABLE coc_rooms ADD COLUMN host_token_hash CHAR(64) NULL AFTER host_id")) {
+            return false;
+        }
+    }
+
+    return (bool)$conn->query("CREATE TABLE IF NOT EXISTS coc_room_messages (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         room_id VARCHAR(32) NOT NULL,
         sender_id VARCHAR(64) NOT NULL,
@@ -57,13 +72,28 @@ function ensure_room_schema($conn) {
 
 function cleanup_rooms($conn, $ttlHours) {
     $ttl = max(1, (int)$ttlHours);
-    $conn->query("DELETE m FROM coc_room_messages m LEFT JOIN coc_rooms r ON r.room_id = m.room_id WHERE r.room_id IS NULL OR m.created_at < (NOW() - INTERVAL {$ttl} HOUR)");
-    $conn->query("DELETE FROM coc_rooms WHERE updated_at < (NOW() - INTERVAL {$ttl} HOUR)");
+    $messagesCleaned = $conn->query("DELETE m FROM coc_room_messages m LEFT JOIN coc_rooms r ON r.room_id = m.room_id WHERE r.room_id IS NULL OR m.created_at < (NOW() - INTERVAL {$ttl} HOUR)");
+    $roomsCleaned = $conn->query("DELETE FROM coc_rooms WHERE updated_at < (NOW() - INTERVAL {$ttl} HOUR)");
+    return $messagesCleaned !== false && $roomsCleaned !== false;
+}
+
+function prune_room_messages($conn, $roomId, $maxMessages) {
+    $maxMessages = min(500, max(50, (int)$maxMessages));
+    $stmt = $conn->prepare("SELECT id FROM coc_room_messages WHERE room_id = ? ORDER BY id DESC LIMIT 1 OFFSET {$maxMessages}");
+    $stmt->bind_param('s', $roomId);
+    $stmt->execute();
+    $row = app_stmt_fetch_assoc($stmt);
+    if (!$row) return;
+
+    $cutoffId = (int)$row['id'];
+    $stmt = $conn->prepare("DELETE FROM coc_room_messages WHERE room_id = ? AND id <= ?");
+    $stmt->bind_param('si', $roomId, $cutoffId);
+    $stmt->execute();
 }
 
 function get_room($conn, $roomId, $ttlHours) {
     $ttl = max(1, (int)$ttlHours);
-    $stmt = $conn->prepare("SELECT room_id, host_id FROM coc_rooms WHERE room_id = ? AND updated_at >= (NOW() - INTERVAL {$ttl} HOUR) LIMIT 1");
+    $stmt = $conn->prepare("SELECT room_id, host_id, host_token_hash FROM coc_rooms WHERE room_id = ? AND updated_at >= (NOW() - INTERVAL {$ttl} HOUR) LIMIT 1");
     $stmt->bind_param('s', $roomId);
     $stmt->execute();
     $room = app_stmt_fetch_assoc($stmt);
@@ -74,7 +104,7 @@ function get_room($conn, $roomId, $ttlHours) {
 }
 
 function touch_room($conn, $roomId) {
-    $stmt = $conn->prepare("UPDATE coc_rooms SET updated_at = NOW() WHERE room_id = ?");
+    $stmt = $conn->prepare("UPDATE coc_rooms SET updated_at = NOW() WHERE room_id = ? AND updated_at < (NOW() - INTERVAL 30 SECOND)");
     $stmt->bind_param('s', $roomId);
     $stmt->execute();
 }
@@ -101,17 +131,37 @@ function is_host_only_message($type) {
     return isset($hostOnlyTypes[$type]);
 }
 
-ensure_room_schema($conn);
-if (mt_rand(1, 20) === 1) cleanup_rooms($conn, $roomTtlHours);
+function is_player_log_append($payload, $senderId) {
+    if (($payload['type'] ?? '') !== 'sync_log_append') return false;
+    $message = $payload['message'] ?? null;
+    if (!is_array($message)) return false;
+
+    $role = (string)($message['role'] ?? '');
+    if ($role !== 'user' && $role !== 'whisper') return false;
+    if (!empty($message['isAiGenerated'])) return false;
+
+    $claimedSender = $message['senderId'] ?? ($message['id'] ?? null);
+    return $claimedSender !== null && (string)$claimedSender === $senderId;
+}
+
+app_run_periodically('room_schema_v2', 3600, function () use ($conn) {
+    return ensure_room_schema($conn);
+});
+app_run_periodically('room_cleanup_' . $roomTtlHours, 300, function () use ($conn, $roomTtlHours) {
+    return cleanup_rooms($conn, $roomTtlHours);
+});
 
 $action = $_GET['action'] ?? '';
 
 if ($action === 'create') {
     app_require_method('POST');
     app_rate_limit($conn, 'room_create', 30, 300);
+    app_require_content_length(64 * 1024);
     $data = read_json_body();
     $roomId = normalize_room_id($data['room_id'] ?? '');
     $hostId = normalize_sender_id($data['user_id'] ?? '');
+    $hostToken = bin2hex(random_bytes(32));
+    $hostTokenHash = hash('sha256', $hostToken);
 
     $stmt = $conn->prepare("SELECT room_id FROM coc_rooms WHERE room_id = ? AND updated_at >= (NOW() - INTERVAL {$roomTtlHours} HOUR) LIMIT 1");
     $stmt->bind_param('s', $roomId);
@@ -120,20 +170,21 @@ if ($action === 'create') {
         respond(['status' => 'error', 'message' => 'Room already exists'], 409);
     }
 
-    $stmt = $conn->prepare("REPLACE INTO coc_rooms (room_id, host_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
-    $stmt->bind_param('ss', $roomId, $hostId);
+    $stmt = $conn->prepare("REPLACE INTO coc_rooms (room_id, host_id, host_token_hash, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())");
+    $stmt->bind_param('sss', $roomId, $hostId, $hostTokenHash);
     if (!$stmt->execute()) respond(['status' => 'error', 'message' => 'Room create failed'], 500);
 
     $stmt = $conn->prepare("DELETE FROM coc_room_messages WHERE room_id = ?");
     $stmt->bind_param('s', $roomId);
     if (!$stmt->execute()) respond(['status' => 'error', 'message' => 'Room reset failed'], 500);
 
-    respond(['status' => 'success', 'last_id' => 0]);
+    respond(['status' => 'success', 'last_id' => 0, 'host_token' => $hostToken]);
 }
 
 if ($action === 'join') {
     app_require_method('POST');
     app_rate_limit($conn, 'room_join', 120, 300);
+    app_require_content_length(64 * 1024);
     $data = read_json_body();
     $roomId = normalize_room_id($data['room_id'] ?? '');
     get_room($conn, $roomId, $roomTtlHours);
@@ -166,12 +217,21 @@ if ($action === 'push') {
         respond(['status' => 'error', 'message' => 'Invalid message type'], 400);
     }
 
-    if (is_host_only_message($type) && $senderId !== $room['host_id']) {
-        respond(['status' => 'error', 'message' => 'Only host can send this message'], 403);
+    $isPlayerLogAppend = is_player_log_append($payload, $senderId);
+
+    if (is_host_only_message($type) && !$isPlayerLogAppend) {
+        $hostToken = trim((string)($data['host_token'] ?? ''));
+        $hostTokenHash = hash('sha256', $hostToken);
+        if ($senderId !== $room['host_id'] || $hostToken === '' || !hash_equals((string)$room['host_token_hash'], $hostTokenHash)) {
+            respond(['status' => 'error', 'message' => 'Only host can send this message'], 403);
+        }
     }
 
-    if (!is_host_only_message($type)) {
+    if (!is_host_only_message($type) || $isPlayerLogAppend) {
         $claimedUserId = $payload['user']['id'] ?? ($payload['userId'] ?? null);
+        if ($isPlayerLogAppend) {
+            $claimedUserId = $payload['message']['senderId'] ?? ($payload['message']['id'] ?? null);
+        }
         if ($claimedUserId !== null && (string)$claimedUserId !== $senderId) {
             respond(['status' => 'error', 'message' => 'Sender mismatch'], 403);
         }
@@ -186,6 +246,7 @@ if ($action === 'push') {
     $stmt = $conn->prepare("INSERT INTO coc_room_messages (room_id, sender_id, payload) VALUES (?, ?, ?)");
     $stmt->bind_param('sss', $roomId, $senderId, $payloadJson);
     if (!$stmt->execute()) respond(['status' => 'error', 'message' => 'Message send failed'], 500);
+    prune_room_messages($conn, $roomId, $maxRoomMessages);
     touch_room($conn, $roomId);
 
     respond(['status' => 'success', 'id' => (int)$stmt->insert_id]);

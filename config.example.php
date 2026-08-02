@@ -2,6 +2,7 @@
 return [
     'db' => [
         'host' => 'localhost',
+        'port' => 3306,
         'user' => 'your_database_user',
         'password' => 'your_database_password',
         'database' => 'your_database_name',
@@ -12,9 +13,10 @@ return [
         // 'https://example.com',
     ],
     'room' => [
-        'ttl_hours' => 12,
-        'max_payload_bytes' => 8 * 1024 * 1024,
-        'poll_limit' => 100,
+        'ttl_hours' => 2,
+        'max_payload_bytes' => 512 * 1024,
+        'max_room_messages' => 240,
+        'poll_limit' => 80,
     ],
     'library' => [
         'max_content_bytes' => 4 * 1024 * 1024,
