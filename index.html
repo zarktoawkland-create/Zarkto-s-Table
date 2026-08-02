@@ -364,7 +364,10 @@
         .settings-view button:active { transform: scale(.985); }
         .app-sidebar button { transition: color .3s ease, background-color .3s ease, border-color .3s ease, transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
         .app-sidebar button:hover { transform: translateX(3px); }
-        @media (min-width: 1024px) { .settings-half { grid-column: span 6 / span 6 !important; } }
+        @media (min-width: 1024px) {
+            .settings-half { grid-column: span 6 / span 6 !important; }
+            .settings-layout { gap: 1.25rem; }
+        }
         @media (max-width: 640px) {
             .settings-view { padding: 0 !important; background-image: none !important; background: #020617 !important; font-size: 13px; }
             .settings-view::before, .settings-view::after { display: none; }
@@ -1032,18 +1035,25 @@
         .z-system-ui .settings-page-title::after {
             content: "CABINET 07 / LOCAL";
             width: 176px;
-            height: 66px;
+            height: 38px;
             flex: 0 0 auto;
             display: grid;
             place-items: center;
-            padding: 0 27px 1px;
-            color: rgba(16,23,31,.7);
-            background: url("./assets/art/generated/museum-label-holder.webp") center / contain no-repeat;
+            padding: 0 30px 1px;
+            color: rgba(226,210,169,.72);
+            border: 1px solid rgba(195,161,90,.22);
+            border-radius: 11px 5px 11px 5px;
+            background:
+                radial-gradient(circle at 12px 50%, rgba(213,186,122,.72) 0 1.5px, rgba(55,45,30,.9) 2px 4px, transparent 4.5px),
+                radial-gradient(circle at calc(100% - 12px) 50%, rgba(213,186,122,.72) 0 1.5px, rgba(55,45,30,.9) 2px 4px, transparent 4.5px),
+                linear-gradient(180deg, rgba(118,101,68,.2), rgba(10,17,21,.42));
             font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
             letter-spacing: .13em;
-            filter: grayscale(.08) sepia(.05) saturate(.72) brightness(.76);
-            opacity: .76;
+            backdrop-filter: blur(4px);
+            text-shadow: 0 1px 3px rgba(0,0,0,.85);
+            opacity: .84;
             transform: rotate(-.6deg);
+            box-shadow: inset 0 1px rgba(255,255,255,.035), inset 0 0 14px rgba(0,0,0,.32), 0 8px 22px rgba(0,0,0,.16);
         }
         .z-evidence-divider {
             width: min(100%, 64rem);
@@ -1968,42 +1978,43 @@
                     </h3>
                     <div class="text-xs text-slate-500 font-mono mb-6 uppercase tracking-widest border-b border-dark-700 pb-2 flex justify-between">
                         <span>Frequency: 192.8 MHz</span>
-                        <span>Ver 1.2.0</span>
+                        <span>Ver 1.3.0</span>
                     </div>
                     
                     <div class="prose prose-invert prose-sm max-w-none text-slate-300 font-serif leading-relaxed mb-6 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
-                        <p>欢迎来到 <strong>Zarkto's Table</strong> (Ver 1.2.0)。</p>
-                        <p class="text-mystic-gold font-bold">云端链路已重铸，头像生成也接入了自定义 Nai2API 工作流。</p>
-                        <p>此次更新的核心内容：</p>
+                        <p>欢迎来到 <strong>Zarkto's Table</strong> (Ver 1.3.0)。</p>
+                        <p class="text-mystic-gold font-bold">1.3.0「深夜档案」现已上线：界面、云存档、移动端设置与环境声场完成统一升级。</p>
+                        <p>本次频段记录：</p>
                         <ul class="list-disc pl-4 space-y-1 marker:text-mystic-gold">
-                            <li><strong>自建联机后端</strong>：
+                            <li><strong>暗黑档案视觉重构</strong>：
                                 <ul class="list-none pl-2 text-xs text-slate-400 mt-1 space-y-1 border-l border-dark-700">
-                                    <li>• <strong>移除 Supabase 依赖</strong>：联机房间、好友、云端同步改为自有 PHP/MySQL 接口。</li>
-                                    <li>• <strong>虚拟主机友好</strong>：不需要 WebSocket 常驻进程，普通虚拟主机也能部署。</li>
-                                    <li>• <strong>断线容错</strong>：房间状态通过轮询同步，降低浏览器实时连接失败带来的影响。</li>
+                                    <li>• 全站采用斑驳金属、旧纸、织物与档案摄影素材，重做侧边栏、卡片、弹窗和页面背景。</li>
+                                    <li>• 启动动画、品牌标识、聆听低语、调查员档案与密大图书馆获得独立场景构图。</li>
+                                    <li>• 桌面端设置重新编排；移动端改为“目录 → 具体设置”的分级导航。</li>
                                 </ul>
                             </li>
-                            <li><strong>头像生图系统</strong>：
+                            <li><strong>私有模型与媒体系统</strong>：
                                 <ul class="list-none pl-2 text-xs text-slate-400 mt-1 space-y-1 border-l border-dark-700">
-                                    <li>• <strong>Nai2API 兼容</strong>：支持 <code>/generate</code> 直链格式，自动传递 tag、token、model、size、steps 等参数。</li>
-                                    <li>• <strong>自定义 URL / Key</strong>：可接入自己的生图网关，不再绑定旧接口。</li>
-                                    <li>• <strong>画师串预设</strong>：加入 2.5D、韩漫、本子动漫、GalGame、旧动漫风，并保留自定义画师串。</li>
+                                    <li>• API 提供商下拉预设、三档模型路由、流式输出、温度与自定义连接预设已集中到设置中心。</li>
+                                    <li>• Nai2API 头像生图支持自定义地址、密钥、模型、尺寸与画师串。</li>
+                                    <li>• 环境留声机加入默认歌单、音量、顺序/随机/列表/单曲循环与「雨夜（街巷）」。</li>
                                 </ul>
                             </li>
-                            <li><strong>稳定性与安全</strong>：补充上传体积限制、CORS 白名单、请求频率限制和敏感配置示例，减少部署后的暴露面。</li>
+                            <li><strong>云端与稳定性</strong>：账号数据可跨设备自动同步；联机继续使用自建 PHP/MySQL 与 HTTP 轮询，并修复云存档格式兼容、离线缓存及生产资源加载问题。</li>
                         </ul>
                         <div class="mt-4 pt-4 border-t border-dark-800">
                             <p class="mb-2 font-bold text-slate-200">核心功能一览：</p>
                             <ul class="list-disc pl-4 space-y-1 marker:text-mystic-gold text-xs text-slate-400">
                                 <li><strong>聆听低语</strong>：沉浸式多模态跑团。</li>
-                                <li><strong>自建云端</strong>：虚拟主机可部署的联机与同步后端。</li>
-                                <li><strong>头像生图</strong>：Nai2API 直链、自定义密钥与画师串预设。</li>
+                                <li><strong>云端档案</strong>：账号、调查员、跑团存档与创作记录跨设备同步。</li>
+                                <li><strong>私有 AI</strong>：自定义兼容接口、三档模型路由与 Nai2API 头像生图。</li>
                                 <li><strong>命运天平</strong>：模组背景与角色强度审阅。</li>
                                 <li><strong>异闻酒馆</strong>：基于记录的冒险文学改编。</li>
                                 <li><strong>密大图书馆</strong>：共研与开源资源枢纽。</li>
+                                <li><strong>环境留声机</strong>：内置歌单与多种循环模式。</li>
                             </ul>
                         </div>
-                        <div class="mt-6 p-4 bg-mystic-gold/5 border border-mystic-gold/20 rounded-lg text-xs text-mystic-gold/80 italic">“雾中的电台终于校准了频率；从今夜起，低语将在你的书房深处回响。”</div>
+                        <div class="mt-6 p-4 bg-mystic-gold/5 border border-mystic-gold/20 rounded-lg text-xs text-mystic-gold/80 italic">“旧档案换上了新的封皮，但纸页之间的低语依然属于深夜。”</div>
                         <div class="mt-4 text-xs text-slate-500 font-serif text-right">
                             <p>Cheers,<br>Z4RKTO<br><em>Special thanks to STA1N</em></p>
                         </div>
@@ -2765,11 +2776,10 @@
 
             <!-- 6. Settings View -->
             <div v-if="currentView === 'settings'" :data-mobile-section="mobileSettingsSection" class="z-art-view z-art-settings settings-view h-full overflow-y-auto px-0 py-2 md:p-8 animate-fade-in">
-                <div class="settings-page-title max-w-5xl mx-auto mb-6 hidden md:flex items-end justify-between px-1">
+                <div class="settings-page-title max-w-7xl mx-auto mb-6 hidden md:flex items-end justify-between px-1">
                     <div>
                         <div class="text-[10px] uppercase tracking-[0.3em] text-emerald-400/70 font-mono mb-2">Local Archive Settings</div>
                         <h2 class="text-3xl font-bold text-slate-100 font-serif">设置中心</h2>
-                        <p class="mt-2 text-sm text-slate-500">管理私有模型链路、生成偏好与本地档案。</p>
                     </div>
                     <span class="text-[10px] text-slate-600 font-mono">ZARKTO / CONTROL NODE</span>
                 </div>
@@ -2784,7 +2794,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="settings-layout max-w-5xl mx-auto">
+                <div class="settings-layout max-w-7xl mx-auto">
                     <!-- User Profile -->
                     <div class="settings-card settings-profile-card glass-panel p-6 rounded-xl">
                         <h3 class="font-bold text-slate-200 mb-6 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-mystic-gold mr-3"></span> 个人信息</h3>
@@ -3230,7 +3240,7 @@
                         <p class="mt-4 text-[10px] text-slate-500">清理操作仅删除已迁移或失效的旧版缓存，不会删除角色卡、存档、聊天记录或小说。</p>
                     </div>
                     <!-- Feature Toggles -->
-                    <div class="settings-card settings-features-card glass-panel p-6 rounded-xl transition-all">
+                    <div class="settings-card settings-features-card settings-half glass-panel p-6 rounded-xl transition-all">
                         <h3 class="font-bold text-slate-200 mb-6 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-mystic-purple mr-3"></span> 功能开关</h3>
                         <div class="space-y-4">
                             <div class="settings-feature-row flex items-center justify-between p-4 bg-dark-900/50 rounded-xl border border-dark-800 hover:border-dark-700 transition-all">
@@ -3322,7 +3332,7 @@
                     <div class="settings-card settings-about-card glass-panel p-6 rounded-xl">
                         <h3 class="font-bold text-slate-200 mb-4 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-slate-600 mr-3"></span> 关于</h3>
                         <div class="text-sm text-slate-500 space-y-2">
-                            <p><span class="text-slate-400">版本：</span> 1.2.0</p>
+                            <p><span class="text-slate-400">版本：</span> 1.3.0</p>
                             <p><span class="text-slate-400">开发者：</span> Z4RKTO</p>
                             <p><span class="text-slate-400">鸣谢：</span> STA1N</p>
                             <p class="text-xs italic mt-4">"在疯狂与理智的边缘，我们寻找真相。"</p>
@@ -3473,7 +3483,7 @@
                         </h2>
                         <div class="text-[10px] text-slate-500 font-mono flex flex-col items-end">
                             <span class="uppercase tracking-widest text-mystic-gold/60">Frequency: 192.8 MHz</span>
-                            <span>Ver 1.2.0</span>
+                            <span>Ver 1.3.0</span>
                         </div>
                     </header>
 
@@ -3485,27 +3495,43 @@
                         <div class="prose prose-invert prose-lg max-w-none text-slate-300 font-serif leading-relaxed relative z-10">
                             <p class="text-xl md:text-2xl text-slate-100 font-bold mb-6">欢迎来到 <span class="text-mystic-gold">Zarkto's Table</span></p>
                             <div class="p-6 bg-mystic-gold/5 border-l-4 border-mystic-gold/30 rounded-r-xl mb-8">
-                                <p class="text-mystic-gold font-bold italic mb-0">“1.2.0 已完成云端链路重铸，联机与生图都可以走你自己的节点。”</p>
+                                <p class="text-mystic-gold font-bold italic mb-0">“1.3.0 将暗黑档案、跨设备云存档与私有模型工作流校准到了同一频段。”</p>
                             </div>
 
                             <div class="space-y-8">
                                 <section>
-                                    <h4 class="text-slate-100 font-bold flex items-center gap-2 mb-4"><span class="w-2 h-2 bg-mystic-gold rounded-full"></span> 1.2.0 更新记录</h4>
+                                    <h4 class="text-slate-100 font-bold flex items-center gap-2 mb-4"><span class="w-2 h-2 bg-mystic-gold rounded-full"></span> 1.3.0 更新记录</h4>
                                     <ul class="list-none space-y-4 pl-0">
                                         <li class="bg-dark-900/50 p-6 rounded-2xl border border-dark-800">
-                                            <p class="text-mystic-gold font-bold text-sm mb-2 uppercase tracking-widest">自建云端与联机</p>
+                                            <p class="text-mystic-gold font-bold text-sm mb-2 uppercase tracking-widest">暗黑档案视觉系统</p>
                                             <ul class="list-disc pl-5 space-y-2 text-sm text-slate-400">
-                                                <li><strong>移除 Supabase</strong>：房间、好友与云同步接口改为自有 PHP/MySQL 后端。</li>
-                                                <li><strong>虚拟主机可用</strong>：联机同步基于普通 HTTP 轮询，不依赖常驻 WebSocket 服务。</li>
-                                                <li><strong>部署更稳</strong>：加入 CORS 白名单、请求体积限制和基础频率限制。</li>
+                                                <li><strong>真实素材融入</strong>：旧纸、织物、黄铜、档案摄影与神秘学图版覆盖全站主要场景。</li>
+                                                <li><strong>统一组件语言</strong>：侧边栏、按钮、卡片、输入框和弹窗统一为斑驳、克制的旧日档案风格。</li>
+                                                <li><strong>响应式重排</strong>：桌面端设置网格更均衡，移动端设置采用分级目录，减少长页滚动。</li>
                                             </ul>
                                         </li>
                                         <li class="bg-dark-900/50 p-6 rounded-2xl border border-dark-800">
-                                            <p class="text-mystic-gold font-bold text-sm mb-2 uppercase tracking-widest">Nai2API 头像生图</p>
+                                            <p class="text-mystic-gold font-bold text-sm mb-2 uppercase tracking-widest">私有 AI 与头像生图</p>
                                             <ul class="list-disc pl-5 space-y-2 text-sm text-slate-400">
-                                                <li><strong>自定义 URL 与 Key</strong>：头像生成可接入自己的 Nai2API 网关或兼容直链接口。</li>
-                                                <li><strong>完整参数控制</strong>：支持模型、尺寸、步数、采样器、scale、cfg、负面词与噪声调度。</li>
-                                                <li><strong>画师串预设</strong>：内置 2.5D、韩漫、本子动漫、GalGame、旧动漫风，并保留自定义。</li>
+                                                <li><strong>提供商预设</strong>：可从 STA1N、DeepSeek、OpenRouter、SiliconFlow 或自定义兼容接口快速切换。</li>
+                                                <li><strong>三档模型路由</strong>：主叙事、辅助任务与快速响应分别配置，并保留温度和流式输出控制。</li>
+                                                <li><strong>Nai2API 工作流</strong>：支持自定义 URL、密钥、模型、尺寸、参数和画师串预设。</li>
+                                            </ul>
+                                        </li>
+                                        <li class="bg-dark-900/50 p-6 rounded-2xl border border-dark-800">
+                                            <p class="text-mystic-gold font-bold text-sm mb-2 uppercase tracking-widest">云端账号与多人联机</p>
+                                            <ul class="list-disc pl-5 space-y-2 text-sm text-slate-400">
+                                                <li><strong>跨设备档案</strong>：调查员、跑团存档、异闻创作与必要设置可随账号自动同步。</li>
+                                                <li><strong>自建 PHP/MySQL</strong>：房间与好友继续使用普通 HTTP 轮询，无需常驻 WebSocket 进程。</li>
+                                                <li><strong>恢复更可靠</strong>：兼容不同历史存档 ID，并修复 Service Worker 离线缓存响应复用问题。</li>
+                                            </ul>
+                                        </li>
+                                        <li class="bg-dark-900/50 p-6 rounded-2xl border border-dark-800">
+                                            <p class="text-mystic-gold font-bold text-sm mb-2 uppercase tracking-widest">环境留声机与内容空间</p>
+                                            <ul class="list-disc pl-5 space-y-2 text-sm text-slate-400">
+                                                <li><strong>默认声场</strong>：内置「雨夜（街巷）」与音量控制，支持单曲、列表、顺序和随机播放。</li>
+                                                <li><strong>独立场景</strong>：聆听低语、调查员档案、密大图书馆、异闻酒馆与多人模式拥有各自背景构图。</li>
+                                                <li><strong>生产资源</strong>：Tailwind 改为预编译 CSS，减少运行时依赖与生产环境警告。</li>
                                             </ul>
                                         </li>
                                     </ul>
@@ -3525,6 +3551,12 @@
                                         </div>
                                         <div class="core-feature-item flex items-center">
                                             <div><div class="font-bold text-slate-200">异闻酒馆</div><div class="text-[10px] text-slate-500">冒险记录改编小说</div></div>
+                                        </div>
+                                        <div class="core-feature-item flex items-center">
+                                            <div><div class="font-bold text-slate-200">云端档案</div><div class="text-[10px] text-slate-500">账号与跨设备自动同步</div></div>
+                                        </div>
+                                        <div class="core-feature-item flex items-center">
+                                            <div><div class="font-bold text-slate-200">环境留声机</div><div class="text-[10px] text-slate-500">歌单、音量与循环模式</div></div>
                                         </div>
                                     </div>
                                 </section>
@@ -3702,7 +3734,7 @@
                     <!-- Header -->
                     <header class="text-center space-y-6 pt-8">
                         <div class="inline-block px-4 py-1.5 bg-mystic-gold/10 border border-mystic-gold/30 rounded-full text-mystic-gold text-[10px] uppercase tracking-[0.3em] font-bold">Investigator's Manual</div>
-                        <h2 class="text-4xl md:text-5xl font-bold text-slate-200 font-serif tracking-tight">调查员手册 <span class="text-mystic-gold">Ver 1.2.0</span></h2>
+                        <h2 class="text-4xl md:text-5xl font-bold text-slate-200 font-serif tracking-tight">调查员手册 <span class="text-mystic-gold">Ver 1.3.0</span></h2>
                         <p class="text-slate-500 font-serif italic max-w-lg mx-auto leading-relaxed">"当你凝视深渊时，深渊也在凝视你。而这本手册，将是你坠入黑暗前的最后一根火柴。"</p>
                         <div class="flex justify-center gap-4">
                             <div class="h-px w-12 bg-gradient-to-r from-transparent to-mystic-gold/40 mt-3"></div>
@@ -3722,7 +3754,7 @@
                             <div class="space-y-6 text-slate-400 text-sm font-serif leading-relaxed">
                                 <div class="bg-red-950/20 border-l-4 border-red-500/50 p-6 rounded-r-xl space-y-3">
                                     <p class="text-red-200 font-bold text-lg italic">⚠️ 核心警告：不要让您的理智（数据）烟消云散</p>
-                                    <p>如果您未在「设置中心」注册并登录账号，游戏内的所有进度、存档及调查员记录将仅作为“本地部署”存在。<strong>这意味着：清理浏览器缓存、更换设备、或在隐身模式下打开，您的所有奋斗痕迹将彻底消失。</strong></p>
+                                    <p>如果您未在「设置中心」注册并登录账号，调查员、跑团存档与创作记录将只保存在当前浏览器。<strong>清理站点数据、更换设备或使用隐身模式，都可能使这些本地档案无法找回。</strong></p>
                                 </div>
                                 <div class="space-y-4">
                                     <p><strong class="text-slate-200">手把手操作指引：</strong></p>
@@ -3737,7 +3769,7 @@
                                         </li>
                                         <li class="flex gap-4">
                                             <span class="w-6 h-6 rounded-full bg-dark-800 border border-dark-700 flex items-center justify-center text-mystic-gold shrink-0 font-bold">3</span>
-                                            <p>完成注册后登录，系统将自动开始实时同步。此时，您在任一设备上的操作都将被旧日支配者（云端）铭记。</p>
+                                            <p>完成注册并登录后，系统会自动拉取云端档案，并在数据变化后同步调查员、跑团存档、异闻创作与必要设置。API Key 仍只保存在当前浏览器。</p>
                                         </li>
                                     </ul>
                                 </div>
@@ -3751,12 +3783,12 @@
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-cyan-900/10 transition-all hover:border-cyan-900/20">
                             <h3 class="text-2xl font-bold text-cyan-400 font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-cyan-900/10 p-3 rounded-2xl text-cyan-400"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M4 12h16M4 17h16"></path></svg></span>
-                                新增：自建服务与头像生图
+                                第二章：设置中心与私有服务
                             </h3>
                             <div class="space-y-8 text-slate-400 text-sm font-serif leading-relaxed">
                                 <div class="space-y-4">
-                                    <h4 class="text-slate-200 font-bold flex items-center gap-2"><span class="w-2 h-2 bg-cyan-400 rounded-full"></span> 1. 联机与同步现在走自己的服务器</h4>
-                                    <p>1.2.0 起，项目不再依赖 Supabase 实时连接。只要您的虚拟主机支持 PHP 与 MySQL，就可以使用项目内置的 <span class="text-cyan-300 font-mono">room_api.php</span>、<span class="text-cyan-300 font-mono">db_api.php</span> 和 <span class="text-cyan-300 font-mono">library_api.php</span>。多人房间采用普通 HTTP 轮询同步，适合没有常驻进程权限的虚拟主机。</p>
+                                    <h4 class="text-slate-200 font-bold flex items-center gap-2"><span class="w-2 h-2 bg-cyan-400 rounded-full"></span> 1. 云端与联机使用自建服务</h4>
+                                    <p>1.3.0 延续自建 PHP/MySQL 架构，不依赖 Supabase 实时连接。只要服务器支持 PHP 与 MySQL，就可以使用项目内置的 <span class="text-cyan-300 font-mono">room_api.php</span>、<span class="text-cyan-300 font-mono">db_api.php</span> 和 <span class="text-cyan-300 font-mono">library_api.php</span>。多人房间采用普通 HTTP 轮询同步，适合没有常驻进程权限的部署环境。</p>
                                     <div class="bg-dark-900 border border-dark-700 p-5 rounded-xl text-xs text-slate-500 space-y-2">
                                         <p><strong class="text-slate-300">部署要点：</strong> 将源码上传到虚拟主机，复制 <span class="font-mono text-slate-300">config.example.php</span> 为 <span class="font-mono text-slate-300">config.local.php</span>，填入数据库账号、库名和允许访问的域名。</p>
                                         <p><strong class="text-slate-300">安全提醒：</strong> <span class="font-mono text-slate-300">config.local.php</span> 只放服务器，不要提交到公开仓库。</p>
@@ -3776,6 +3808,20 @@
                                         </li>
                                     </ul>
                                 </div>
+                                <div class="space-y-4">
+                                    <h4 class="text-slate-200 font-bold flex items-center gap-2"><span class="w-2 h-2 bg-cyan-400 rounded-full"></span> 3. 配置私有模型链路</h4>
+                                    <p>在「API 连接与服务」中选择提供商预设，或填写自己的 OpenAI 兼容地址。主叙事、辅助任务与快速响应模型可以分别配置；刷新模型列表后可直接选择服务端返回的模型。</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="bg-dark-900/50 p-4 rounded-xl border border-dark-800">
+                                            <p class="text-cyan-300 font-bold text-xs mb-1">桌面端</p>
+                                            <p class="text-xs text-slate-500">设置采用宽屏双列网格；高级选项、环境留声机、空间管理与功能开关会成对排列，减少无效留白。</p>
+                                        </div>
+                                        <div class="bg-dark-900/50 p-4 rounded-xl border border-dark-800">
+                                            <p class="text-cyan-300 font-bold text-xs mb-1">移动端</p>
+                                            <p class="text-xs text-slate-500">设置首页只显示模块目录。点击模块进入详情，使用顶部返回按钮回到目录，无需在一张超长页面中反复滚动。</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -3786,7 +3832,7 @@
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-mystic-green/10">
                             <h3 class="text-2xl font-bold text-mystic-green font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-mystic-green/10 p-3 rounded-2xl text-mystic-green"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg></span>
-                                第二章：指令与侧边栏
+                                第三章：指令与侧边栏
                             </h3>
                             <div class="space-y-8">
                                 <div class="space-y-4">
@@ -3812,7 +3858,7 @@
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-indigo-900/10 transition-all hover:border-indigo-900/20">
                             <h3 class="text-2xl font-bold text-indigo-400 font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-indigo-900/10 p-3 rounded-2xl text-indigo-400"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg></span>
-                                第三章：记忆回廊
+                                第四章：记忆回廊
                             </h3>
                             <div class="space-y-8">
                                 <div class="space-y-4">
@@ -3842,7 +3888,7 @@
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-amber-900/10">
                             <h3 class="text-2xl font-bold text-amber-500 font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-amber-900/10 p-3 rounded-2xl text-amber-500"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z"></path></svg></span>
-                                第四章：异闻酒馆
+                                第五章：异闻酒馆
                             </h3>
                             <div class="space-y-8">
                                 <p class="text-sm text-slate-400 font-serif leading-relaxed">在这里，枯燥的判定记录将被重塑。以下是创作一篇长篇报告的步骤：</p>
@@ -3872,13 +3918,37 @@
                         </div>
                     </section>
 
+                    <!-- Section: Ambient Phonograph -->
+                    <section class="relative group">
+                        <div class="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400/60 to-transparent rounded-full"></div>
+                        <div class="glass-panel p-8 md:p-12 rounded-3xl border border-amber-900/10">
+                            <h3 class="text-2xl font-bold text-amber-300 font-serif mb-8 flex items-center gap-4">
+                                <span class="bg-amber-900/10 p-3 rounded-2xl text-amber-300"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 18V5l12-2v13M9 9l12-2M6 21a3 3 0 100-6 3 3 0 000 6zm12-2a3 3 0 100-6 3 3 0 000 6z"></path></svg></span>
+                                第六章：环境留声机
+                            </h3>
+                            <div class="space-y-6 text-sm text-slate-400 font-serif">
+                                <p>设置中心的「环境留声机」负责整个站点的背景声场。系统默认歌单包含 2.5 分钟版「雨夜（街巷）」，首次进入时会尝试以单曲循环播放。</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-dark-900/70 p-5 rounded-xl border border-dark-800">
+                                        <p class="text-amber-300 font-bold text-xs mb-2">播放模式</p>
+                                        <p class="text-xs text-slate-500">支持列表循环、顺序播放、随机播放与单曲循环；也可以添加本地 MP3、OGG 或 WAV 到当前浏览器歌单。</p>
+                                    </div>
+                                    <div class="bg-dark-900/70 p-5 rounded-xl border border-dark-800">
+                                        <p class="text-amber-300 font-bold text-xs mb-2">浏览器自动播放限制</p>
+                                        <p class="text-xs text-slate-500">若浏览器阻止自动播放，完成一次点击或触摸后音乐会继续启动。音量、开关与播放模式会保存在当前浏览器。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- Section: Radio/Friends -->
                     <section class="relative group">
                         <div class="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500/60 to-transparent rounded-full"></div>
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-blue-900/10">
                             <h3 class="text-2xl font-bold text-blue-400 font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-blue-900/10 p-3 rounded-2xl text-blue-400"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg></span>
-                                第五章：收音机调频
+                                第七章：多人联机与同伴
                             </h3>
                             <div class="space-y-6 text-sm text-slate-400 font-serif">
                                 <p>这不仅仅是好友系统，更是多人联机的桥梁：</p>
@@ -3897,7 +3967,7 @@
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-purple-900/10">
                             <h3 class="text-2xl font-bold text-purple-400 font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-purple-900/10 p-3 rounded-2xl text-purple-400"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></span>
-                                第六章：调查员档案
+                                第八章：调查员档案
                             </h3>
                             <div class="space-y-8">
                                 <div class="bg-dark-900 shadow-xl border border-dark-800 p-8 rounded-xl relative overflow-hidden group/card transition-all hover:border-purple-500/30">
@@ -3925,7 +3995,7 @@
                         <div class="glass-panel p-8 md:p-12 rounded-3xl border border-slate-900/10">
                             <h3 class="text-2xl font-bold text-slate-300 font-serif mb-8 flex items-center gap-4">
                                 <span class="bg-slate-900/10 p-3 rounded-2xl text-slate-300"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></span>
-                                第七章：密大图书馆
+                                第九章：密大图书馆
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 text-sm text-slate-400 font-serif leading-relaxed">
                                 <div class="space-y-4">
@@ -5334,8 +5404,8 @@
                     saveData();
                     showToast('文件夹已重命名', 'success');
                 };
-                const showBroadcast = ref(false); const dontShowBroadcast = ref(false); const currentVersion = '1.2.0';
-                const checkBroadcast = () => { const lastReadVersion = localStorage.getItem('coc_broadcast_read_version'); const shownSession = sessionStorage.getItem('coc_broadcast_shown'); if (lastReadVersion !== currentVersion && !shownSession) { showBroadcast.value = true; sessionStorage.setItem('coc_broadcast_shown', 'true'); } };
+                const showBroadcast = ref(false); const dontShowBroadcast = ref(false); const currentVersion = '1.3.0';
+                const checkBroadcast = () => { const lastReadVersion = localStorage.getItem('coc_broadcast_read_version'); const shownSessionVersion = sessionStorage.getItem('coc_broadcast_shown_version'); if (lastReadVersion !== currentVersion && shownSessionVersion !== currentVersion) { showBroadcast.value = true; sessionStorage.setItem('coc_broadcast_shown_version', currentVersion); } };
                 const closeBroadcast = () => { showBroadcast.value = false; if (dontShowBroadcast.value) localStorage.setItem('coc_broadcast_read_version', currentVersion); };
                 const openCocCard = () => { 
                     if (cocState.gameState === 'playing') return showToast('游戏进行中，请先保存进度或结团后再进入调查员档案', 'warning');
