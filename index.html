@@ -2907,19 +2907,27 @@
                                 <input v-model="settings.customApiKey" @change="handleApiConfigChange" type="password" autocomplete="off" placeholder="仅保存在当前浏览器" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-sm">
                             </div>
 
-                            <datalist id="z-coc-model-list"><option v-for="model in modelListStatus.models" :key="model" :value="model"></option></datalist>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
+                                <div class="group">
                                     <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-widest">主叙事模型</label>
-                                    <input v-model.trim="settings.qualityModel" @change="saveData" list="z-coc-model-list" placeholder="跑团主回复、视觉理解" class="w-full bg-dark-900 border border-dark-700 rounded px-3 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-xs">
+                                    <button type="button" data-testid="quality-model-toggle" @click="openModelPicker('quality')" class="w-full min-h-[46px] bg-dark-900 border border-dark-700 rounded px-3 py-2.5 text-left flex items-center justify-between gap-3 hover:border-emerald-500/60 active:scale-[0.99] transition-all">
+                                        <span class="min-w-0 truncate text-slate-200 font-mono text-xs">{{ settings.qualityModel || '跑团主回复、视觉理解' }}</span>
+                                        <svg class="w-4 h-4 shrink-0 text-slate-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
                                 </div>
-                                <div>
+                                <div class="group">
                                     <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-widest">辅助任务模型</label>
-                                    <input v-model.trim="settings.balancedModel" @change="saveData" list="z-coc-model-list" placeholder="审卡、小说整理" class="w-full bg-dark-900 border border-dark-700 rounded px-3 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-xs">
+                                    <button type="button" data-testid="balanced-model-toggle" @click="openModelPicker('balanced')" class="w-full min-h-[46px] bg-dark-900 border border-dark-700 rounded px-3 py-2.5 text-left flex items-center justify-between gap-3 hover:border-emerald-500/60 active:scale-[0.99] transition-all">
+                                        <span class="min-w-0 truncate text-slate-200 font-mono text-xs">{{ settings.balancedModel || '审卡、小说整理' }}</span>
+                                        <svg class="w-4 h-4 shrink-0 text-slate-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
                                 </div>
-                                <div>
+                                <div class="group">
                                     <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-widest">快速响应模型</label>
-                                    <input v-model.trim="settings.fastModel" @change="saveData" list="z-coc-model-list" placeholder="AI 队友等短回复" class="w-full bg-dark-900 border border-dark-700 rounded px-3 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-xs">
+                                    <button type="button" data-testid="fast-model-toggle" @click="openModelPicker('fast')" class="w-full min-h-[46px] bg-dark-900 border border-dark-700 rounded px-3 py-2.5 text-left flex items-center justify-between gap-3 hover:border-emerald-500/60 active:scale-[0.99] transition-all">
+                                        <span class="min-w-0 truncate text-slate-200 font-mono text-xs">{{ settings.fastModel || 'AI 队友等短回复' }}</span>
+                                        <svg class="w-4 h-4 shrink-0 text-slate-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
                                 </div>
                                 <div class="bg-dark-900/60 border border-dark-700 rounded px-3 py-2.5">
                                     <div class="flex items-center justify-between mb-2"><label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">温度</label><span class="text-xs font-mono text-emerald-400">{{ Number(settings.temperature).toFixed(1) }}</span></div>
@@ -4039,6 +4047,46 @@
                 </div>
             </div>
             
+            <!-- Model Selector Modal -->
+            <div v-if="activeModelPicker" class="fixed inset-0 z-[220] flex items-center justify-center p-3 md:p-5" role="dialog" aria-modal="true" aria-labelledby="model-selector-title">
+                <div class="absolute inset-0 bg-dark-950/85 backdrop-blur-md" @click="closeModelPicker"></div>
+                <div class="relative w-full max-w-2xl h-[min(82vh,680px)] max-h-[calc(100dvh-24px)] bg-dark-900/95 border border-emerald-500/25 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
+                    <div class="px-4 py-4 md:px-6 border-b border-dark-700 flex items-center justify-between gap-3 bg-dark-950/70">
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-[0.22em] text-emerald-400/70 font-mono">Model Archive</p>
+                            <h3 id="model-selector-title" class="text-lg font-bold text-slate-100 font-serif">选择{{ activeModelPickerLabel }}模型</h3>
+                        </div>
+                        <button type="button" data-testid="model-selector-close" @click="closeModelPicker" aria-label="关闭模型选择" class="w-11 h-11 shrink-0 rounded-xl border border-dark-700 text-slate-400 hover:text-white hover:border-emerald-500/50 active:bg-dark-700 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div class="p-4 md:p-5 border-b border-dark-700 space-y-3 bg-dark-900/80">
+                        <div class="flex gap-2">
+                            <input v-model.trim="modelSearchQuery" type="search" inputmode="search" autocomplete="off" placeholder="搜索已获取的模型…" class="min-w-0 flex-1 bg-dark-950 border border-dark-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-600 focus:border-emerald-500 outline-none font-mono">
+                            <button type="button" @click="fetchCustomModels" :disabled="modelListStatus.isLoading" class="min-w-[48px] px-3 rounded-xl border border-dark-700 text-emerald-400 hover:border-emerald-500/60 active:bg-emerald-500/10 disabled:opacity-50" aria-label="刷新模型列表">
+                                <svg class="w-5 h-5 mx-auto" :class="modelListStatus.isLoading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input v-model.trim="manualModelName" @keyup.enter="useManualTierModel" type="text" autocomplete="off" placeholder="也可以手动输入模型名称" class="min-w-0 flex-1 bg-dark-950/70 border border-dark-700 rounded-xl px-4 py-2.5 text-xs text-slate-300 placeholder-slate-600 focus:border-mystic-gold/60 outline-none font-mono">
+                            <button type="button" @click="useManualTierModel" :disabled="!manualModelName" class="px-4 rounded-xl bg-mystic-gold text-dark-950 text-xs font-bold disabled:opacity-40 active:scale-95 transition-transform">使用</button>
+                        </div>
+                        <p v-if="modelListStatus.error" class="text-xs text-red-400">{{ modelListStatus.error }}</p>
+                    </div>
+                    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 md:p-3">
+                        <button v-for="model in filteredModelOptions" :key="model" type="button" @click="selectTierModel(activeModelPicker, model)" class="w-full min-h-[48px] px-4 py-3 rounded-xl text-left text-xs md:text-sm font-mono text-slate-300 hover:bg-emerald-500/10 active:bg-emerald-500/20 border border-transparent hover:border-emerald-500/20 flex items-center justify-between gap-3">
+                            <span class="break-all">{{ model }}</span>
+                            <svg v-if="activeModelValue === model" class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                        <div v-if="!filteredModelOptions.length" class="h-full min-h-40 flex flex-col items-center justify-center px-6 py-10 text-center">
+                            <svg class="w-10 h-10 mb-3 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                            <p class="text-sm text-slate-500">{{ modelListStatus.models.length ? '没有匹配的模型' : '尚未获取模型列表' }}</p>
+                            <button v-if="!modelListStatus.models.length" type="button" @click="fetchCustomModels" class="mt-4 px-4 py-2 rounded-lg border border-emerald-500/30 text-emerald-300 text-xs hover:bg-emerald-500/10">获取可用模型</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Folder Management Modal -->
             <div v-if="folderManagementState.show" class="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
                 <div class="absolute inset-0 bg-dark-950/80 backdrop-blur-md" @click="closeFolderModal"></div>
@@ -4521,6 +4569,9 @@
                     reviewMode: 'advice' // 'advice' or 'check'
                 });
                 const modelListStatus = reactive({ isLoading: false, models: [], error: '', showList: false });
+                const activeModelPicker = ref('');
+                const modelSearchQuery = ref('');
+                const manualModelName = ref('');
                 const providerDropdownOpen = ref(false);
                 const selectedApiProvider = Vue.computed(() => apiProviderPresets.find(provider => provider.id === settings.apiProvider) || apiProviderPresets[apiProviderPresets.length - 1]);
                 const serviceStatus = reactive({
@@ -4805,6 +4856,52 @@
                     modelListStatus.showList = false;
                     saveData();
                     showToast(`已选择模型: ${modelId}`, 'success');
+                };
+
+                const modelTierKeys = Object.freeze({
+                    quality: 'qualityModel',
+                    balanced: 'balancedModel',
+                    fast: 'fastModel'
+                });
+                const modelTierLabels = Object.freeze({
+                    quality: '主叙事',
+                    balanced: '辅助任务',
+                    fast: '快速响应'
+                });
+                const activeModelPickerLabel = Vue.computed(() => modelTierLabels[activeModelPicker.value] || '');
+                const activeModelValue = Vue.computed(() => {
+                    const key = modelTierKeys[activeModelPicker.value];
+                    return key ? settings[key] : '';
+                });
+                const filteredModelOptions = Vue.computed(() => {
+                    const query = modelSearchQuery.value.trim().toLowerCase();
+                    if (!query) return modelListStatus.models;
+                    return modelListStatus.models.filter(model => String(model).toLowerCase().includes(query));
+                });
+                const openModelPicker = (tier) => {
+                    if (!modelTierKeys[tier]) return;
+                    activeModelPicker.value = tier;
+                    modelSearchQuery.value = '';
+                    manualModelName.value = '';
+                };
+                const closeModelPicker = () => {
+                    activeModelPicker.value = '';
+                    modelSearchQuery.value = '';
+                    manualModelName.value = '';
+                };
+                const selectTierModel = (tier, modelId) => {
+                    const key = modelTierKeys[tier];
+                    if (!key || !modelId) return;
+                    settings[key] = modelId;
+                    if (tier === 'quality') settings.customModel = modelId;
+                    closeModelPicker();
+                    saveData();
+                    showToast(`已选择模型: ${modelId}`, 'success');
+                };
+                const useManualTierModel = () => {
+                    const modelId = manualModelName.value.trim();
+                    if (!modelId || !activeModelPicker.value) return;
+                    selectTierModel(activeModelPicker.value, modelId);
                 };
 
                 const normalizeApiBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
@@ -8257,7 +8354,7 @@ ${buildInvestigatorProfile(inv)}
                     tavernState, importTavernSave, generateNovel, saveNovel, deleteNovel, viewNovel, exportNovel,
                     exportCurrentInvestigatorJSON, exportCurrentInvestigatorPNG, downloadReport, canViewReport,
                     isLocalDev, showDevLogin, isDevMode, verifyDevAccess,
-                    modelListStatus, fetchCustomModels, selectCustomModel, serviceStatus, checkServiceStatus, handleApiConfigChange,
+                    modelListStatus, fetchCustomModels, selectCustomModel, activeModelPicker, activeModelPickerLabel, activeModelValue, modelSearchQuery, manualModelName, filteredModelOptions, openModelPicker, closeModelPicker, selectTierModel, useManualTierModel, serviceStatus, checkServiceStatus, handleApiConfigChange,
                     apiProviderPresets, selectedApiProvider, providerDropdownOpen, applyApiProviderPreset,
                     storageStats, storageUsagePercent, refreshStorageStats, cleanupUnusedStorage, formatBytes, applyDisplaySettings,
                     bgmPlaylist, bgmTrackName, bgmPlaying, applyBgmVolume, handleBgmToggle, handleBgmFileUpload, removeBgmTrack, playBgmTrack, playAdjacentBgm, toggleBgmPlayback, changeBgmPlayMode,
