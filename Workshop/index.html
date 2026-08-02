@@ -6,54 +6,10 @@
     <title>COC 调查员生成器</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;600;700&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="stylesheet" href="../assets/css/tailwind.css">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        serif: ['"Noto Serif SC"', 'SimSun', 'Songti SC', 'serif'],
-                        sans: ['"Noto Serif SC"', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        // Original DaisyUI colors mapped to new palette or kept for compatibility
-                        primary: '#d4af37', // Mystic Gold
-                        secondary: '#2d6a4f', // Mystic Green
-                        accent: '#8a1c1c', // Mystic Red
-                        
-                        // Custom Palette
-                        dark: {
-                            950: '#020617', // Slate 950
-                            900: '#0a0f1e', // Deep Void
-                            850: '#141b2d', // Lighter Void
-                            800: '#1e293b', // Slate 800
-                            700: '#334155', // Slate 700
-                        },
-                        mystic: {
-                            gold: '#d4af37',
-                            gold_dim: '#8a7120',
-                            green: '#2d6a4f',
-                            teal: '#115e59',
-                            red: '#8a1c1c',
-                            purple: '#581c87',
-                        }
-                    },
-                    boxShadow: {
-                        'glow-gold': '0 0 15px rgba(212, 175, 55, 0.15)',
-                        'glow-green': '0 0 15px rgba(45, 106, 79, 0.2)',
-                        'inner-glow': 'inset 0 0 20px rgba(0,0,0,0.5)',
-                    },
-                    backgroundImage: {
-                        'void-noise': "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.07%22/%3E%3C/svg%3E')",
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         html {
             -webkit-text-size-adjust: 100% !important;

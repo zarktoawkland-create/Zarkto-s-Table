@@ -5,6 +5,11 @@
 .well-known
 .idea
 .vscode
+node_modules
+package.json
+pnpm-lock.yaml
+tailwind.config.js
+assets/css/tailwind.input.css
 
 config.local.php
 *-claimed-*.json

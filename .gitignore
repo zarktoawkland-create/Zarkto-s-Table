@@ -6,6 +6,7 @@ config.local.php
 .env.*
 !.env.example
 *.log
+node_modules/
 
 # Local image-generation intermediates and source masters are not deployment assets.
 tmp/

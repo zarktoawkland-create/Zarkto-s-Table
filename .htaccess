@@ -2,7 +2,7 @@ Options -Indexes
 
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
-<FilesMatch "^(config\.(local|example)|api_bootstrap)\.php$|^(Dockerfile|\.dockerignore|DEPLOY_ZEABUR\.md|SECURITY_NOTES\.md|apache-z-coc\.conf|php-production\.ini)$">
+<FilesMatch "^(config\.(local|example)|api_bootstrap)\.php$|^(Dockerfile|\.dockerignore|DEPLOY_ZEABUR\.md|SECURITY_NOTES\.md|apache-z-coc\.conf|php-production\.ini|package\.json|pnpm-lock\.yaml|tailwind\.config\.js|tailwind\.input\.css)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

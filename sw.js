@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'z-coc-shell-v1';
+const CACHE_VERSION = 'z-coc-shell-v2';
 const APP_SHELL = [
     './',
     './index.html',
@@ -6,7 +6,8 @@ const APP_SHELL = [
     './Workshop/index.html',
     './404.html',
     './manifest.json',
-    './favicon.svg'
+    './favicon.svg',
+    './assets/css/tailwind.css'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,9 +38,15 @@ self.addEventListener('fetch', (event) => {
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
-                .then((response) => {
+                .then(async (response) => {
                     if (response.ok) {
-                        caches.open(CACHE_VERSION).then((cache) => cache.put(request, response.clone()));
+                        const cachedResponse = response.clone();
+                        try {
+                            const cache = await caches.open(CACHE_VERSION);
+                            await cache.put(request, cachedResponse);
+                        } catch (_) {
+                            // A cache write failure must not block navigation.
+                        }
                     }
                     return response;
                 })
@@ -54,15 +61,18 @@ self.addEventListener('fetch', (event) => {
     const cacheableDestination = ['script', 'style', 'font', 'image', 'audio'].includes(request.destination);
     if (!cacheableDestination) return;
 
-    event.respondWith(
-        caches.match(request).then((cached) => {
-            const network = fetch(request).then((response) => {
-                if (response.ok || response.type === 'opaque') {
-                    caches.open(CACHE_VERSION).then((cache) => cache.put(request, response.clone()));
-                }
-                return response;
-            });
-            return cached || network;
-        })
-    );
+    const fetchAndCache = async () => {
+        const response = await fetch(request);
+        if (response.ok || response.type === 'opaque') {
+            const cachedResponse = response.clone();
+            await caches.open(CACHE_VERSION)
+                .then((cache) => cache.put(request, cachedResponse));
+        }
+        return response;
+    };
+
+    const cachedResponse = caches.match(request);
+    const networkResponse = fetchAndCache();
+    event.waitUntil(networkResponse.then(() => undefined).catch(() => undefined));
+    event.respondWith(cachedResponse.then((cached) => cached || networkResponse));
 });
