@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'z-coc-shell-v4';
+const CACHE_VERSION = 'z-coc-shell-v5';
 const APP_SHELL = [
     './',
     './index.html',
@@ -7,7 +7,8 @@ const APP_SHELL = [
     './404.html',
     './manifest.json',
     './favicon.svg',
-    './assets/css/tailwind.css'
+    './assets/css/tailwind.css',
+    './assets/art/generated/launch-ritual-moon-archive-v1.webp'
 ];
 
 self.addEventListener('install', (event) => {

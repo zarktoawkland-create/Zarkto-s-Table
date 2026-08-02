@@ -19,6 +19,7 @@
     </script>
     <meta name="theme-color" content="#020617">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23d4af37' d='M256 32c-123.7 0-224 100.3-224 224s100.3 224 224 224 224-100.3 224-224S379.7 32 256 32z'/%3E%3C/svg%3E">
+    <link rel="preload" as="image" href="assets/art/generated/launch-ritual-moon-archive-v1.webp" type="image/webp" fetchpriority="high">
     <link rel="stylesheet" href="assets/css/tailwind.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
@@ -51,6 +52,8 @@
             opacity:1;
             visibility:visible;
             transition:opacity .82s cubic-bezier(.22,.7,.18,1),visibility .82s;
+            contain:strict;
+            transform:translateZ(0);
         }
         .z-launch-screen::before {
             content:"";
@@ -62,6 +65,8 @@
             -webkit-mask-image:radial-gradient(circle at center,transparent 0 10%,#000 28% 56%,transparent 72%);
             mask-image:radial-gradient(circle at center,transparent 0 10%,#000 28% 56%,transparent 72%);
             animation:zLaunchRays 28s linear infinite,zLaunchBreathe 3.8s ease-in-out infinite;
+            will-change:transform,opacity;
+            backface-visibility:hidden;
         }
         .z-launch-screen::after {
             content:"";
@@ -86,7 +91,9 @@
             place-items:center;
             transform:translate(-50%,-50%);
             opacity:0;
-            animation:zLaunchPosterIn 1.15s .08s cubic-bezier(.16,1,.3,1) forwards;
+            animation:zLaunchPosterIn 1.15s cubic-bezier(.16,1,.3,1) forwards;
+            will-change:transform,opacity;
+            backface-visibility:hidden;
         }
         .z-launch-door {
             position:absolute;
@@ -115,9 +122,11 @@
             -webkit-mask:radial-gradient(circle,transparent 0 34%,#000 34.5% 63%,transparent 64%);
             mask:radial-gradient(circle,transparent 0 34%,#000 34.5% 63%,transparent 64%);
             opacity:0;
-            animation:zLaunchHaloIn 1.15s .45s ease-out forwards,zLaunchRays 42s 1.6s linear infinite;
+            animation:zLaunchHaloIn 1.15s ease-out forwards,zLaunchRays 42s linear infinite;
+            will-change:transform,opacity;
+            backface-visibility:hidden;
         }
-        .z-launch-art {
+        .z-launch-art,.z-launch-art-blur {
             position:absolute!important;
             inset:0!important;
             z-index:2;
@@ -129,10 +138,19 @@
             object-position:50% 50%;
             opacity:0;
             transform:scale(.955);
-            filter:blur(12px) sepia(.08) saturate(.68) contrast(1.02) brightness(.42) drop-shadow(0 10px 28px rgba(0,0,0,.54));
             -webkit-mask-image:radial-gradient(ellipse 49% 48% at 50% 49%,#000 55%,rgba(0,0,0,.94) 72%,transparent 100%);
             mask-image:radial-gradient(ellipse 49% 48% at 50% 49%,#000 55%,rgba(0,0,0,.94) 72%,transparent 100%);
-            animation:zLaunchEmerge 1.85s .18s cubic-bezier(.16,1,.3,1) forwards;
+            will-change:transform,opacity;
+            backface-visibility:hidden;
+        }
+        .z-launch-art {
+            filter:sepia(.08) saturate(.83) contrast(1.08) brightness(.78) drop-shadow(0 20px 46px rgba(0,0,0,.78));
+            animation:zLaunchSharpIn 1.85s cubic-bezier(.16,1,.3,1) forwards;
+        }
+        .z-launch-art-blur {
+            z-index:1;
+            filter:blur(12px) sepia(.08) saturate(.68) contrast(1.02) brightness(.42) drop-shadow(0 10px 28px rgba(0,0,0,.54));
+            animation:zLaunchBlurDissolve 1.85s cubic-bezier(.16,1,.3,1) forwards;
         }
         .z-launch-orbit {
             position:absolute;
@@ -143,7 +161,9 @@
             border:1px solid rgba(183,148,77,.34);
             box-shadow:inset 0 0 42px rgba(77,152,142,.07),0 0 32px rgba(183,148,77,.06);
             opacity:0;
-            animation:zLaunchHaloIn .9s 1s ease-out forwards,zLaunchOrbit 24s 1.9s linear infinite;
+            animation:zLaunchHaloIn .9s ease-out forwards,zLaunchOrbit 24s linear infinite;
+            will-change:transform,opacity;
+            backface-visibility:hidden;
         }
         .z-launch-orbit::before,.z-launch-orbit::after {
             content:"";
@@ -165,7 +185,7 @@
             transform:translateX(-50%) translateY(18px);
             text-align:center;
             opacity:0;
-            animation:zLaunchCopyIn .8s 1.18s ease-out forwards;
+            animation:zLaunchCopyIn .8s ease-out forwards;
         }
         .z-launch-kicker {
             color:rgba(77,152,142,.78);
@@ -200,7 +220,7 @@
             transform:translateX(-100%);
             background:linear-gradient(90deg,transparent,var(--launch-gold) 24% 76%,var(--launch-teal));
             box-shadow:0 0 16px rgba(183,148,77,.38);
-            animation:zLaunchProgress 3.25s .35s cubic-bezier(.15,.75,.2,1) forwards;
+            animation:zLaunchProgress 3.25s cubic-bezier(.15,.75,.2,1) forwards;
         }
         .z-launch-skip {
             position:absolute;
@@ -224,11 +244,8 @@
         .z-launch-screen.is-leaving { opacity:0; visibility:hidden; pointer-events:none; }
         .z-launch-screen.is-leaving .z-launch-poster { transform:translate(-50%,-50%) scale(1.018); transition:transform .85s cubic-bezier(.22,.7,.18,1); }
         @keyframes zLaunchPosterIn { to { opacity:1; } }
-        @keyframes zLaunchEmerge {
-            0% { opacity:0; transform:scale(.955); filter:blur(12px) sepia(.08) saturate(.68) contrast(1.02) brightness(.42) drop-shadow(0 10px 28px rgba(0,0,0,.54)); }
-            48% { opacity:.66; }
-            100% { opacity:1; transform:scale(1); filter:blur(0) sepia(.08) saturate(.83) contrast(1.08) brightness(.78) drop-shadow(0 20px 46px rgba(0,0,0,.78)); }
-        }
+        @keyframes zLaunchSharpIn { 0% { opacity:0; transform:scale(.955); } 48% { opacity:.16; } 100% { opacity:1; transform:scale(1); } }
+        @keyframes zLaunchBlurDissolve { 0% { opacity:0; transform:scale(.955); } 48% { opacity:.66; } 100% { opacity:0; transform:scale(1); } }
         @keyframes zLaunchHaloIn { from { opacity:0; transform:scale(.76); } to { opacity:.52; transform:scale(1); } }
         @keyframes zLaunchCopyIn { to { opacity:1; transform:translateX(-50%) translateY(0); } }
         @keyframes zLaunchProgress { to { transform:translateX(0); } }
@@ -239,14 +256,28 @@
             .z-launch-poster { width:112vw; height:79dvh; }
             .z-launch-door { inset:2% 24% 3%; }
             .z-launch-rays { width:116vw; }
-            .z-launch-art { object-position:50% 50%; -webkit-mask-image:radial-gradient(ellipse 48% 45% at 50% 50%,#000 52%,rgba(0,0,0,.96) 73%,transparent 100%); mask-image:radial-gradient(ellipse 48% 45% at 50% 50%,#000 52%,rgba(0,0,0,.96) 73%,transparent 100%); }
+            .z-launch-art,.z-launch-art-blur { object-position:50% 50%; -webkit-mask-image:radial-gradient(ellipse 48% 45% at 50% 50%,#000 52%,rgba(0,0,0,.96) 73%,transparent 100%); mask-image:radial-gradient(ellipse 48% 45% at 50% 50%,#000 52%,rgba(0,0,0,.96) 73%,transparent 100%); }
             .z-launch-orbit { width:83vw; }
             .z-launch-copy { bottom:max(20px,calc(env(safe-area-inset-bottom) + 10px)); }
         }
+        .z-launch-screen:not(.is-ready)::before,
+        .z-launch-screen:not(.is-ready) .z-launch-poster,
+        .z-launch-screen:not(.is-ready) .z-launch-rays,
+        .z-launch-screen:not(.is-ready) .z-launch-orbit,
+        .z-launch-screen:not(.is-ready) .z-launch-copy,
+        .z-launch-screen:not(.is-ready) .z-launch-progress::after,
+        .z-launch-screen:not(.is-ready) .z-launch-art,
+        .z-launch-screen:not(.is-ready) .z-launch-art-blur { animation-play-state:paused; }
+        .z-launch-screen.is-settled::before,
+        .z-launch-screen.is-settled .z-launch-rays,
+        .z-launch-screen.is-settled .z-launch-orbit,
+        .z-launch-screen.is-settled .z-launch-progress::after { animation-play-state:paused!important; }
+        .z-launch-screen.is-settled .z-launch-art-blur { visibility:hidden; }
         @media(prefers-reduced-motion:reduce) {
-            .z-launch-screen::before,.z-launch-rays,.z-launch-orbit,.z-launch-art,.z-launch-progress::after { animation:none!important; }
+            .z-launch-screen::before,.z-launch-rays,.z-launch-orbit,.z-launch-art,.z-launch-art-blur,.z-launch-progress::after { animation:none!important; }
             .z-launch-poster,.z-launch-copy { animation-duration:.01ms!important; animation-delay:0s!important; animation-fill-mode:forwards!important; }
             .z-launch-art { opacity:1; transform:scale(1); filter:sepia(.08) saturate(.83) contrast(1.08) brightness(.78) drop-shadow(0 20px 46px rgba(0,0,0,.78)); }
+            .z-launch-art-blur { display:none; }
         }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; border-left: 1px solid #1e293b; }
@@ -796,7 +827,15 @@
         }
         @media (max-width: 767px) {
             .z-system-ui .app-mobile-header { margin: 7px 8px 0; min-height: 60px; border-radius: 18px; }
-            .z-system-ui .app-sidebar { margin: 8px; height: calc(100dvh - 16px); border: 1px solid var(--z-line); border-radius: 24px; overflow: hidden; }
+            .z-system-ui .app-sidebar {
+                width: min(17.5rem, 76vw) !important;
+                max-width: min(17.5rem, 76vw) !important;
+                margin: 8px;
+                height: calc(100dvh - 16px);
+                border: 1px solid var(--z-line);
+                border-radius: 24px;
+                overflow: hidden;
+            }
             .z-system-ui .settings-mobile-menu { padding: 12px; background: transparent; }
             .z-system-ui .settings-mobile-group { margin-bottom: 12px; border-bottom: 1px solid var(--z-line); border-radius: 18px; }
             .z-system-ui .settings-mobile-row { min-height: 3.8rem; padding: .72rem .9rem; }
@@ -1372,6 +1411,15 @@
         @media (max-width: 767px) {
             .z-system-ui #app::after { opacity: .35; }
             .z-system-ui .app-sidebar::after { display: none; }
+            .z-system-ui .z-art-view,
+            .z-system-ui .settings-view {
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior-y: contain;
+            }
+            .z-art-view::before {
+                will-change: transform;
+                backface-visibility: hidden;
+            }
             .z-system-ui .settings-mobile-group {
                 border-radius: 13px;
                 background: rgba(7,13,17,.82) !important;
@@ -1639,6 +1687,14 @@
             .z-archive-upload p:last-of-type { font-size: .68rem; line-height: 1.6; }
             .z-sidebar-user-id { font-size: .62rem !important; max-width: 178px; }
         }
+        @supports (content-visibility:auto) {
+            @media (max-width: 767px) {
+                .z-system-ui .z-art-view :is(.glass-panel,.settings-card,.card,.z-ornamented-card,.settings-mobile-group) {
+                    content-visibility: auto;
+                    contain-intrinsic-size: auto 420px;
+                }
+            }
+        }
     </style>
 </head>
 <body class="z-system-ui selection:bg-teal-900 selection:text-teal-100">
@@ -1647,6 +1703,7 @@
         <div class="z-launch-poster" aria-hidden="true">
             <div class="z-launch-door"></div>
             <div class="z-launch-rays"></div>
+            <img class="z-launch-art-blur" src="assets/art/generated/launch-ritual-moon-archive-v1.webp" alt="" decoding="async" fetchpriority="high">
             <img class="z-launch-art" src="assets/art/generated/launch-ritual-moon-archive-v1.webp" alt="" decoding="async" fetchpriority="high">
             <div class="z-launch-orbit"></div>
         </div>
@@ -1662,18 +1719,50 @@
             const screen = document.getElementById('z-launch-screen');
             if (!screen) return;
             let closed = false;
-            const closeLaunch = () => {
+            let mountRequested = false;
+            let appMounted = false;
+            let settleTimer = 0;
+            let safetyTimer = 0;
+            const finishLaunch = () => {
                 if (closed) return;
                 closed = true;
                 screen.classList.add('is-leaving');
                 window.setTimeout(() => screen.remove(), 900);
                 window.removeEventListener('keydown', onLaunchKey);
+                window.removeEventListener('z-coc:app-mounted', onAppMounted);
             };
-            const onLaunchKey = (event) => { if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') closeLaunch(); };
-            screen.querySelector('.z-launch-skip')?.addEventListener('click', closeLaunch);
+            const requestAppMount = () => {
+                if (mountRequested) return;
+                mountRequested = true;
+                screen.classList.add('is-settled');
+                window.__zCocLaunchMountRequested = true;
+                window.dispatchEvent(new CustomEvent('z-coc:mount-app'));
+                safetyTimer = window.setTimeout(finishLaunch, 4500);
+            };
+            const onAppMounted = () => {
+                appMounted = true;
+                window.clearTimeout(safetyTimer);
+                if (mountRequested) requestAnimationFrame(() => requestAnimationFrame(finishLaunch));
+            };
+            const skipLaunch = () => {
+                window.clearTimeout(settleTimer);
+                requestAppMount();
+                if (appMounted) finishLaunch();
+            };
+            const onLaunchKey = (event) => { if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') skipLaunch(); };
+            screen.querySelector('.z-launch-skip')?.addEventListener('click', skipLaunch);
             window.addEventListener('keydown', onLaunchKey);
+            window.addEventListener('z-coc:app-mounted', onAppMounted);
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            window.setTimeout(closeLaunch, reduceMotion ? 900 : 3900);
+            const art = screen.querySelector('.z-launch-art');
+            const decoded = art?.decode ? art.decode().catch(() => undefined) : Promise.resolve();
+            decoded.then(() => {
+                requestAnimationFrame(() => {
+                    screen.classList.add('is-ready');
+                    const delay = reduceMotion ? 350 : 3650;
+                    settleTimer = window.setTimeout(requestAppMount, delay);
+                });
+            });
         })();
     </script>
     <div id="app" v-cloak :class="{ 'immersive-mode': settings.immersiveMode && currentView === 'chat' }" class="h-full flex flex-col md:flex-row relative bg-dark-950 text-slate-300">
@@ -2904,7 +2993,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">API Key</label>
-                                <input v-model="settings.customApiKey" @change="handleApiConfigChange" type="password" autocomplete="off" placeholder="仅保存在当前浏览器" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-sm">
+                                <input v-model.trim="settings.customApiKey" @change="handleApiConfigChange" type="password" autocomplete="off" placeholder="仅保存在当前浏览器" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-sm">
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2965,7 +3054,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">API Key</label>
-                                <input v-model="settings.customApiKey" @change="saveData" type="password" placeholder="sk-..." class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-green outline-none font-mono text-sm">
+                                <input v-model.trim="settings.customApiKey" @change="saveData" type="password" placeholder="sk-..." class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-slate-200 focus:border-mystic-green outline-none font-mono text-sm">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest flex justify-between items-center">
@@ -4339,7 +4428,7 @@
             });
         };
 
-        createApp({
+        const zCocApp = createApp({
             setup() {
                 const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); });
 
@@ -4808,14 +4897,43 @@
                 const apiHeaders = (includeJson = false) => {
                     const headers = {};
                     if (includeJson) headers['Content-Type'] = 'application/json';
-                    if (settings.customApiKey) headers.Authorization = `Bearer ${settings.customApiKey}`;
+                    const apiKey = String(settings.customApiKey || '').trim();
+                    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
                     return headers;
+                };
+
+                const parseAvailableModelIds = (payload) => {
+                    const rows = [
+                        payload,
+                        payload?.data,
+                        payload?.models,
+                        payload?.items,
+                        payload?.result?.data,
+                        payload?.result?.models,
+                        payload?.result?.items
+                    ].find(Array.isArray) || [];
+                    return [...new Set(rows.map(item => {
+                        if (typeof item === 'string') return item.trim();
+                        return String(item?.id || item?.model || item?.name || '').trim();
+                    }).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN', { numeric: true, sensitivity: 'base' }));
                 };
 
                 const fetchCustomModels = async (silent = false) => {
                     if (!settings.customApiUrl) {
                         if (!silent) showToast('请先填写 API 地址', 'warning');
                         return [];
+                    }
+                    const apiKey = String(settings.customApiKey || '').trim();
+                    if (!apiKey) {
+                        modelListStatus.models = [];
+                        modelListStatus.error = '请先填写当前 API 服务的 Key';
+                        serviceStatus.api = { state: 'error', label: '缺少 API Key', latency: null };
+                        if (!silent) showToast(modelListStatus.error, 'warning');
+                        return [];
+                    }
+                    if (apiKey !== settings.customApiKey) {
+                        settings.customApiKey = apiKey;
+                        saveData();
                     }
                     modelListStatus.isLoading = true;
                     modelListStatus.error = '';
@@ -4830,8 +4948,7 @@
                         const res = await fetch(url, { method: 'GET', headers: apiHeaders(), signal: controller.signal });
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         const data = await res.json();
-                        if (!data || !Array.isArray(data.data)) throw new Error('返回数据格式不正确');
-                        modelListStatus.models = [...new Set(data.data.map(m => m.id).filter(Boolean))].sort();
+                        modelListStatus.models = parseAvailableModelIds(data);
                         if (!modelListStatus.models.length) throw new Error('未找到可用模型');
                         const latency = Math.round(performance.now() - startedAt);
                         serviceStatus.api = { state: 'online', label: `${latency}ms`, latency };
@@ -5052,6 +5169,7 @@
                     syncApiProviderFromUrl();
                     serviceStatus.api = { state: 'idle', label: '待检测', latency: null };
                     modelListStatus.error = '';
+                    modelListStatus.models = [];
                     saveData();
                 };
 
@@ -8369,7 +8487,15 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
             }
-        }).mount('#app');
+        });
+        const mountZCocApp = () => {
+            if (window.__zCocAppMounted) return;
+            window.__zCocAppMounted = true;
+            zCocApp.mount('#app');
+            window.dispatchEvent(new CustomEvent('z-coc:app-mounted'));
+        };
+        window.addEventListener('z-coc:mount-app', mountZCocApp, { once: true });
+        if (window.__zCocLaunchMountRequested || !document.getElementById('z-launch-screen')) mountZCocApp();
     </script>
 </body>
 </html>

@@ -267,7 +267,12 @@
         }
         @media (max-width: 767px) {
             .z-system-ui .library-header { margin: 7px 8px 0; height: 52px; border-radius: 18px; padding-left: .45rem; padding-right: .75rem; }
-            .z-system-ui .library-main { padding: 14px 12px 24px; }
+            .z-system-ui .library-main {
+                padding: 14px 12px 24px;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior-y: contain;
+                touch-action: pan-y;
+            }
             .z-system-ui .library-segmented { width: 100%; }
             .z-system-ui .library-segmented button { flex: 1; padding-left: .75rem; padding-right: .75rem; }
             .z-system-ui .library-module-grid { gap: 14px; }
@@ -279,6 +284,14 @@
             .z-system-ui .library-module-card::before { inset-inline: 14px; }
             .z-system-ui .fixed.inset-0.flex.items-center.justify-center { align-items: center; padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)); }
             .z-system-ui .fixed.inset-0.flex.items-center.justify-center > div { width: 100%; max-height: calc(100dvh - 20px); border-radius: 26px !important; }
+        }
+        @supports (content-visibility:auto) {
+            @media (max-width: 767px) {
+                .z-system-ui .library-module-card {
+                    content-visibility:auto;
+                    contain-intrinsic-size:auto 420px;
+                }
+            }
         }
         @media (prefers-reduced-motion: reduce) { .z-system-ui *, .z-system-ui *::before, .z-system-ui *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .library-art-banner::before { transform: none !important; } }
 

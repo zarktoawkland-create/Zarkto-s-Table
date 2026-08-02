@@ -663,7 +663,16 @@
         @media(max-width:767px) {
             .workshop-page-background { inset:0; background-position:center,center,center,38% 48%; filter:grayscale(.2) sepia(.12) saturate(.65) contrast(1.08) brightness(.68); }
             .workshop-art-banner { height:152px; border-radius:12px; }
-            .z-system-ui .drawer-side > .menu { border-radius:16px; }
+            .z-system-ui .drawer-side > .menu {
+                width:min(17.5rem,76vw) !important;
+                max-width:min(17.5rem,76vw) !important;
+                border-radius:16px;
+            }
+            .z-system-ui .workshop-main {
+                -webkit-overflow-scrolling:touch;
+                overscroll-behavior-y:contain;
+                touch-action:pan-y;
+            }
             .z-system-ui .card,.z-system-ui .modal-box { border-radius:12px !important; }
             .z-system-ui button,
             .z-system-ui a.tab,
@@ -672,6 +681,17 @@
                 min-height:36px !important;
             }
             .z-system-ui .toggle { width:34px !important; height:20px !important; min-height:20px !important; }
+        }
+        @supports (content-visibility:auto) {
+            @media(max-width:767px) {
+                .z-system-ui .workshop-main .card {
+                    content-visibility:auto;
+                    contain-intrinsic-size:auto 720px;
+                }
+                .z-system-ui .workshop-main .skill-ledger-card {
+                    contain-intrinsic-size:auto 1500px;
+                }
+            }
         }
     </style>
 </head>
@@ -1141,14 +1161,14 @@
                                     </td>
                                     <td class="text-center opacity-40 p-2 font-mono text-[10px] text-slate-500">{{ skill.base }}</td>
                                     <td class="p-2">
-                                        <input type="number" v-model.number="skill.occupation" class="skill-number-input input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 transition-colors"
+                                        <input type="number" min="0" step="1" inputmode="numeric" v-model.number="skill.occupation" class="skill-number-input input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/50 transition-colors"
                                                :class="{'input-error': skill.occupation > 0 && !isJobSkill(skill.name)}"
                                                :disabled="!isJobSkill(skill.name)"
-                                               @input="updateSkillTotal(skill)" placeholder="0" />
+                                               @input="updateSkillAllocation(skill, 'occupation')" @blur="updateSkillAllocation(skill, 'occupation')" placeholder="0" />
                                     </td>
                                     <td class="p-2">
-                                        <input type="number" v-model.number="skill.interest" class="skill-number-input input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-green focus:ring-1 focus:ring-mystic-green/50 transition-colors"
-                                               @input="updateSkillTotal(skill)" placeholder="0" />
+                                        <input type="number" min="0" step="1" inputmode="numeric" v-model.number="skill.interest" class="skill-number-input input input-bordered input-xs w-full text-center px-0 bg-dark-900 border-dark-700 text-slate-300 focus:border-mystic-green focus:ring-1 focus:ring-mystic-green/50 transition-colors"
+                                               @input="updateSkillAllocation(skill, 'interest')" @blur="updateSkillAllocation(skill, 'interest')" placeholder="0" />
                                     </td>
                                     <td class="p-2">
                                         <div class="skill-growth-join join w-full justify-center">
@@ -1841,7 +1861,7 @@
     </div> <!-- End App -->
 
 <script>
-    const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount } = Vue;
 
     createApp({
         setup() {
@@ -2095,6 +2115,11 @@
             const characters = ref([]);
             const activeIndex = ref(0);
             const isLoaded = ref(false);
+            const normalizeSkillPointValue = (value) => {
+                const number = Number(value);
+                return Number.isFinite(number) ? Math.max(0, Math.trunc(number)) : 0;
+            };
+            let flushPendingCharacterSave = () => Promise.resolve();
 
             // Initialize localforage
             localforage.config({ name: 'AICharGen_COC', storeName: 'characters_coc' });
@@ -2152,6 +2177,13 @@
                                     newSkill.base = 0;
                                     newSkill.occupation = 0;
                                     newSkill.interest = 0;
+                                    modified = true;
+                                }
+                                const occupation = normalizeSkillPointValue(newSkill.occupation);
+                                const interest = normalizeSkillPointValue(newSkill.interest);
+                                if (occupation !== newSkill.occupation || interest !== newSkill.interest) {
+                                    newSkill.occupation = occupation;
+                                    newSkill.interest = interest;
                                     modified = true;
                                 }
                                 if (newSkill.growth === undefined) {
@@ -2229,6 +2261,7 @@
 
             // Character Management
             const createNewCharacter = () => {
+                void flushPendingCharacterSave();
                 const newChar = {
                     name: '',
                     coc: null // Will be initialized by syncCurrentCharacter
@@ -2244,6 +2277,7 @@
             };
 
             const switchCharacter = async (index) => {
+                await flushPendingCharacterSave();
                 activeIndex.value = index;
                 localStorage.setItem('ai_chargen_active_index_coc', index);
                 syncCurrentCharacter();
@@ -2561,6 +2595,7 @@
             });
 
             const deleteCharacter = (index) => {
+                void flushPendingCharacterSave();
                 characters.value.splice(index, 1);
                 if (characters.value.length === 0) {
                     createNewCharacter();
@@ -2570,36 +2605,92 @@
                     // Force sync if deleting current
                     syncCurrentCharacter();
                 }
+                scheduleCharacterSave();
                 showToast('角色已删除', 'success');
                 // Persist handled by watcher
             };
 
             const deleteAllCharacters = async () => {
+                await flushPendingCharacterSave();
                 characters.value = [];
                 createNewCharacter();
                 activeIndex.value = 0;
-                await localforage.setItem('ai_chargen_characters_coc', JSON.stringify(characters.value));
+                await persistCurrentCharacter();
                 showToast('所有角色已清空', 'success');
             };
 
-            // Auto-save watcher
-            watch(coc, async (newVal) => {
-                if (!isLoaded.value) return;
-                
-                if (characters.value[activeIndex.value]) {
-                    characters.value[activeIndex.value].coc = JSON.parse(JSON.stringify(newVal));
-                    if (newVal.name) characters.value[activeIndex.value].name = newVal.name;
-                    // Sync avatar back to root for sidebar display
-                    if (newVal.avatar) characters.value[activeIndex.value].avatar = newVal.avatar;
-                    if (newVal.avatar_prompt) characters.value[activeIndex.value].avatar_prompt = newVal.avatar_prompt;
-                    
-                    try {
-                        await localforage.setItem('ai_chargen_characters_coc', JSON.stringify(characters.value));
-                    } catch (e) {
-                        console.error('Save failed:', e);
-                    }
+            // Batch rapid edits so mobile input does not clone and persist the full dossier per keystroke.
+            let saveTimer = null;
+            let saveIdleHandle = null;
+            let saveQueued = false;
+            let saveWriteChain = Promise.resolve();
+
+            const cancelScheduledCharacterSave = () => {
+                if (saveTimer !== null) {
+                    clearTimeout(saveTimer);
+                    saveTimer = null;
                 }
-            }, { deep: true });
+                if (saveIdleHandle !== null && 'cancelIdleCallback' in window) {
+                    window.cancelIdleCallback(saveIdleHandle);
+                    saveIdleHandle = null;
+                }
+            };
+
+            const persistCurrentCharacter = () => {
+                cancelScheduledCharacterSave();
+                saveQueued = false;
+                if (!isLoaded.value) return saveWriteChain;
+
+                const character = characters.value[activeIndex.value];
+                if (!character) return saveWriteChain;
+
+                const snapshot = JSON.parse(JSON.stringify(coc));
+                character.coc = snapshot;
+                if (snapshot.name) character.name = snapshot.name;
+                if (snapshot.avatar) character.avatar = snapshot.avatar;
+                if (snapshot.avatar_prompt) character.avatar_prompt = snapshot.avatar_prompt;
+                const payload = JSON.stringify(characters.value);
+
+                saveWriteChain = saveWriteChain
+                    .catch(() => undefined)
+                    .then(() => localforage.setItem('ai_chargen_characters_coc', payload))
+                    .catch((error) => console.error('Save failed:', error));
+                return saveWriteChain;
+            };
+
+            const scheduleCharacterSave = () => {
+                if (!isLoaded.value) return;
+                saveQueued = true;
+                cancelScheduledCharacterSave();
+                saveTimer = setTimeout(() => {
+                    saveTimer = null;
+                    if ('requestIdleCallback' in window) {
+                        saveIdleHandle = window.requestIdleCallback(() => {
+                            saveIdleHandle = null;
+                            persistCurrentCharacter();
+                        }, { timeout: 800 });
+                    } else {
+                        persistCurrentCharacter();
+                    }
+                }, 350);
+            };
+
+            flushPendingCharacterSave = () => saveQueued ? persistCurrentCharacter() : saveWriteChain;
+            watch(coc, scheduleCharacterSave, { deep: true, flush: 'post' });
+
+            const flushSaveOnPageHide = () => { void flushPendingCharacterSave(); };
+            const flushSaveWhenHidden = () => {
+                if (document.visibilityState === 'hidden') void flushPendingCharacterSave();
+            };
+            onMounted(() => {
+                window.addEventListener('pagehide', flushSaveOnPageHide);
+                document.addEventListener('visibilitychange', flushSaveWhenHidden);
+            });
+            onBeforeUnmount(() => {
+                window.removeEventListener('pagehide', flushSaveOnPageHide);
+                document.removeEventListener('visibilitychange', flushSaveWhenHidden);
+                void flushPendingCharacterSave();
+            });
 
             // Avatar Logic
             const handleImageUpload = (event) => {
@@ -3286,7 +3377,7 @@
                 // Credit Rating points are usually occupation points
                 spent += (coc.creditRating || 0);
                 coc.skills.forEach(s => {
-                    spent += (s.occupation || 0);
+                    spent += normalizeSkillPointValue(s.occupation);
                 });
                 return maxOccupationPoints.value - spent;
             });
@@ -3294,7 +3385,7 @@
             const interestPointsRemaining = computed(() => {
                 let spent = 0;
                 coc.skills.forEach(s => {
-                    spent += (s.interest || 0);
+                    spent += normalizeSkillPointValue(s.interest);
                 });
                 return maxInterestPoints.value - spent;
             });
@@ -3403,6 +3494,9 @@
             };
 
             const updateSkillTotal = (skill) => {
+                skill.occupation = normalizeSkillPointValue(skill.occupation);
+                skill.interest = normalizeSkillPointValue(skill.interest);
+
                 // Occupation points are valid only on occupation skills.
                 if (!isJobSkill(skill.name) && skill.occupation > 0) {
                     skill.occupation = 0;
@@ -3445,6 +3539,11 @@
                 } else {
                     skill.value = total;
                 }
+            };
+
+            const updateSkillAllocation = (skill, field) => {
+                skill[field] = normalizeSkillPointValue(skill[field]);
+                updateSkillTotal(skill);
             };
 
             const skillGrowth = (skill) => {
@@ -4278,6 +4377,7 @@ return {
     toggleCustomJobSkill,
     maxCustomJobSkills,
     updateSkillTotal,
+    updateSkillAllocation,
     autoBalancePoints,
     sortedSkills,
     removeSkill,
