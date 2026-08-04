@@ -8,6 +8,7 @@
     <!-- 引入衬线字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;600;700&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/tailwind.css">
+    <script src="../assets/js/app-runtime.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
@@ -1073,7 +1074,7 @@
                 });
                 const showDeleteModal = ref(false);
                 const moduleToDelete = ref(null);
-                const LIBRARY_API_URL = '../library_api.php';
+                const LIBRARY_API_URL = window.ZCOC_RUNTIME.apiUrl('../library_api.php');
 
                 // Utils
                 const showToast = (msg, type = 'info') => {

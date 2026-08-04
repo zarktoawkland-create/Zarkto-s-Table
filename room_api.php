@@ -223,7 +223,7 @@ if ($action === 'push') {
         $hostToken = trim((string)($data['host_token'] ?? ''));
         $hostTokenHash = hash('sha256', $hostToken);
         if ($senderId !== $room['host_id'] || $hostToken === '' || !hash_equals((string)$room['host_token_hash'], $hostTokenHash)) {
-            respond(['status' => 'error', 'message' => 'Only host can send this message'], 403);
+            respond(['status' => 'error', 'code' => 'HOST_AUTH_FAILED', 'message' => 'Only host can send this message'], 403);
         }
     }
 

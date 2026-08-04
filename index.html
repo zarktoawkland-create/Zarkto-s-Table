@@ -21,6 +21,7 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23d4af37' d='M256 32c-123.7 0-224 100.3-224 224s100.3 224 224 224 224-100.3 224-224S379.7 32 256 32z'/%3E%3C/svg%3E">
     <link rel="preload" as="image" href="assets/art/generated/launch-ritual-moon-archive-v1.webp" type="image/webp" fetchpriority="high">
     <link rel="stylesheet" href="assets/css/tailwind.css">
+    <script src="assets/js/app-runtime.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
@@ -2663,7 +2664,7 @@
                             <h3 class="font-bold text-slate-200 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-mystic-green mr-3 shadow-[0_0_10px_rgba(45,106,79,0.5)]"></span> 调查员名册</h3>
                             <div v-if="cocState.mode === 'multi' && multiplayerState.members.length > 0" class="flex-1 flex items-center justify-center gap-4 mx-4">
                                 <div class="text-center text-xs font-bold uppercase tracking-wider">
-                                    <span v-if="multiplayerState.members[multiplayerState.turnIndex]?.id === user.uuid" class="text-mystic-gold animate-pulse">当前轮次：轮到你了！请选择角色</span>
+                                    <span v-if="multiplayerState.members[multiplayerState.turnIndex]?.id === (multiplayerState.myId || user.uuid)" class="text-mystic-gold animate-pulse">当前轮次：轮到你了！请选择角色</span>
                                     <span v-else class="text-slate-500">当前轮次：等待 {{ multiplayerState.members[multiplayerState.turnIndex]?.name || 'Unknown' }} 选择...</span>
                                 </div>
                             </div>
@@ -2672,7 +2673,7 @@
                         
                         <div v-if="cocState.investigators.length === 0" class="text-center py-12 text-slate-600 border border-dark-800 border-dashed rounded bg-dark-900/30 font-serif italic">暂无调查员记录... 也许他们都已迷失在时空裂隙中。</div>
                         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                            <div v-for="(inv, index) in cocState.investigators" :key="index" class="relative p-4 rounded border transition-all cursor-pointer flex gap-4 group overflow-hidden" :class="[ cocState.activeInvestigatorIndex === index ? 'border-mystic-green bg-mystic-green/10 shadow-glow-green' : 'border-dark-700 bg-dark-800/40 hover:border-slate-500 hover:bg-dark-800', multiplayerState.assignments[index] && multiplayerState.assignments[index] !== user.uuid ? 'opacity-50' : '' ]" @click="handleInvestigatorClick(index)">
+                            <div v-for="(inv, index) in cocState.investigators" :key="index" class="relative p-4 rounded border transition-all cursor-pointer flex gap-4 group overflow-hidden" :class="[ cocState.activeInvestigatorIndex === index ? 'border-mystic-green bg-mystic-green/10 shadow-glow-green' : 'border-dark-700 bg-dark-800/40 hover:border-slate-500 hover:bg-dark-800', multiplayerState.assignments[index] && multiplayerState.assignments[index] !== (multiplayerState.myId || user.uuid) ? 'opacity-50' : '' ]" @click="handleInvestigatorClick(index)">
                                 <div class="absolute inset-0 bg-gradient-to-r from-mystic-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <div class="w-16 h-16 rounded bg-dark-900 flex-shrink-0 overflow-hidden border border-dark-600 group-hover:border-slate-400 transition-colors shadow-lg relative">
                                     <img v-if="inv.avatar" :src="inv.avatar" :alt="`${inv.name || '调查员'}的头像`" class="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500">
@@ -2684,9 +2685,9 @@
                                     <!-- Assignment Status -->
                                     <div v-if="cocState.mode === 'multi'" class="mt-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                                         <template v-if="multiplayerState.assignments[index]">
-                                            <span class="w-1.5 h-1.5 rounded-full" :class="multiplayerState.assignments[index] === user.uuid ? 'bg-mystic-green' : (multiplayerState.assignments[index].startsWith('ai_') ? 'bg-purple-500' : 'bg-slate-500')"></span>
-                                            <span :class="multiplayerState.assignments[index] === user.uuid ? 'text-mystic-green' : (multiplayerState.assignments[index].startsWith('ai_') ? 'text-purple-500' : 'text-slate-500')">
-                                                {{ multiplayerState.assignments[index] === user.uuid ? '已选择 (你)' : (multiplayerState.assignments[index].startsWith('ai_') ? 'AI 托管' : '已被占用') }}
+                                            <span class="w-1.5 h-1.5 rounded-full" :class="multiplayerState.assignments[index] === (multiplayerState.myId || user.uuid) ? 'bg-mystic-green' : (multiplayerState.assignments[index].startsWith('ai_') ? 'bg-purple-500' : 'bg-slate-500')"></span>
+                                            <span :class="multiplayerState.assignments[index] === (multiplayerState.myId || user.uuid) ? 'text-mystic-green' : (multiplayerState.assignments[index].startsWith('ai_') ? 'text-purple-500' : 'text-slate-500')">
+                                                {{ multiplayerState.assignments[index] === (multiplayerState.myId || user.uuid) ? '已选择 (你)' : (multiplayerState.assignments[index].startsWith('ai_') ? 'AI 托管' : '已被占用') }}
                                             </span>
                                         </template>
                                         <template v-else-if="multiplayerState.assignmentDetails && multiplayerState.assignmentDetails[index]"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span><span class="text-yellow-500">等待归位: {{ multiplayerState.assignmentDetails[index].name }}</span></template>
@@ -4256,7 +4257,7 @@
         marked.use({ breaks: true });
 
         // 注册 Service Worker (仅在 http/https 下，避免 file:// 协议报错)
-        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        if (!window.ZCOC_RUNTIME.isNative && 'serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
             });
@@ -5321,8 +5322,8 @@
                 const hasCot = (text) => { const s = ensureString(text); return s && (s.includes('<cot>') || s.includes('<cot')); };
                 const getCotContent = (text) => { const s = ensureString(text); if (!s) return ''; const match = s.match(/<cot>([\s\S]*?)(?:<\/cot>|<cot>|$)/); return match ? match[1] : (s.includes('<cot>') ? s.split('<cot>')[1] || '' : ''); };
                 const removeCot = (text) => { const s = ensureString(text); if (!s) return ''; let clean = s.replace(/<cot>[\s\S]*?(?:<\/cot>|<cot>)/g, '').trim(); if (clean.includes('<cot>')) clean = clean.split('<cot>')[0].trim(); return clean; };
-                const toggleCot = async (index) => { if (cocState.mode === 'multi' && !multiplayerState.isHost && !multiplayerState.cotAuthorizedUsers.includes(user.uuid)) { if (await showConfirm('您没有权限查看思维链 (CoT)。是否向房主申请权限？', '申请权限')) requestCotAccess(); return; } const msg = cocState.log[index]; if (msg) msg.showCot = !msg.showCot; };
-                const requestCotAccess = () => { if (!multiplayerState.inRoom) return; broadcastMessage({ type: 'request_cot_access', userId: user.uuid, userName: user.name }); showToast('已发送权限申请', 'info'); };
+                const toggleCot = async (index) => { if (cocState.mode === 'multi' && !multiplayerState.isHost && !multiplayerState.cotAuthorizedUsers.includes(multiplayerState.myId || user.uuid)) { if (await showConfirm('您没有权限查看思维链 (CoT)。是否向房主申请权限？', '申请权限')) requestCotAccess(); return; } const msg = cocState.log[index]; if (msg) msg.showCot = !msg.showCot; };
+                const requestCotAccess = () => { if (!multiplayerState.inRoom) return; broadcastMessage({ type: 'request_cot_access', userId: multiplayerState.myId || user.uuid, userName: user.name }); showToast('已发送权限申请', 'info'); };
                 const saveApiPreset = () => {
                     if (!settings.customApiUrl) return showToast('请输入 API 地址', 'warning');
                     const name = prompt('为当前配置命名 (例如: DeepSeek-V3):');
@@ -5421,7 +5422,7 @@
                 const isRoundLocked = Vue.computed(() => {
                     if (isGenerating.value) return true;
                     if (cocState.mode === 'multi') {
-                        return multiplayerState.roundActionIds.includes(user.uuid);
+                        return multiplayerState.roundActionIds.includes(multiplayerState.myId || user.uuid);
                     }
                     if (cocState.mode === 'single' && hasAiTeammates.value) {
                         return multiplayerState.roundActionIds.includes(user.uuid);
@@ -5429,12 +5430,13 @@
                     return false;
                 });
                 const showMentionList = ref(false); const mentionQuery = ref('');
-                const mentionCandidates = Vue.computed(() => { if (!mentionQuery.value && mentionQuery.value !== '') return []; const q = mentionQuery.value.toLowerCase(); let candidates = []; if (cocState.mode === 'multi' || hasAiTeammates.value) { cocState.investigators.forEach((inv, idx) => { if (multiplayerState.assignments[idx] && multiplayerState.assignments[idx] !== user.uuid) candidates.push({ type: 'character', name: inv.name, id: `char_${idx}`, avatar: inv.avatar }); }); } return candidates.filter(c => c.name.toLowerCase().includes(q)); });
+                const mentionCandidates = Vue.computed(() => { if (!mentionQuery.value && mentionQuery.value !== '') return []; const q = mentionQuery.value.toLowerCase(); let candidates = []; if (cocState.mode === 'multi' || hasAiTeammates.value) { cocState.investigators.forEach((inv, idx) => { if (multiplayerState.assignments[idx] && multiplayerState.assignments[idx] !== (multiplayerState.myId || user.uuid)) candidates.push({ type: 'character', name: inv.name, id: `char_${idx}`, avatar: inv.avatar }); }); } return candidates.filter(c => c.name.toLowerCase().includes(q)); });
                 const handleInput = (e) => { const val = e.target.value; const cursor = e.target.selectionStart; const lastAt = val.lastIndexOf('@', cursor - 1); if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ' || val[lastAt - 1] === '\n')) { const query = val.substring(lastAt + 1, cursor); if (!query.includes(' ')) { mentionQuery.value = query; showMentionList.value = true; return; } } showMentionList.value = false; };
                 const selectMention = (candidate) => { const val = cocInput.value; const cursor = cocInputRef.value.selectionStart; const lastAt = val.lastIndexOf('@', cursor - 1); if (lastAt !== -1) { const before = val.substring(0, lastAt); const after = val.substring(cursor); cocInput.value = `${before}@${candidate.name} ${after}`; showMentionList.value = false; nextTick(() => { cocInputRef.value.focus(); const newCursorPos = lastAt + 1 + candidate.name.length + 1; cocInputRef.value.setSelectionRange(newCursorPos, newCursorPos); }); } };
 
-                const multiplayerState = reactive({ isConnected: false, inRoom: false, roomId: null, hostToken: '', myId: null, isHost: false, members: [], turnStatus: {}, skipStatus: {}, isReady: false, assignments: {}, turnIndex: 0, roundActionIds: [], cotAuthorizedUsers: [], syncReceived: false });
+                const multiplayerState = reactive({ isConnected: false, inRoom: false, roomId: null, hostToken: '', myId: null, isHost: false, hostAuthorizationFailed: false, members: [], turnStatus: {}, skipStatus: {}, isReady: false, assignments: {}, turnIndex: 0, roundActionIds: [], cotAuthorizedUsers: [], syncReceived: false });
                 let joinRetryInterval = null;
+                let joinRetryAttempts = 0;
                 let roomPollTimer = null;
                 let roomLastMessageId = 0;
                 let roomPollInFlight = false;
@@ -5624,7 +5626,8 @@
                 const closeBroadcast = () => { showBroadcast.value = false; if (dontShowBroadcast.value) localStorage.setItem('coc_broadcast_read_version', currentVersion); };
                 const openCocCard = () => { 
                     if (cocState.gameState === 'playing') return showToast('游戏进行中，请先保存进度或结团后再进入调查员档案', 'warning');
-                    window.open('Workshop/index.html', '_blank'); 
+                    if (window.ZCOC_RUNTIME.isNative) window.location.href = 'Workshop/index.html';
+                    else window.open('Workshop/index.html', '_blank');
                     showMobileMenu.value = false; 
                 };
                 
@@ -5680,7 +5683,7 @@ const performCloudSync = async () => {
             }
         }
     };
-    const res = await fetch('db_api.php?action=sync', {
+    const res = await fetch(window.ZCOC_RUNTIME.apiUrl('db_api.php?action=sync'), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -5730,7 +5733,7 @@ const pullFromCloud = async ({ clearWhenEmpty = false } = {}) => {
     cloudSyncReady = false;
     clearTimeout(window._syncTimer);
     try {
-        const res = await fetch(`db_api.php?action=pull&user_id=${encodeURIComponent(user.uuid)}`, {
+        const res = await fetch(window.ZCOC_RUNTIME.apiUrl(`db_api.php?action=pull&user_id=${encodeURIComponent(user.uuid)}`), {
             headers: { 'Authorization': `Bearer ${authState.token}` }
         });
         if (res.status === 401) {
@@ -5829,7 +5832,7 @@ const handleAuth = async () => {
     authState.error = '';
     const currentAction = authState.mode === 'register' ? 'register' : 'login';
     try {
-        const response = await fetch(`db_api.php?action=${currentAction}`, {
+        const response = await fetch(window.ZCOC_RUNTIME.apiUrl(`db_api.php?action=${currentAction}`), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: authState.email, password: authState.password })
@@ -5879,7 +5882,7 @@ const handleAuth = async () => {
                     clearTimeout(window._syncTimer);
                     if (authState.token) {
                         try {
-                            const response = await fetch('db_api.php?action=logout', {
+                            const response = await fetch(window.ZCOC_RUNTIME.apiUrl('db_api.php?action=logout'), {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -6890,7 +6893,7 @@ ${buildInvestigatorProfile(inv)}
                     // 发送准备状态更新广播
                     broadcastMessage({
                         type: 'toggle_ready',
-                        userId: user.uuid,
+                        userId: getRoomSessionId(),
                         isReady: multiplayerState.isReady
                     });
                 };
@@ -7467,7 +7470,7 @@ ${buildInvestigatorProfile(inv)}
                     // 如果正在游戏中，禁止切换角色（除非是房主在管理 AI）
                     if (cocState.gameState === 'playing') {
                         if (cocState.mode === 'multi') {
-                            const isMyChar = multiplayerState.assignments[index] === user.uuid;
+                            const isMyChar = multiplayerState.assignments[index] === getRoomSessionId();
                             const isAi = multiplayerState.assignments[index]?.startsWith('ai_');
                             // 房主可以点击 AI 角色来查看/管理，玩家只能点击自己的角色
                             if (multiplayerState.isHost && isAi) {
@@ -7490,19 +7493,19 @@ ${buildInvestigatorProfile(inv)}
                         const currentAssignee = multiplayerState.assignments[index];
                         
                         // 如果该角色已被其他人占用
-                        if (currentAssignee && currentAssignee !== user.uuid && !currentAssignee.startsWith('ai_')) {
+                        if (currentAssignee && currentAssignee !== getRoomSessionId() && !currentAssignee.startsWith('ai_')) {
                             const ownerName = multiplayerState.members.find(m => m.id === currentAssignee)?.name || '其他玩家';
                             return showToast(`该角色已被 ${ownerName} 选择`, 'warning');
                         }
 
                         // 房主直接操作并广播
                         if (multiplayerState.isHost) {
-                            if (currentAssignee === user.uuid) {
+                            if (currentAssignee === getRoomSessionId()) {
                                 delete multiplayerState.assignments[index];
                                 cocState.activeInvestigatorIndex = -1;
                             } else {
-                                clearUserAssignments(user.uuid);
-                                multiplayerState.assignments[index] = user.uuid;
+                                clearUserAssignments(getRoomSessionId());
+                                multiplayerState.assignments[index] = getRoomSessionId();
                                 cocState.activeInvestigatorIndex = index;
                             }
                             broadcastMessage({ type: 'sync_assignments', assignments: multiplayerState.assignments });
@@ -7512,9 +7515,9 @@ ${buildInvestigatorProfile(inv)}
                             // 这里选择等待房主确认，只发送请求
                             broadcastMessage({
                                 type: 'request_assignment',
-                                user: { id: user.uuid },
+                                user: { id: getRoomSessionId() },
                                 index: index,
-                                isCancel: currentAssignee === user.uuid
+                                isCancel: currentAssignee === getRoomSessionId()
                             });
                         }
                     } else {
@@ -7525,7 +7528,7 @@ ${buildInvestigatorProfile(inv)}
                 const updateMyAssignment = () => {
                     if (cocState.mode === 'multi') {
                         // 根据 assignments 找到自己的角色索引
-                        const myIndex = Object.keys(multiplayerState.assignments).find(k => multiplayerState.assignments[k] === user.uuid);
+                        const myIndex = Object.keys(multiplayerState.assignments).find(k => multiplayerState.assignments[k] === getRoomSessionId());
                         if (myIndex !== undefined) {
                             cocState.activeInvestigatorIndex = parseInt(myIndex);
                         } else {
@@ -7723,8 +7726,8 @@ ${buildInvestigatorProfile(inv)}
                             msg.name = user.name;
                             msg.avatar = user.avatar;
                         }
-                        msg.id = user.uuid;
-                        msg.senderId = user.uuid;
+                        msg.id = getRoomSessionId();
+                        msg.senderId = getRoomSessionId();
                     } else {
                         if (inv) {
                             msg.name = inv.name;
@@ -7751,9 +7754,9 @@ ${buildInvestigatorProfile(inv)}
                     if (cocState.mode === 'multi') {
                         broadcastMessage({ type: 'sync_log_append', message: msg });
                         // 只有非私聊消息才视为行动
-                        if (msg.role !== 'whisper' && !multiplayerState.roundActionIds.includes(user.uuid)) {
-                            multiplayerState.roundActionIds.push(user.uuid);
-                            broadcastMessage({ type: 'action_taken', userId: user.uuid });
+                        if (msg.role !== 'whisper' && !multiplayerState.roundActionIds.includes(getRoomSessionId())) {
+                            multiplayerState.roundActionIds.push(getRoomSessionId());
+                            broadcastMessage({ type: 'action_taken', userId: getRoomSessionId() });
                             checkAndTriggerRound();
                         }
                     } else {
@@ -7904,7 +7907,49 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
 
-                const ROOM_API_URL = 'room_api.php';
+                const ROOM_API_URL = window.ZCOC_RUNTIME.apiUrl('room_api.php');
+                const ROOM_HOST_SESSION_PREFIX = 'z_coc_room_host_';
+                const ROOM_HOST_ONLY_TYPES = new Set([
+                    'sync_state', 'sync_log_append', 'update_last_message', 'update_last_message_full',
+                    'sync_module', 'sync_investigators', 'sync_assignments', 'game_start', 'game_ended',
+                    'room_closed', 'grant_cot_access', 'coj_toggle', 'generating_start', 'generating_end',
+                    'regenerate_start', 'distribute_reports'
+                ]);
+                const getRoomSessionId = () => String(multiplayerState.myId || user.uuid || '').trim();
+                const getHostSessionKey = (roomId) => `${ROOM_HOST_SESSION_PREFIX}${String(roomId || '').trim().toUpperCase()}`;
+                const saveHostRoomSession = () => {
+                    if (!multiplayerState.isHost || !multiplayerState.roomId || !multiplayerState.hostToken || !getRoomSessionId()) return;
+                    try {
+                        sessionStorage.setItem(getHostSessionKey(multiplayerState.roomId), JSON.stringify({
+                            roomId: multiplayerState.roomId,
+                            hostToken: multiplayerState.hostToken,
+                            senderId: getRoomSessionId()
+                        }));
+                    } catch (error) {
+                        console.warn('Unable to persist room host session:', error);
+                    }
+                };
+                const restoreHostRoomSession = (roomId) => {
+                    try {
+                        const raw = sessionStorage.getItem(getHostSessionKey(roomId));
+                        if (!raw) return false;
+                        const saved = JSON.parse(raw);
+                        const token = String(saved?.hostToken || '').trim();
+                        const senderId = String(saved?.senderId || '').trim();
+                        if (!/^[a-f0-9]{64}$/i.test(token) || !senderId) return false;
+                        multiplayerState.hostToken = token;
+                        multiplayerState.myId = senderId;
+                        multiplayerState.hostAuthorizationFailed = false;
+                        return true;
+                    } catch (error) {
+                        console.warn('Unable to restore room host session:', error);
+                        return false;
+                    }
+                };
+                const clearHostRoomSession = (roomId) => {
+                    if (!roomId) return;
+                    try { sessionStorage.removeItem(getHostSessionKey(roomId)); } catch (_) {}
+                };
                 const roomApiRequest = async (action, body = null, query = {}) => {
                     const params = new URLSearchParams({ action });
                     Object.entries(query).forEach(([key, value]) => {
@@ -7919,7 +7964,10 @@ ${buildInvestigatorProfile(inv)}
                         const res = await fetch(`${ROOM_API_URL}?${params.toString()}`, options);
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok || data.status === 'error') {
-                            throw new Error(data.message || `Room API Error: ${res.status}`);
+                            const error = new Error(data.message || `Room API Error: ${res.status}`);
+                            error.status = res.status;
+                            error.code = data.code || '';
+                            throw error;
                         }
                         return data;
                     }
@@ -7930,7 +7978,10 @@ ${buildInvestigatorProfile(inv)}
                         const res = await fetch(`${ROOM_API_URL}?${params.toString()}`, { ...options, signal: controller.signal });
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok || data.status === 'error') {
-                            throw new Error(data.message || `Room API Error: ${res.status}`);
+                            const error = new Error(data.message || `Room API Error: ${res.status}`);
+                            error.status = res.status;
+                            error.code = data.code || '';
+                            throw error;
                         }
                         return data;
                     } finally {
@@ -7946,18 +7997,32 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
 
-                const broadcastMessage = async (payload) => {
-                    if (!multiplayerState.roomId || !user.uuid) return false;
+                const broadcastMessage = async (payload, allowCredentialRecovery = true) => {
+                    const senderId = getRoomSessionId();
+                    if (!multiplayerState.roomId || !senderId) return false;
+                    const isProtectedHostMessage = multiplayerState.isHost && ROOM_HOST_ONLY_TYPES.has(payload?.type);
+                    if (isProtectedHostMessage && multiplayerState.hostAuthorizationFailed) return false;
                     try {
                         await roomApiRequest('push', {
                             room_id: multiplayerState.roomId,
-                            sender_id: user.uuid,
+                            sender_id: senderId,
                             host_token: multiplayerState.isHost ? multiplayerState.hostToken : '',
                             payload
                         });
                         multiplayerState.isConnected = true;
                         return true;
                     } catch (e) {
+                        if (isProtectedHostMessage && e?.status === 403) {
+                            const previousToken = multiplayerState.hostToken;
+                            if (allowCredentialRecovery && restoreHostRoomSession(multiplayerState.roomId) && multiplayerState.hostToken !== previousToken) {
+                                return broadcastMessage(payload, false);
+                            }
+                            multiplayerState.hostAuthorizationFailed = true;
+                            multiplayerState.isConnected = false;
+                            showRoomTransportError('房主凭证已失效，请退出后重新创建房间');
+                            console.error('Room host authorization failed:', e);
+                            return false;
+                        }
                         console.error('Room broadcast failed:', e);
                         multiplayerState.isConnected = false;
                         showRoomTransportError('联机消息发送失败');
@@ -7981,12 +8046,12 @@ ${buildInvestigatorProfile(inv)}
                         const data = await roomApiRequest('pull', null, {
                             room_id: activeRoomId,
                             since: roomLastMessageId,
-                            user_id: user.uuid
+                            user_id: getRoomSessionId()
                         });
                         if (activeRoomId !== multiplayerState.roomId) return;
                         (data.messages || []).forEach(msg => {
                             roomLastMessageId = Math.max(roomLastMessageId, Number(msg.id) || 0);
-                            if (msg.sender_id === user.uuid) return;
+                            if (msg.sender_id === getRoomSessionId()) return;
                             if (msg.payload && msg.payload.type) handleBroadcastMessage(msg.payload);
                         });
                         multiplayerState.isConnected = true;
@@ -8103,7 +8168,7 @@ ${buildInvestigatorProfile(inv)}
                                     multiplayerState.syncReceived = true;
                                     showToast('同步完成', 'success');
                                     if (joinRetryInterval) {
-                                        clearInterval(joinRetryInterval);
+                                        clearTimeout(joinRetryInterval);
                                         joinRetryInterval = null;
                                     }
                                 }
@@ -8218,7 +8283,7 @@ ${buildInvestigatorProfile(inv)}
                             }
                             break;
                         case 'grant_cot_access':
-                             if (payload.userId === user.uuid) {
+                             if (payload.userId === getRoomSessionId()) {
                                  showToast('已获得思考过程查看权限', 'success');
                                  multiplayerState.cotAuthorizedUsers = payload.authorizedUsers;
                              }
@@ -8295,11 +8360,24 @@ ${buildInvestigatorProfile(inv)}
 
                     const data = await roomApiRequest(options.reset ? 'create' : 'join', {
                         room_id: normalizedRoomId,
-                        user_id: user.uuid
+                        user_id: getRoomSessionId()
                     });
                     roomLastMessageId = Number(data.last_id) || 0;
                     multiplayerState.roomId = normalizedRoomId;
-                    multiplayerState.hostToken = options.reset ? String(data.host_token || '') : '';
+                    multiplayerState.hostAuthorizationFailed = false;
+                    if (options.reset) {
+                        multiplayerState.hostToken = String(data.host_token || '').trim();
+                        if (!/^[a-f0-9]{64}$/i.test(multiplayerState.hostToken)) {
+                            throw new Error('Room API did not return a valid host credential');
+                        }
+                        saveHostRoomSession();
+                    } else if (multiplayerState.isHost) {
+                        if (!restoreHostRoomSession(normalizedRoomId)) {
+                            throw new Error('Host credential is unavailable');
+                        }
+                    } else {
+                        multiplayerState.hostToken = '';
+                    }
                     multiplayerState.isConnected = true;
                     multiplayerState.inRoom = true;
                     startRoomPolling();
@@ -8308,23 +8386,30 @@ ${buildInvestigatorProfile(inv)}
                         multiplayerState.syncReceived = false;
                         showToast('已连接房间，请求同步...', 'success');
                         
-                        broadcastMessage({
+                        const joined = await broadcastMessage({
                             type: 'player_joined',
-                            user: { id: user.uuid, name: user.name, avatar: user.avatar }
+                            user: { id: getRoomSessionId(), name: user.name, avatar: user.avatar }
                         });
+                        if (!joined) throw new Error('Unable to announce room membership');
 
-                        if (joinRetryInterval) clearInterval(joinRetryInterval);
-                        joinRetryInterval = setInterval(() => {
+                        if (joinRetryInterval) clearTimeout(joinRetryInterval);
+                        joinRetryAttempts = 0;
+                        const retrySync = () => {
                             if (multiplayerState.syncReceived || !multiplayerState.inRoom) {
-                                clearInterval(joinRetryInterval);
+                                clearTimeout(joinRetryInterval);
                                 joinRetryInterval = null;
                                 return;
                             }
-                            broadcastMessage({
-                                type: 'player_joined',
-                                user: { id: user.uuid, name: user.name, avatar: user.avatar }
-                            });
-                        }, 2000);
+                            joinRetryAttempts += 1;
+                            if (joinRetryAttempts > 5) {
+                                joinRetryInterval = null;
+                                showRoomTransportError('房主未返回同步数据，请确认房主仍在房间中');
+                                return;
+                            }
+                            broadcastMessage({ type: 'request_sync', userId: getRoomSessionId() });
+                            joinRetryInterval = setTimeout(retrySync, Math.min(3000 * joinRetryAttempts, 10000));
+                        };
+                        joinRetryInterval = setTimeout(retrySync, 3000);
                     }
                 };
                 
@@ -8382,18 +8467,23 @@ ${buildInvestigatorProfile(inv)}
 
                 const leaveRoom = async () => {
                     if (joinRetryInterval) {
-                        clearInterval(joinRetryInterval);
+                        clearTimeout(joinRetryInterval);
                         joinRetryInterval = null;
                     }
+                    joinRetryAttempts = 0;
+                    const leavingRoomId = multiplayerState.roomId;
                     stopRoomPolling();
                     roomLastMessageId = 0;
                     multiplayerState.inRoom = false;
                     multiplayerState.isConnected = false;
                     multiplayerState.roomId = null;
                     multiplayerState.hostToken = '';
+                    multiplayerState.myId = null;
+                    multiplayerState.hostAuthorizationFailed = false;
                     multiplayerState.members = [];
                     multiplayerState.assignments = {};
                     multiplayerState.syncReceived = false;
+                    clearHostRoomSession(leavingRoomId);
                     showToast('已断开连接', 'info');
                 };
                 const addFriend = () => { /* ... */ };
@@ -8443,7 +8533,7 @@ ${buildInvestigatorProfile(inv)}
                                 multiplayerState.inRoom = true;
                                 startRoomPolling();
                                 if (!multiplayerState.isHost) {
-                                    broadcastMessage({ type: 'request_sync', userId: user.uuid });
+                                    broadcastMessage({ type: 'request_sync', userId: getRoomSessionId() });
                                 } else {
                                     broadcastState();
                                 }

@@ -11,6 +11,8 @@ return [
     // the page and PHP APIs are on different domains.
     'allowed_origins' => [
         // 'https://example.com',
+        // 'https://localhost',      // Capacitor Android
+        // 'capacitor://localhost',  // Capacitor iOS
     ],
     'room' => [
         'ttl_hours' => 2,

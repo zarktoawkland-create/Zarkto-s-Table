@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'z-coc-shell-v5';
+const CACHE_VERSION = 'z-coc-shell-v6';
 const APP_SHELL = [
     './',
     './index.html',
@@ -34,6 +34,7 @@ self.addEventListener('fetch', (event) => {
     if (request.method !== 'GET' || request.headers.has('range')) return;
 
     const url = new URL(request.url);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
     if (url.origin === self.location.origin && url.pathname.endsWith('.php')) return;
 
     if (request.mode === 'navigate') {
