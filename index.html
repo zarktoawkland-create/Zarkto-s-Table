@@ -2444,6 +2444,12 @@
                                         </div>
                                     </div>
 
+                                    <!-- 状态标签 & 当前位置 -->
+                                    <div v-if="(cocState.investigators[cocState.activeInvestigatorIndex].statuses && cocState.investigators[cocState.activeInvestigatorIndex].statuses.length) || cocState.investigators[cocState.activeInvestigatorIndex].location" class="flex flex-wrap gap-1.5 items-center pt-1">
+                                        <span v-for="tag in (cocState.investigators[cocState.activeInvestigatorIndex].statuses || [])" :key="tag" class="px-2 py-0.5 rounded text-[10px] font-bold border" :class="tag.includes('重伤') ? 'bg-red-900/30 border-red-500/40 text-red-400' : tag.includes('濒死') ? 'bg-red-950/60 border-red-600/50 text-red-300' : tag.includes('疯狂') ? 'bg-purple-900/30 border-purple-500/40 text-purple-300' : tag.includes('死亡') ? 'bg-slate-800/60 border-slate-500/40 text-slate-400' : 'bg-dark-800 border-dark-600 text-slate-400'">{{ tag }}</span>
+                                        <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].location" class="px-2 py-0.5 rounded text-[10px] font-bold border bg-dark-900 border-mystic-gold/30 text-mystic-gold/90">📍 {{ cocState.investigators[cocState.activeInvestigatorIndex].location }}</span>
+                                    </div>
+
                                     <!-- Stats Grid -->
                                     <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].stats">
                                         <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
@@ -6014,6 +6020,18 @@ const handleAuth = async () => {
                                 parsed.bgmAutoplayConfiguredV1 = true;
                             }
                             Object.assign(settings, parsed);
+                            // 老存档补充后续版本新增的默认 KP 规则（不覆盖用户已有/已改的规则）
+                            if (Array.isArray(settings.kpRules)) {
+                                DEFAULT_KP_RULES.forEach(rule => {
+                                    if (!settings.kpRules.some(r => r.id === rule.id)) settings.kpRules.push(JSON.parse(JSON.stringify(rule)));
+                                });
+                                // report 规则内容定向刷新（新增 relationships 字段要求，仅当内容为旧版时）
+                                const savedReportRule = settings.kpRules.find(r => r.id === 'report');
+                                const defaultReportRule = DEFAULT_KP_RULES.find(r => r.id === 'report');
+                                if (savedReportRule && defaultReportRule && !savedReportRule.content.includes('relationships')) {
+                                    savedReportRule.content = defaultReportRule.content;
+                                }
+                            }
                             if (!['list-loop', 'sequential', 'shuffle', 'single-loop'].includes(settings.bgmPlayMode)) settings.bgmPlayMode = 'list-loop';
                             if (typeof settings.bgmCurrentTrackId !== 'string') settings.bgmCurrentTrackId = '';
                             settings.qualityModel = parsed.qualityModel || parsed.customModel || '';
@@ -6934,6 +6952,7 @@ ${buildInvestigatorProfile(inv)}
                                 { name: "聆听", value: Math.floor(Math.random() * 5) + 1 }
                             ],
                             newItems: ["测试物品 A", "神秘道具 B"],
+                            relationships: [{ name: "测试NPC", relation: "盟友", story: "并肩调查了教堂地窖" }],
                             badge: { name: "测试先锋", desc: "在开发者模式下完成测试", icon: "🛠️" },
                             summary: `[测试] ${inv.name} 完成了本次冒险测试。`
                         }));
@@ -7171,7 +7190,7 @@ ${buildInvestigatorProfile(inv)}
                         showToast('导出失败: ' + e.message, 'error');
                     }
                 };
-                const confirmSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; inv.san = Math.min(inv.maxSan||99, inv.san + settlementState.sanRewardVal); settlementState.skillGrowths.forEach(g => { if(g.success) { const s = inv.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } }); if(!inv.history) inv.history=[]; inv.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`); if(settlementState.badge.name) { if(!inv.badges) inv.badges=[]; inv.badges.push({...settlementState.badge}); } saveData(); showToast('结算完成', 'success'); settlementState.show = false; };
+                const confirmSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; inv.san = Math.min(inv.maxSan||99, inv.san + settlementState.sanRewardVal); settlementState.skillGrowths.forEach(g => { if(g.success) { const s = inv.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } }); applyMythosSanLimit(inv); if(!inv.history) inv.history=[]; inv.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`); if(settlementState.badge.name) { if(!inv.badges) inv.badges=[]; inv.badges.push({...settlementState.badge}); } saveData(); showToast('结算完成', 'success'); settlementState.show = false; };
 
                 const importTavernSave = (e) => {
                     const file = e.target.files[0];
