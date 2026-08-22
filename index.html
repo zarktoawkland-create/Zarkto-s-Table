@@ -2465,6 +2465,28 @@
                                         </div>
                                     </div>
 
+                                    <!-- Archive Extras (疯狂/神话/人际/已知信息) -->
+                                    <div v-if="hasArchiveExtras(cocState.investigators[cocState.activeInvestigatorIndex])" class="space-y-2">
+                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
+                                            <span class="w-1 h-1 rounded-full bg-slate-500"></span> 档案
+                                        </h4>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mania || cocState.investigators[cocState.activeInvestigatorIndex].phobia" class="text-[11px] text-purple-300 leading-relaxed bg-dark-800/40 border border-dark-700/50 rounded p-2">
+                                            <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].mania">躁狂症：{{ cocState.investigators[cocState.activeInvestigatorIndex].mania }}</span>
+                                            <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].mania && cocState.investigators[cocState.activeInvestigatorIndex].phobia"> · </span>
+                                            <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].phobia">恐惧症：{{ cocState.investigators[cocState.activeInvestigatorIndex].phobia }}</span>
+                                        </div>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mythos && (cocState.investigators[cocState.activeInvestigatorIndex].mythos.tomes || cocState.investigators[cocState.activeInvestigatorIndex].mythos.spells)" class="text-[11px] text-slate-400 leading-relaxed bg-dark-800/40 border border-dark-700/50 rounded p-2 space-y-1">
+                                            <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mythos.tomes"><span class="text-mystic-gold/80">典籍：</span>{{ cocState.investigators[cocState.activeInvestigatorIndex].mythos.tomes }}</div>
+                                            <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mythos.spells"><span class="text-mystic-gold/80">法术：</span>{{ cocState.investigators[cocState.activeInvestigatorIndex].mythos.spells }}</div>
+                                        </div>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].relationships && cocState.investigators[cocState.activeInvestigatorIndex].relationships.length" class="space-y-1">
+                                            <div v-for="(rel, idx) in cocState.investigators[cocState.activeInvestigatorIndex].relationships.filter(r => r && (r.name || r.relation))" :key="idx" class="text-[11px] text-slate-400 bg-dark-800/40 border border-dark-700/50 rounded p-2">
+                                                <span class="text-slate-200 font-bold">{{ rel.name }}</span><span class="text-slate-500">（{{ rel.relation }}）</span> <span v-if="rel.story">{{ rel.story }}</span>
+                                            </div>
+                                        </div>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].knownInfo" class="text-[11px] text-slate-400 leading-relaxed bg-dark-800/40 border border-dark-700/50 rounded p-2 whitespace-pre-line">{{ cocState.investigators[cocState.activeInvestigatorIndex].knownInfo }}</div>
+                                    </div>
+
                                     <!-- Skills -->
                                     <div class="flex-1 min-h-0 flex flex-col" v-if="cocState.investigators[cocState.activeInvestigatorIndex].skills">
                                         <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
@@ -2472,7 +2494,7 @@
                                         </h4>
                                         <div class="overflow-y-auto custom-scrollbar pr-1 -mr-1 flex-1">
                                             <div class="flex flex-wrap gap-2">
-                                                <button v-for="skill in cocState.investigators[cocState.activeInvestigatorIndex].skills.filter(s => s.value > 0).sort((a,b) => b.value - a.value)" :key="skill.name"
+                                                <button v-for="skill in visibleSkills(cocState.investigators[cocState.activeInvestigatorIndex])" :key="skill.name"
                                                         class="px-2.5 py-1 bg-dark-800 hover:bg-mystic-green/10 border border-dark-700 hover:border-mystic-green/40 rounded text-xs text-slate-400 hover:text-mystic-green transition-all flex items-center gap-2 group"
                                                         @click="cocInput = `.ra ${skill.name}`" title="点击检定">
                                                     <span>{{ skill.name }}</span>
@@ -3365,10 +3387,27 @@
                                         <div class="text-[10px] text-slate-500">开启后可通过命运权衡获取模组分析与角色评估</div>
                                     </div>
                                 </div>
-                                <div @click="settings.enableCharReview = !settings.enableCharReview; saveData()" 
+                                <div @click="settings.enableCharReview = !settings.enableCharReview; saveData()"
                                      :class="settings.enableCharReview ? 'bg-mystic-purple' : 'bg-dark-700'"
                                      class="w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300">
                                     <div :class="settings.enableCharReview ? 'left-5.5' : 'left-0.5'"
+                                         class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300"></div>
+                                </div>
+                            </div>
+                            <div class="settings-feature-row flex items-center justify-between p-4 bg-dark-900/50 rounded-xl border border-dark-800 hover:border-dark-700 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-lg bg-mystic-purple/20 text-mystic-purple flex items-center justify-center">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-slate-200">AI 代掷 NPC 检定</div>
+                                        <div class="text-[10px] text-slate-500">开启后仅 KP(AI) 可用 .rn 代掷 NPC 检定；关闭后玩家可自行使用 .rn</div>
+                                    </div>
+                                </div>
+                                <div @click="settings.npcCheckByAI = !(settings.npcCheckByAI !== false); saveData()"
+                                     :class="settings.npcCheckByAI !== false ? 'bg-mystic-purple' : 'bg-dark-700'"
+                                     class="w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300">
+                                    <div :class="settings.npcCheckByAI !== false ? 'left-5.5' : 'left-0.5'"
                                          class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300"></div>
                                 </div>
                             </div>
@@ -4664,7 +4703,10 @@
                     apiPresets: [], // 存储多个自定义配置
                     customKpPrompt: '', // KP 自定义提示词 (作为补充项)
                     kpRules: JSON.parse(JSON.stringify(DEFAULT_KP_RULES)), // 初始化规则列表
-                    enableCharReview: false // 审卡功能开关
+                    enableCharReview: false, // 审卡功能开关
+                    moduleContextLimit: 50000, // 模组传入 AI 的字符上限（0=不限制）；多人模式仅房主设置生效
+                    npcCheckByAI: true, // NPC 检定由 AI 代掷（true=仅 AI 消息中的 .rn 生效；false=玩家可自行使用 .rn）
+                    commandHotkeys: ['', '', ''] // 输入栏指令记忆快捷键（3 格，随云同步）
                 });
 
                 const charReviewState = reactive({
@@ -6250,33 +6292,28 @@ const handleAuth = async () => {
 
                 const applyStCommands = (content, defaultInvIndex = -1) => {
                     if (!content) return { logs: [], rollbacks: [] };
-                    
+
                     // 先移除 COT 内容，避免执行思维链中的指令
                     let cleanContent = removeCot(content);
-                    
-                    // Regex to match .st commands: (@Name)? .st prop val
-                    // Updated to support Chinese names and better spacing
-                    // Matches:
-                    // 1. @OptionalName (lazy)
-                    // 2. .st or 。st
-                    // 3. property (e.g. hp)
-                    // 4. value (e.g. -3, +1d6, 10)
-                    const regex = /(?:@([^\s\.]+)\s+)?[\.。]st\s+(\w+)\s+([+-]?\d+(?:d\d+)?|[+-]?\d+)/gi;
+
                     const logs = [];
                     const rollbacks = [];
-                    
+
+                    // .st 指令：(@名字)? .st 属性/状态/位置/技能 值
+                    // 值放宽为文本（状态标签/位置需要），以下一个 .st/.know 或行尾为界
+                    const regex = /(?:@([^\s\.]+)\s+)?[\.。]st\s+(\S+)\s+([^\.。\n]+?)(?=[\s。]|$|[\.。](?:st|know)\s)/gi;
                     let match;
                     while ((match = regex.exec(cleanContent)) !== null) {
                         const targetName = match[1];
                         const prop = match[2];
-                        const valExpr = match[3];
-                        
+                        const valExpr = match[3].trim();
+
                         let invIndex = defaultInvIndex;
                         if (targetName) {
                             const foundIndex = findInvestigatorIndexByName(targetName);
                             if (foundIndex !== -1) invIndex = foundIndex;
                         }
-                        
+
                         if (invIndex !== -1 && cocState.investigators[invIndex]) {
                             const result = executeStCommand(cocState.investigators[invIndex], prop, valExpr);
                             if (result && result.success) {
@@ -6285,16 +6322,53 @@ const handleAuth = async () => {
                             }
                         }
                     }
+
+                    // .know 指令：(@名字)? .know 内容 —— 追加式写入"角色已知信息"，只增不覆盖
+                    const knowRegex = /(?:@([^\s\.]+)\s+)?[\.。]know\s+([^\.。\n]+)/gi;
+                    while ((match = knowRegex.exec(cleanContent)) !== null) {
+                        const targetName = match[1];
+                        const info = match[2].trim();
+                        if (!info) continue;
+
+                        let invIndex = defaultInvIndex;
+                        if (targetName) {
+                            const foundIndex = findInvestigatorIndexByName(targetName);
+                            if (foundIndex !== -1) invIndex = foundIndex;
+                        }
+
+                        if (invIndex !== -1 && cocState.investigators[invIndex]) {
+                            const inv = cocState.investigators[invIndex];
+                            const prev = String(inv.knownInfo || '');
+                            inv.knownInfo = prev ? `${prev}\n[${new Date().toLocaleDateString()}] ${info}` : `[${new Date().toLocaleDateString()}] ${info}`;
+                            logs.push(`📝 **已知信息** ${inv.name} 记录：「${info}」`);
+                            rollbacks.push({ invIndex, kind: 'field', prop: 'knownInfo', oldVal: prev });
+                            saveData();
+                        }
+                    }
                     return { logs, rollbacks };
                 };
 
                 const rollbackStChanges = (rollbacks) => {
                     if (!rollbacks || !Array.isArray(rollbacks)) return;
-                    rollbacks.reverse().forEach(rb => {
+                    rollbacks.slice().reverse().forEach(rb => {
                         const inv = cocState.investigators[rb.invIndex];
-                        if (inv) {
-                            if (rb.isStat) inv.stats[rb.prop] = rb.oldVal;
-                            else inv[rb.prop] = rb.oldVal;
+                        if (!inv) return;
+                        if (rb.kind === 'statuses') {
+                            inv.statuses = Array.isArray(rb.oldStatuses) ? rb.oldStatuses.slice() : [];
+                        } else if (rb.kind === 'field') {
+                            inv[rb.prop] = rb.oldVal;
+                        } else if (rb.kind === 'skill') {
+                            const skill = Array.isArray(inv.skills) ? inv.skills.find(s => s.name === rb.name) : null;
+                            if (skill) skill.value = rb.oldVal;
+                        } else if (rb.kind === 'mythos') {
+                            const skill = Array.isArray(inv.skills) ? inv.skills.find(s => s.name === rb.name) : null;
+                            if (skill) skill.value = rb.oldVal;
+                            inv.maxSan = rb.oldMaxSan;
+                            inv.san = rb.oldSan;
+                        } else if (rb.isStat) {
+                            inv.stats[rb.prop] = rb.oldVal;
+                        } else if (rb.prop) {
+                            inv[rb.prop] = rb.oldVal;
                         }
                     });
                     saveData();
@@ -6405,7 +6479,7 @@ ${buildInvestigatorProfile(inv)}
                             if (content) {
                                 // 移除开头可能的多余符号（例如AI有时候会输出 "> .ra"）
                                 let cleanContent = content.replace(/^>\s*/, '');
-                                const { content: processedContent, diceResult } = processDiceCommand(cleanContent, inv);
+                                const { content: processedContent, diceResult } = processDiceCommand(cleanContent, inv, true);
                                 const msg = { role: 'user', name: inv.name, avatar: inv.avatar, content: processedContent, diceResult, isAiGenerated: true, aiIndex: idx };
                                 processAiMessageStCommands(msg); // Process .st commands for AI
                                 cocState.log.push(msg);
@@ -7602,64 +7676,106 @@ ${buildInvestigatorProfile(inv)}
                 };
                 const scrollToBottom = () => { /* 自动滚动已禁用 */ };
                 // 骰子处理函数
-                const processDiceCommand = (content, inv) => {
+                const processDiceCommand = (content, inv, fromAi = false) => {
                     if (!content) return { content, diceResult: null };
                     
                     // 预处理：移除开头可能存在的空白，兼容 .ra 心理学 和 .ra心理学
                     // 注意：AI有时会输出 "。ra 心理学" 或 " .ra 心理学"
                     const trimmedContent = content.trim();
                     
-                    // 1. 技能/属性检定 .ra / .rc
-                    // 正则优化：支持前面有空白，支持指令和参数之间无空格（如 .ra心理学）
-                    const raMatch = trimmedContent.match(/^[\.。](?:ra|rc)\s*([^\s\d]+)/i);
+                    // 0. NPC 检定 .rn NPC名 技能名 数值（"AI 代掷"开启时仅 AI 消息可用，关闭时玩家可用）
+                    const rnMatch = trimmedContent.match(/^[\.。]rn\s+(\S+)\s+(\S+)\s+(\d+)\s*$/i);
+                    if (rnMatch) {
+                        const aiMode = settings.npcCheckByAI !== false;
+                        if (aiMode === !fromAi) {
+                            if (!fromAi) showToast('已开启"AI 代掷 NPC 检定"，该指令由 KP 使用', 'warning');
+                            return { content, diceResult: null };
+                        }
+                        const npcName = rnMatch[1];
+                        const npcSkill = rnMatch[2];
+                        const npcTarget = Math.max(1, Math.min(99, parseInt(rnMatch[3]) || 1));
+                        const npcRoll = Math.floor(Math.random() * 100) + 1;
+                        let npcLevel = '失败'; let npcSuccess = false;
+                        if (npcRoll === 1) { npcLevel = '大成功'; npcSuccess = true; }
+                        else if (npcRoll === 100) { npcLevel = '大失败'; npcSuccess = false; }
+                        else if (npcRoll <= npcTarget / 5) { npcLevel = '极难成功'; npcSuccess = true; }
+                        else if (npcRoll <= npcTarget / 2) { npcLevel = '困难成功'; npcSuccess = true; }
+                        else if (npcRoll <= npcTarget) { npcLevel = '成功'; npcSuccess = true; }
+                        else if (npcRoll > 95) { npcLevel = '大失败'; npcSuccess = false; }
+                        return {
+                            content,
+                            diceResult: { label: `NPC · ${npcName} · ${npcSkill}`, roll: npcRoll, target: npcTarget, level: npcLevel, success: npcSuccess }
+                        };
+                    }
+
+                    // 1. 技能/属性检定 .ra / .rab(奖励骰) / .rap(惩罚骰)，支持 #N 多骰与 ±N 临时修正
+                    // 兼容无空格写法（.ra心理学）与修正后缀（.ra攀爬+20）
+                    const raMatch = trimmedContent.match(/^[\.。](rab|rap|ra|rc)(?:#(\d+))?\s*(.+?)([+-]\d+)?\s*$/i);
                     if (raMatch && inv) {
-                        const skillName = raMatch[1];
+                        const diceKind = raMatch[1].toLowerCase();
+                        const extraDice = Math.min(4, Math.max(1, parseInt(raMatch[2]) || 1)); // #N：N 个奖励/惩罚骰
+                        const skillName = (raMatch[3] || '').trim();
+                        const modVal = raMatch[4] ? parseInt(raMatch[4]) : 0;
                         // 查找技能或属性值
                         let skillVal = 0;
                         let skillLabel = skillName;
-                        
+
                         const statKeyMap = { '力量': 'STR', '体质': 'CON', '体型': 'SIZ', '敏捷': 'DEX', '外貌': 'APP', '智力': 'INT', '灵感': 'INT', '意志': 'POW', '教育': 'EDU', '知识': 'EDU', '幸运': 'LUCK' };
                         const statKey = statKeyMap[skillName] || (inv.stats[skillName.toUpperCase()] ? skillName.toUpperCase() : null);
-                        
+
                         if (statKey) {
                             skillVal = inv.stats[statKey];
                             skillLabel = statDisplayMap[statKey] || statKey;
+                        } else if (skillName === '信用评级' || skillName.toLowerCase() === 'cr') {
+                            skillVal = parseInt(inv.creditRating) || 0;
                         } else {
                             const skill = inv.skills.find(s => s.name === skillName);
                             if (skill) skillVal = skill.value;
                         }
-                        
-                        const roll = Math.floor(Math.random() * 100) + 1;
+
+                        // 修正后的目标值（临时加减，不改角色卡）
+                        const targetVal = Math.max(1, Math.min(99, skillVal + modVal));
+                        // 奖励骰取多次中的最低（更有利），惩罚骰取最高（更不利）
+                        let roll;
+                        if (diceKind === 'rab' || diceKind === 'rap') {
+                            const rolls = [];
+                            for (let i = 0; i <= extraDice; i++) rolls.push(Math.floor(Math.random() * 100) + 1);
+                            roll = diceKind === 'rab' ? Math.min(...rolls) : Math.max(...rolls);
+                        } else {
+                            roll = Math.floor(Math.random() * 100) + 1;
+                        }
+                        const diceTag = diceKind === 'rab' ? `（奖励骰${extraDice > 1 ? '×' + extraDice : ''}）` : diceKind === 'rap' ? `（惩罚骰${extraDice > 1 ? '×' + extraDice : ''}）` : '';
                         let diceResult = null;
-                        
+
                         if (skillVal > 0) {
                             let level = '';
                             let success = false;
-                            
+
                             if (roll === 1) { level = '大成功'; success = true; }
                             else if (roll === 100) { level = '大失败'; success = false; }
-                            else if (roll <= skillVal / 5) { level = '极难成功'; success = true; }
-                            else if (roll <= skillVal / 2) { level = '困难成功'; success = true; }
-                            else if (roll <= skillVal) { level = '成功'; success = true; }
+                            else if (roll <= targetVal / 5) { level = '极难成功'; success = true; }
+                            else if (roll <= targetVal / 2) { level = '困难成功'; success = true; }
+                            else if (roll <= targetVal) { level = '成功'; success = true; }
                             else if (roll > 95) { level = '大失败'; success = false; }
                             else { level = '失败'; success = false; }
-                            
+
                             diceResult = {
-                                label: `${skillLabel} 检定`,
+                                label: `${skillLabel} 检定${diceTag}`,
                                 roll: roll,
-                                target: skillVal,
+                                target: targetVal,
                                 level: level,
-                                success: success
+                                success: success,
+                                extra: modVal ? `修正 ${modVal > 0 ? '+' : ''}${modVal}（原值 ${skillVal}）` : ''
                             };
                         } else {
                             diceResult = {
-                                label: `${skillLabel} 检定`,
+                                label: `${skillLabel} 检定${diceTag}`,
                                 roll: roll,
                                 level: '未习得',
                                 success: null
                             };
                         }
-                        
+
                         return { content, diceResult };
                     }
                     
@@ -7765,6 +7881,12 @@ ${buildInvestigatorProfile(inv)}
                         cocInput.value = '';
                         scrollToBottom();
                         generateResponse(); // 直接触发生成，AI 会看到这条开发者指令
+                        return;
+                    }
+
+                    // 回合锁定期间仅放行投骰/检定等指令，叙事行动仍一轮一次
+                    if (isRoundLocked.value && !/^\s*[\.。]/.test(rawContent)) {
+                        showToast('本轮已行动，仍可发送 .ra/.sc/.st 等指令', 'warning');
                         return;
                     }
 
@@ -7956,6 +8078,8 @@ ${buildInvestigatorProfile(inv)}
                                 broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
                             }
                         }
+                        // NPC 检定：系统代掷 KP 消息中的 .rn 指令，结果追加进对话
+                        resolveNpcChecks(assistantMsg.content);
 
                         isGenerating.value = false;
                         // 生成完成后，房主广播最终完整内容，并通知生成结束
