@@ -824,7 +824,7 @@
         .z-system-ui .settings-mobile-row:hover .settings-mobile-chevron { transform: translateX(2px); color: var(--z-gold); }
         @media (min-width: 768px) {
             .z-system-ui .app-sidebar { margin: 12px 0 12px 12px; height: calc(100dvh - 24px); border: 1px solid var(--z-line); border-radius: 24px; overflow: hidden; }
-            .z-system-ui .app-right-sidebar { margin: 12px 12px 12px 0; height: calc(100dvh - 24px); border: 1px solid var(--z-line); border-radius: 24px; overflow: hidden; }
+            .z-system-ui .app-right-sidebar { margin: 12px 12px 12px 0; height: calc(100dvh - 24px); border: 1px solid var(--z-line); border-radius: 24px; overflow-x: hidden; overflow-y: scroll; }
         }
         @media (max-width: 767px) {
             .z-system-ui .app-mobile-header { margin: 7px 8px 0; min-height: 60px; border-radius: 18px; }
@@ -2399,7 +2399,7 @@
                             <div v-if="showMobileRightSidebar" @click="showMobileRightSidebar = false" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 md:hidden transition-opacity"></div>
 
                             <!-- Sidebar Info (Desktop & Mobile) -->
-                            <div :class="['app-right-sidebar fixed inset-y-0 right-0 z-30 w-72 bg-dark-900 border-l border-dark-800 transform transition-transform duration-300 md:relative md:translate-x-0 flex flex-col shadow-2xl md:shadow-none overflow-y-auto safe-pb', showMobileRightSidebar ? 'translate-x-0' : 'translate-x-full']">
+                            <div :class="['app-right-sidebar fixed inset-y-0 right-0 z-30 w-72 bg-dark-900 border-l border-dark-800 transform transition-transform duration-300 md:relative md:translate-x-0 flex flex-col shadow-2xl md:shadow-none overflow-y-scroll safe-pb', showMobileRightSidebar ? 'translate-x-0' : 'translate-x-full']">
                                 <div v-if="cocState.activeInvestigatorIndex !== -1 && cocState.investigators[cocState.activeInvestigatorIndex]" class="p-5 space-y-6">
                                     <!-- 头像 & 基础信息 -->
                                     <div class="flex items-center gap-4 pb-4 border-b border-dark-800">
@@ -6495,8 +6495,15 @@ const handleAuth = async () => {
                     }
                     
                     if (isStat) inv.stats[targetKey] = newVal; else inv[targetKey] = newVal;
-                    if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(99, inv[targetKey]));
-                    if (targetKey === 'hp') inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey]));
+                    if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(inv.maxSan || 99, inv[targetKey]));
+                    if (targetKey === 'hp') {
+                        inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey]));
+                        // HP 归零自动附加"濒死"标签
+                        if (inv[targetKey] === 0) {
+                            if (!Array.isArray(inv.statuses)) inv.statuses = [];
+                            if (!inv.statuses.includes('濒死')) inv.statuses.push('濒死');
+                        }
+                    }
                     if (targetKey === 'mp') inv[targetKey] = Math.max(0, Math.min(inv.maxMp || 99, inv[targetKey]));
                     
                     const finalVal = isStat ? inv.stats[targetKey] : inv[targetKey];
