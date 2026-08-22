@@ -824,7 +824,7 @@
         .z-system-ui .settings-mobile-row:hover .settings-mobile-chevron { transform: translateX(2px); color: var(--z-gold); }
         @media (min-width: 768px) {
             .z-system-ui .app-sidebar { margin: 12px 0 12px 12px; height: calc(100dvh - 24px); border: 1px solid var(--z-line); border-radius: 24px; overflow: hidden; }
-            .z-system-ui .app-right-sidebar { margin: 12px 12px 12px 0; height: calc(100dvh - 24px); border: 1px solid var(--z-line); border-radius: 24px; overflow: hidden; }
+            .z-system-ui .app-right-sidebar { margin: 12px 12px 12px 0; height: calc(100dvh - 24px); border: 1px solid var(--z-line); border-radius: 24px; overflow-x: hidden; overflow-y: scroll; }
         }
         @media (max-width: 767px) {
             .z-system-ui .app-mobile-header { margin: 7px 8px 0; min-height: 60px; border-radius: 18px; }
@@ -1881,6 +1881,10 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                             下载凭证 (.json)
                         </button>
+                        <button @click="applyReportToInvestigator(report)" class="w-full py-2 bg-mystic-green/15 hover:bg-mystic-green/25 border border-mystic-green/40 rounded text-mystic-green text-xs font-bold transition-all flex items-center justify-center gap-2" title="应用状态变化/技能/物品/徽章，经历概括写入背景，人物关系合并不删减">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            应用日谈到角色卡
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2167,10 +2171,18 @@
                                 </div>
                                 <!-- Player Preview (Top Bar) -->
                                 <div v-if="cocState.mode === 'multi' && multiplayerState.members.length > 0" class="hidden md:flex items-center -space-x-2 ml-6 border-l border-dark-700 pl-6 py-1">
-                                    <div v-for="member in multiplayerState.members" :key="member.id" class="w-8 h-8 rounded-full border-2 bg-dark-800 overflow-hidden relative group cursor-help transition-all z-0 hover:z-10 hover:scale-110" :class="member.isHost ? 'border-mystic-gold shadow-[0_0_8px_rgba(212,175,55,0.6)] z-10' : 'border-slate-400'" :title="member.name + (member.isHost ? ' (房主)' : '')">
-                                        <img v-if="member.avatar" :src="member.avatar" :alt="`${member.name || '参与者'}的头像`" class="w-full h-full object-cover">
-                                        <div v-else class="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500">{{ member.name.charAt(0) }}</div>
-                                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-dark-950" :class="member.isReady || member.isHost ? 'bg-mystic-green' : 'bg-slate-500'"></div>
+                                    <div v-for="member in multiplayerState.members" :key="member.id" class="relative">
+                                        <div class="w-8 h-8 rounded-full border-2 bg-dark-800 overflow-hidden relative group cursor-help transition-all z-0 hover:z-10 hover:scale-110" :class="member.isHost ? 'border-mystic-gold shadow-[0_0_8px_rgba(212,175,55,0.6)] z-10' : (member.isSpectator ? 'border-slate-600 border-dashed' : 'border-slate-400')" :title="member.name + (member.isHost ? ' (房主)' : '') + (member.isSpectator ? ' (旁观)' : '') + (member.isOffline ? ' (离线)' : '')" @click="multiplayerState.isHost && member.isOffline && !member.isHost ? (multiplayerState.memberMenuUserId = multiplayerState.memberMenuUserId === member.id ? null : member.id) : undefined">
+                                            <img v-if="member.avatar" :src="member.avatar" :alt="`${member.name || '参与者'}的头像`" class="w-full h-full object-cover" :class="member.isOffline ? 'grayscale opacity-50' : ''">
+                                            <div v-else class="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500" :class="member.isOffline ? 'grayscale opacity-50' : ''">{{ member.name.charAt(0) }}</div>
+                                            <span v-if="member.isSpectator" class="absolute top-0 right-0 text-[8px] leading-none">👁</span>
+                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-dark-950" :class="member.isOffline ? 'bg-red-500' : (member.isReady || member.isHost ? 'bg-mystic-green' : 'bg-slate-500')"></div>
+                                        </div>
+                                        <!-- 房主对离线成员的操作菜单（对局中） -->
+                                        <div v-if="multiplayerState.memberMenuUserId === member.id && multiplayerState.isHost && member.isOffline && !member.isHost" class="absolute top-full right-0 mt-1 z-[4000] bg-dark-900 border border-dark-600 rounded-lg p-1 flex flex-col gap-1 shadow-2xl w-36">
+                                            <button @click="moveToSpectator(member.id); multiplayerState.memberMenuUserId = null" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-dark-700 rounded transition-colors">移入旁观<br><span class="text-[9px] text-slate-500">释放角色，重连后旁观</span></button>
+                                            <button @click="kickPlayer(member.id); multiplayerState.memberMenuUserId = null" class="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-950/40 rounded transition-colors">踢出房间<br><span class="text-[9px] text-slate-500">释放角色，禁止进入</span></button>
+                                        </div>
                                     </div>
                                     <div v-if="multiplayerState.members.length > 5" class="w-8 h-8 rounded-full border-2 border-slate-400 bg-dark-800 flex items-center justify-center text-[10px] text-slate-400 font-bold">+{{ multiplayerState.members.length - 5 }}</div>
                                 </div>
@@ -2324,6 +2336,10 @@
                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                                                 下载调查凭证
                                                             </button>
+                                                            <button @click="applyReportToInvestigator(report)" class="w-full py-2 bg-mystic-green/15 hover:bg-mystic-green/25 border border-mystic-green/40 rounded text-mystic-green text-xs font-bold transition-all flex items-center justify-center gap-2" title="应用状态变化/技能/物品/徽章，经历概括写入背景，人物关系合并不删减">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                                应用日谈到角色卡
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2383,7 +2399,7 @@
                             <div v-if="showMobileRightSidebar" @click="showMobileRightSidebar = false" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 md:hidden transition-opacity"></div>
 
                             <!-- Sidebar Info (Desktop & Mobile) -->
-                            <div :class="['app-right-sidebar fixed inset-y-0 right-0 z-30 w-72 bg-dark-900 border-l border-dark-800 transform transition-transform duration-300 md:relative md:translate-x-0 flex flex-col shadow-2xl md:shadow-none overflow-y-auto safe-pb', showMobileRightSidebar ? 'translate-x-0' : 'translate-x-full']">
+                            <div :class="['app-right-sidebar fixed inset-y-0 right-0 z-30 w-72 bg-dark-900 border-l border-dark-800 transform transition-transform duration-300 md:relative md:translate-x-0 flex flex-col shadow-2xl md:shadow-none overflow-y-scroll safe-pb', showMobileRightSidebar ? 'translate-x-0' : 'translate-x-full']">
                                 <div v-if="cocState.activeInvestigatorIndex !== -1 && cocState.investigators[cocState.activeInvestigatorIndex]" class="p-5 space-y-6">
                                     <!-- 头像 & 基础信息 -->
                                     <div class="flex items-center gap-4 pb-4 border-b border-dark-800">
@@ -2436,6 +2452,12 @@
                                         </div>
                                     </div>
 
+                                    <!-- 状态标签 & 当前位置 -->
+                                    <div v-if="(cocState.investigators[cocState.activeInvestigatorIndex].statuses && cocState.investigators[cocState.activeInvestigatorIndex].statuses.length) || cocState.investigators[cocState.activeInvestigatorIndex].location" class="flex flex-wrap gap-1.5 items-center pt-1">
+                                        <span v-for="tag in (cocState.investigators[cocState.activeInvestigatorIndex].statuses || [])" :key="tag" class="px-2 py-0.5 rounded text-[10px] font-bold border" :class="tag.includes('重伤') ? 'bg-red-900/30 border-red-500/40 text-red-400' : tag.includes('濒死') ? 'bg-red-950/60 border-red-600/50 text-red-300' : tag.includes('疯狂') ? 'bg-purple-900/30 border-purple-500/40 text-purple-300' : tag.includes('死亡') ? 'bg-slate-800/60 border-slate-500/40 text-slate-400' : 'bg-dark-800 border-dark-600 text-slate-400'">{{ tag }}</span>
+                                        <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].location" class="px-2 py-0.5 rounded text-[10px] font-bold border bg-dark-900 border-mystic-gold/30 text-mystic-gold/90">📍 {{ cocState.investigators[cocState.activeInvestigatorIndex].location }}</span>
+                                    </div>
+
                                     <!-- Stats Grid -->
                                     <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].stats">
                                         <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
@@ -2451,6 +2473,28 @@
                                         </div>
                                     </div>
 
+                                    <!-- Archive Extras (疯狂/神话/人际/已知信息) -->
+                                    <div v-if="hasArchiveExtras(cocState.investigators[cocState.activeInvestigatorIndex])" class="space-y-2">
+                                        <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
+                                            <span class="w-1 h-1 rounded-full bg-slate-500"></span> 档案
+                                        </h4>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mania || cocState.investigators[cocState.activeInvestigatorIndex].phobia" class="text-[11px] text-purple-300 leading-relaxed bg-dark-800/40 border border-dark-700/50 rounded p-2">
+                                            <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].mania">躁狂症：{{ cocState.investigators[cocState.activeInvestigatorIndex].mania }}</span>
+                                            <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].mania && cocState.investigators[cocState.activeInvestigatorIndex].phobia"> · </span>
+                                            <span v-if="cocState.investigators[cocState.activeInvestigatorIndex].phobia">恐惧症：{{ cocState.investigators[cocState.activeInvestigatorIndex].phobia }}</span>
+                                        </div>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mythos && (cocState.investigators[cocState.activeInvestigatorIndex].mythos.tomes || cocState.investigators[cocState.activeInvestigatorIndex].mythos.spells)" class="text-[11px] text-slate-400 leading-relaxed bg-dark-800/40 border border-dark-700/50 rounded p-2 space-y-1">
+                                            <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mythos.tomes"><span class="text-mystic-gold/80">典籍：</span>{{ cocState.investigators[cocState.activeInvestigatorIndex].mythos.tomes }}</div>
+                                            <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].mythos.spells"><span class="text-mystic-gold/80">法术：</span>{{ cocState.investigators[cocState.activeInvestigatorIndex].mythos.spells }}</div>
+                                        </div>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].relationships && cocState.investigators[cocState.activeInvestigatorIndex].relationships.length" class="space-y-1">
+                                            <div v-for="(rel, idx) in cocState.investigators[cocState.activeInvestigatorIndex].relationships.filter(r => r && (r.name || r.relation))" :key="idx" class="text-[11px] text-slate-400 bg-dark-800/40 border border-dark-700/50 rounded p-2">
+                                                <span class="text-slate-200 font-bold">{{ rel.name }}</span><span class="text-slate-500">（{{ rel.relation }}）</span> <span v-if="rel.story">{{ rel.story }}</span>
+                                            </div>
+                                        </div>
+                                        <div v-if="cocState.investigators[cocState.activeInvestigatorIndex].knownInfo" class="text-[11px] text-slate-400 leading-relaxed bg-dark-800/40 border border-dark-700/50 rounded p-2 whitespace-pre-line">{{ cocState.investigators[cocState.activeInvestigatorIndex].knownInfo }}</div>
+                                    </div>
+
                                     <!-- Skills -->
                                     <div class="flex-1 min-h-0 flex flex-col" v-if="cocState.investigators[cocState.activeInvestigatorIndex].skills">
                                         <h4 class="font-bold text-slate-500 text-[10px] mb-3 uppercase tracking-widest flex items-center gap-2">
@@ -2458,7 +2502,7 @@
                                         </h4>
                                         <div class="overflow-y-auto custom-scrollbar pr-1 -mr-1 flex-1">
                                             <div class="flex flex-wrap gap-2">
-                                                <button v-for="skill in cocState.investigators[cocState.activeInvestigatorIndex].skills.filter(s => s.value > 0).sort((a,b) => b.value - a.value)" :key="skill.name"
+                                                <button v-for="skill in visibleSkills(cocState.investigators[cocState.activeInvestigatorIndex])" :key="skill.name"
                                                         class="px-2.5 py-1 bg-dark-800 hover:bg-mystic-green/10 border border-dark-700 hover:border-mystic-green/40 rounded text-xs text-slate-400 hover:text-mystic-green transition-all flex items-center gap-2 group"
                                                         @click="cocInput = `.ra ${skill.name}`" title="点击检定">
                                                     <span>{{ skill.name }}</span>
@@ -2515,9 +2559,33 @@
                                 </div>
                             </div>
 
+                            <!-- 指令记忆快捷键：短按追加到输入栏，长按（或点按空按钮）设置指令 -->
+                            <div class="max-w-4xl mx-auto w-full flex gap-2 mb-2">
+                                <button v-for="(cmd, slot) in settings.commandHotkeys" :key="slot"
+                                        @pointerdown.prevent="hotkeyPressStart(slot)" @pointerup.prevent="hotkeyPressEnd(slot)" @pointercancel="hotkeyPressEnd(slot, true)" @contextmenu.prevent
+                                        :class="cmd ? 'bg-dark-800 border-dark-600 hover:border-mystic-gold/50 text-slate-300 hover:text-mystic-gold' : 'bg-dark-950/50 border-dashed border-dark-600 text-slate-600 hover:border-mystic-gold/40'"
+                                        class="flex-1 max-w-[180px] px-3 py-1.5 rounded-lg border text-xs font-mono truncate transition-all select-none" :title="cmd ? `短按追加：${cmd}（长按更换）` : '点按设置指令'">
+                                    {{ cmd || `＋ 指令 ${slot + 1}` }}
+                                </button>
+                            </div>
+                            <!-- 指令选择器 -->
+                            <div v-if="commandPickerState.show" class="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" @click.self="commandPickerState.show = false">
+                                <div class="bg-dark-900 border border-mystic-gold/40 rounded-xl p-5 max-w-sm w-full space-y-3 shadow-2xl">
+                                    <div class="text-sm font-bold text-mystic-gold font-serif">设置指令快捷键 {{ commandPickerState.slot + 1 }}</div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button v-for="c in commonCommands" :key="c" @click="assignHotkey(c)" class="px-3 py-2 bg-dark-800 border border-dark-600 hover:border-mystic-gold/60 rounded text-xs font-mono text-slate-300 hover:text-mystic-gold transition-all truncate">{{ c }}</button>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input v-model="commandPickerState.custom" @keydown.enter.prevent="assignHotkey(commandPickerState.custom.trim())" placeholder="自定义指令，如 .rab 图书馆" class="flex-1 bg-dark-950 border border-dark-700 rounded px-3 py-2 text-xs font-mono text-slate-200 focus:border-mystic-gold outline-none">
+                                        <button @click="assignHotkey(commandPickerState.custom.trim())" :disabled="!commandPickerState.custom.trim()" class="px-4 py-2 bg-mystic-gold/20 border border-mystic-gold/50 text-mystic-gold rounded text-xs font-bold disabled:opacity-40 transition-all">确定</button>
+                                    </div>
+                                    <button @click="assignHotkey('')" class="w-full py-2 text-xs text-slate-500 hover:text-red-400 transition-colors">清除该快捷键</button>
+                                </div>
+                            </div>
+
                             <div class="max-w-4xl mx-auto flex gap-3">
-                                <textarea v-model="cocInput" ref="cocInputRef" @input="handleInput" @keydown.enter.prevent="sendCocMessage" @keydown.esc="showMentionList = false" :placeholder="isRoundLocked ? '本轮已行动，等待队友...' : '你的行动...'" :disabled="isRoundLocked" class="flex-1 bg-dark-800 rounded-lg px-4 py-3 resize-none border border-dark-700 focus:ring-1 focus:ring-mystic-gold focus:border-mystic-gold focus:bg-dark-900 text-slate-200 placeholder-slate-600 transition-all h-[56px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"></textarea>
-                                <button @click="sendCocMessage" aria-label="发送消息" :disabled="!cocInput.trim() || isGenerating || isRoundLocked" class="w-[56px] h-[56px] bg-dark-800 hover:bg-mystic-gold hover:text-dark-950 text-mystic-gold border border-mystic-gold/50 rounded-lg flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg group"><svg class="w-6 h-6 transform rotate-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+                                <textarea v-model="cocInput" ref="cocInputRef" @input="handleInput" @keydown.enter.prevent="sendCocMessage" @keydown.esc="showMentionList = false" :placeholder="multiplayerState.isSpectator ? '旁观模式中，无法发言' : (isRoundLocked ? '本轮已行动，仍可投骰检定...' : '你的行动...')" :disabled="cocState.mode === 'multi' && multiplayerState.isSpectator" class="flex-1 bg-dark-800 rounded-lg px-4 py-3 resize-none border border-dark-700 focus:ring-1 focus:ring-mystic-gold focus:border-mystic-gold focus:bg-dark-900 text-slate-200 placeholder-slate-600 transition-all h-[56px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"></textarea>
+                                <button @click="sendCocMessage" aria-label="发送消息" :disabled="!cocInput.trim() || isGenerating" class="w-[56px] h-[56px] bg-dark-800 hover:bg-mystic-gold hover:text-dark-950 text-mystic-gold border border-mystic-gold/50 rounded-lg flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg group"><svg class="w-6 h-6 transform rotate-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
                             </div>
                         </div>
                     </div>
@@ -2561,9 +2629,13 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">房间通讯码</label>
                             <input v-model="joinRoomId" placeholder="输入 Room ID..." class="w-full bg-dark-950 border border-dark-700 rounded-lg px-4 py-3 text-slate-200 focus:border-mystic-green focus:ring-1 focus:ring-mystic-green/50 outline-none transition-all font-mono text-center tracking-widest text-lg">
+                            <label class="flex items-center gap-2 mt-3 cursor-pointer select-none" @click.prevent="joinAsSpectator = !joinAsSpectator">
+                                <span class="w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold shrink-0" :class="joinAsSpectator ? 'bg-mystic-green/80 border-mystic-green text-dark-950' : 'bg-dark-950 border-dark-600 text-transparent'">✓</span>
+                                <span class="text-xs text-slate-400">以旁观者身份加入（已开局的房间进入后自动旁观）</span>
+                            </label>
                         </div>
-                        
-                        <button @click="joinRoom(joinRoomId)" :disabled="!joinRoomId" class="w-full py-3 bg-dark-800 hover:bg-mystic-green hover:text-dark-950 text-mystic-green border border-mystic-green/30 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-lg">加入房间</button>
+
+                        <button @click="joinRoom(joinRoomId, false, joinAsSpectator)" :disabled="!joinRoomId" class="w-full py-3 bg-dark-800 hover:bg-mystic-green hover:text-dark-950 text-mystic-green border border-mystic-green/30 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-lg">加入房间</button>
                         
                         <div class="relative flex items-center py-2">
                             <div class="flex-grow border-t border-dark-700"></div>
@@ -2707,16 +2779,34 @@
                     <div v-if="cocState.mode === 'multi'" class="glass-panel p-6 rounded-lg">
                         <h3 class="font-bold text-slate-200 mb-4 flex items-center font-serif text-lg"><span class="w-1 h-6 bg-blue-500 mr-3"></span> 小队状态</h3>
                         <div class="space-y-2">
-                            <div v-for="member in multiplayerState.members" :key="member.id" class="flex items-center justify-between p-3 bg-dark-800/50 rounded border border-dark-700">
+                            <div v-for="member in multiplayerState.members" :key="member.id" class="flex items-center justify-between p-3 bg-dark-800/50 rounded border border-dark-700" :class="member.isOffline ? 'opacity-60' : ''">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded bg-dark-700 flex items-center justify-center font-bold text-xs text-slate-500">{{ member.name.charAt(0) }}</div>
                                     <span class="font-serif text-slate-300">{{ member.name }}</span>
                                     <span v-if="member.isHost" class="text-[10px] bg-mystic-gold/10 text-mystic-gold border border-mystic-gold/20 px-2 py-0.5 rounded uppercase">房主</span>
+                                    <span v-if="member.isSpectator" class="text-[10px] bg-slate-800 text-slate-400 border border-slate-600/40 px-2 py-0.5 rounded">👁 旁观</span>
+                                    <span v-if="member.isOffline" class="text-[10px] bg-red-950/40 text-red-400 border border-red-800/40 px-2 py-0.5 rounded">离线</span>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap justify-end">
+                                    <template v-if="multiplayerState.isHost && !member.isHost">
+                                        <span v-if="!member.isSpectator" @click="moveToSpectator(member.id)" class="text-[10px] bg-slate-800/60 text-slate-300 border border-slate-600/40 px-2 py-1 rounded cursor-pointer hover:bg-slate-700 transition-colors">移入旁观</span>
+                                        <span v-else @click="restorePlayer(member.id)" class="text-[10px] bg-mystic-green/10 text-mystic-green border border-mystic-green/30 px-2 py-1 rounded cursor-pointer hover:bg-mystic-green/20 transition-colors">恢复为玩家</span>
+                                        <span v-if="!member.isSpectator && Object.values(multiplayerState.assignments).includes(member.id)" @click="releaseCharacter(member.id)" class="text-[10px] bg-amber-900/20 text-amber-400 border border-amber-700/40 px-2 py-1 rounded cursor-pointer hover:bg-amber-900/40 transition-colors">释放角色</span>
+                                        <span @click="kickPlayer(member.id)" class="text-[10px] bg-red-900/20 text-red-400 border border-red-700/40 px-2 py-1 rounded cursor-pointer hover:bg-red-900/40 transition-colors">踢出房间</span>
+                                    </template>
                                     <span v-if="member.isReady" class="text-xs text-mystic-green font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> 已准备</span>
-                                    <span v-else class="text-xs text-slate-600 font-mono">准备中...</span>
+                                    <span v-else-if="!member.isSpectator" class="text-xs text-slate-600 font-mono">准备中...</span>
                                 </div>
+                            </div>
+                        </div>
+                        <!-- 踢出名单（房主可取消踢出） -->
+                        <div v-if="multiplayerState.isHost && multiplayerState.kickedMembers.length" class="mt-3 p-3 bg-red-950/10 border border-red-900/30 rounded">
+                            <div class="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-2">踢出名单（取消后可重新进入）</div>
+                            <div class="flex flex-wrap gap-2">
+                                <span v-for="k in multiplayerState.kickedMembers" :key="k.id" class="flex items-center gap-2 text-xs text-slate-400 bg-dark-900 border border-dark-700 rounded px-2 py-1">
+                                    {{ k.name }}
+                                    <button @click="unkickMember(k.id)" class="text-[10px] text-mystic-green hover:underline">取消踢出</button>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -3029,7 +3119,16 @@
                                 <svg class="w-4 h-4" :class="modelListStatus.isLoading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 {{ modelListStatus.isLoading ? '正在获取...' : `刷新可用模型${modelListStatus.models.length ? `（${modelListStatus.models.length}）` : ''}` }}
                             </button>
-                            <div v-if="modelListStatus.error" class="text-xs text-red-400 bg-red-950/20 border border-red-900/30 rounded px-3 py-2">{{ modelListStatus.error }}</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest flex justify-between items-center">
+                                    <span>模组上下文上限</span>
+                                    <span v-if="cocState.mode === 'multi' && !multiplayerState.isHost" class="text-[10px] text-amber-500/80 normal-case font-normal">多人模式由房主控制</span>
+                                    <span v-else class="text-[10px] text-slate-400 normal-case font-normal">0 = 不限制</span>
+                                </label>
+                                <input v-model.number="settings.moduleContextLimit" @change="saveData" type="number" min="0" step="1000" :disabled="cocState.mode === 'multi' && !multiplayerState.isHost" class="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2.5 text-slate-200 focus:border-emerald-500 outline-none font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                <div class="text-[10px] text-slate-500 mt-1.5">开局时模组（剧本）传入 AI 的最大字符数。上限过小会截断剧情，AI 将无法得知被截断的部分；上限过大或设为 0 会显著增加 token 消耗，并可能超出模型上下文窗口。多人跑团时以房主设置为准。</div>
+                            </div>
 
                             <div class="pt-2 flex flex-col gap-3">
                                 <button @click="saveApiPreset" class="w-full py-2 bg-emerald-900/20 text-emerald-400 border border-emerald-500/30 rounded font-bold text-xs hover:bg-emerald-900/30 transition-all">保存当前连接为预设</button>
@@ -3351,10 +3450,27 @@
                                         <div class="text-[10px] text-slate-500">开启后可通过命运权衡获取模组分析与角色评估</div>
                                     </div>
                                 </div>
-                                <div @click="settings.enableCharReview = !settings.enableCharReview; saveData()" 
+                                <div @click="settings.enableCharReview = !settings.enableCharReview; saveData()"
                                      :class="settings.enableCharReview ? 'bg-mystic-purple' : 'bg-dark-700'"
                                      class="w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300">
                                     <div :class="settings.enableCharReview ? 'left-5.5' : 'left-0.5'"
+                                         class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300"></div>
+                                </div>
+                            </div>
+                            <div class="settings-feature-row flex items-center justify-between p-4 bg-dark-900/50 rounded-xl border border-dark-800 hover:border-dark-700 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-lg bg-mystic-purple/20 text-mystic-purple flex items-center justify-center">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-slate-200">AI 代掷 NPC 检定</div>
+                                        <div class="text-[10px] text-slate-500">开启后仅 KP(AI) 可用 .rn 代掷 NPC 检定；关闭后玩家可自行使用 .rn</div>
+                                    </div>
+                                </div>
+                                <div @click="settings.npcCheckByAI = !(settings.npcCheckByAI !== false); saveData()"
+                                     :class="settings.npcCheckByAI !== false ? 'bg-mystic-purple' : 'bg-dark-700'"
+                                     class="w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300">
+                                    <div :class="settings.npcCheckByAI !== false ? 'left-5.5' : 'left-0.5'"
                                          class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300"></div>
                                 </div>
                             </div>
@@ -4577,7 +4693,10 @@
                     { id: 'plot_prog', category: '流程管理', label: '剧情循序渐进', content: '不要一次性倾倒所有信息。线索应逐步获得。扮演 NPC 时要鲜活立体。', enabled: true },
                     { id: 'cot', category: '思维链', label: '思维链思考内容', content: '在每次输出正式剧情前，必须以 <cot>...思考内容...</cot> 的格式进行缜密的思考：检索角色卡、分析关系、反思节奏、检查自主权。', enabled: true },
                     { id: 'game_end', category: '流程管理', label: '结团判定指令', content: '当模组剧情彻底结束时，请在回复的最后一行必须输出指令：`.game_end`。', enabled: true },
-                    { id: 'report', category: '流程管理', label: '结团报告生成', content: '当房主发送“确认结团...”指令时，请为每一位参与的调查员分别生成一份对照模组内容的调查报告。输出格式为 JSON 数组：[{"type": "investigation_report", "moduleName": "...", "investigatorName": "...", "changes": {"san": 0, "creditRating": 0}, "skillGrowths": [{"name": "...", "value": 0}], "newItems": ["..."], "badge": {"name": "...", "desc": "...", "icon": "🏆"}, "summary": "..."}]。', enabled: true }
+                    { id: 'report', category: '流程管理', label: '结团报告生成', content: '当房主发送“确认结团...”指令时，请为每一位参与的调查员分别生成一份对照模组内容的调查报告。输出格式为 JSON 数组：[{"type": "investigation_report", "moduleName": "...", "investigatorName": "...", "changes": {"san": 0, "creditRating": 0}, "skillGrowths": [{"name": "...", "value": 0}], "newItems": ["..."], "relationships": [{"name": "人物名", "relation": "关系", "story": "本局共同经历"}], "badge": {"name": "...", "desc": "...", "icon": "🏆"}, "summary": "..."}]。其中 relationships 为本局中与该调查员建立或发展的重要人物关系（含旧关系的变化，输出变化后的完整信息），summary 为该调查员本局经历的概括。', enabled: true },
+                    { id: 'skill_updates', category: '机制处理', label: '技能与档案写入指令', content: '除 HP/MP/SAN/属性外，你还可以用指令写入：技能 `.st 技能名 +N`（如 .st 侦查 +10，技能不存在会自动新建；修改克苏鲁神话会联动降低理智上限）；当前位置 `.st 位置 地点`（剧情场景切换时必须更新）；状态标签见专门规则。', enabled: true },
+                    { id: 'status_tags', category: '机制处理', label: '状态标签指令', content: '用 `.st 状态 +标签` 附加、`.st 状态 -标签` 移除角色的持续状态标签。使用时机：重伤（HP 低于一半且遭受重大伤害）、濒死（HP 归 0，系统会自动附加，急救成功后你应输出 -濒死 并可附加 +已被急救）、临时疯狂/永久疯狂（San Check 失败后按剧情判定附加）、死亡。状态标签对剧情有持续约束力。', enabled: true },
+                    { id: 'npc_checks', category: '机制处理', label: 'NPC 检定指令', content: 'NPC 行动存在成功/失败的不确定性时，严禁自行虚构检定结果，必须输出指令 `.rn NPC名 技能名 技能值`（如 .rn 守门人 侦查 45）。系统会真实掷骰并将结果追加到对话中，你必须在结果出现后依据真实结果叙事。', enabled: true }
                 ];
 
                 const IMAGE_GEN_ARTIST_PRESETS = {
@@ -4647,7 +4766,10 @@
                     apiPresets: [], // 存储多个自定义配置
                     customKpPrompt: '', // KP 自定义提示词 (作为补充项)
                     kpRules: JSON.parse(JSON.stringify(DEFAULT_KP_RULES)), // 初始化规则列表
-                    enableCharReview: false // 审卡功能开关
+                    enableCharReview: false, // 审卡功能开关
+                    moduleContextLimit: 50000, // 模组传入 AI 的字符上限（0=不限制）；多人模式仅房主设置生效
+                    npcCheckByAI: true, // NPC 检定由 AI 代掷（true=仅 AI 消息中的 .rn 生效；false=玩家可自行使用 .rn）
+                    commandHotkeys: ['', '', ''] // 输入栏指令记忆快捷键（3 格，随云同步）
                 });
 
                 const charReviewState = reactive({
@@ -5323,7 +5445,7 @@
                 const getCotContent = (text) => { const s = ensureString(text); if (!s) return ''; const match = s.match(/<cot>([\s\S]*?)(?:<\/cot>|<cot>|$)/); return match ? match[1] : (s.includes('<cot>') ? s.split('<cot>')[1] || '' : ''); };
                 const removeCot = (text) => { const s = ensureString(text); if (!s) return ''; let clean = s.replace(/<cot>[\s\S]*?(?:<\/cot>|<cot>)/g, '').trim(); if (clean.includes('<cot>')) clean = clean.split('<cot>')[0].trim(); return clean; };
                 const toggleCot = async (index) => { if (cocState.mode === 'multi' && !multiplayerState.isHost && !multiplayerState.cotAuthorizedUsers.includes(multiplayerState.myId || user.uuid)) { if (await showConfirm('您没有权限查看思维链 (CoT)。是否向房主申请权限？', '申请权限')) requestCotAccess(); return; } const msg = cocState.log[index]; if (msg) msg.showCot = !msg.showCot; };
-                const requestCotAccess = () => { if (!multiplayerState.inRoom) return; broadcastMessage({ type: 'request_cot_access', userId: multiplayerState.myId || user.uuid, userName: user.name }); showToast('已发送权限申请', 'info'); };
+                const requestCotAccess = () => { if (!multiplayerState.inRoom) return; if (multiplayerState.isSpectator) return showToast('旁观模式中无法申请', 'warning'); broadcastMessage({ type: 'request_cot_access', userId: multiplayerState.myId || user.uuid, userName: user.name }); showToast('已发送权限申请', 'info'); };
                 const saveApiPreset = () => {
                     if (!settings.customApiUrl) return showToast('请输入 API 地址', 'warning');
                     const name = prompt('为当前配置命名 (例如: DeepSeek-V3):');
@@ -5429,19 +5551,77 @@
                     }
                     return false;
                 });
+                // 技能栏展示列表：信用评级为角色顶层字段，不在 skills 数组中，需合并展示
+                const visibleSkills = (inv) => {
+                    if (!inv) return [];
+                    const list = [];
+                    if (parseInt(inv.creditRating) > 0) list.push({ name: '信用评级', value: parseInt(inv.creditRating) });
+                    inv.skills.forEach(s => { if (s.value > 0) list.push(s); });
+                    list.sort((a, b) => b.value - a.value);
+                    return list;
+                };
+                // 角色档案补充区（疯狂/神话/人际/已知信息）是否需要渲染
+                const hasArchiveExtras = (inv) => {
+                    if (!inv) return false;
+                    return Boolean(
+                        inv.mania || inv.phobia
+                        || (inv.mythos && (inv.mythos.tomes || inv.mythos.spells))
+                        || (Array.isArray(inv.relationships) && inv.relationships.some(r => r && (r.name || r.relation)))
+                        || inv.knownInfo
+                    );
+                };
+                // 指令记忆快捷键：短按追加到输入栏，长按（或点按空按钮）打开选择器
+                const commonCommands = ['.rab 侦查', '.rap 侦查', '.ra 侦查', '.sc 0/1d6', '.sc 0/1', '.r 1d100', '.r 1d20', '.st hp -1', '.st san -1d6', '.st mp -1'];
+                const commandPickerState = reactive({ show: false, slot: 0, custom: '' });
+                let hotkeyPressTimer = 0;
+                let hotkeyLongFired = false;
+                const hotkeyPressStart = (slot) => {
+                    hotkeyLongFired = false;
+                    window.clearTimeout(hotkeyPressTimer);
+                    hotkeyPressTimer = window.setTimeout(() => {
+                        hotkeyLongFired = true;
+                        hotkeyPressTimer = 0;
+                        commandPickerState.slot = slot;
+                        commandPickerState.custom = '';
+                        commandPickerState.show = true;
+                        if (navigator.vibrate) navigator.vibrate(30);
+                    }, 500);
+                };
+                const hotkeyPressEnd = (slot, isCancel = false) => {
+                    window.clearTimeout(hotkeyPressTimer);
+                    hotkeyPressTimer = 0;
+                    const wasLong = hotkeyLongFired;
+                    hotkeyLongFired = false;
+                    if (wasLong || isCancel) return;
+                    const cmd = String(settings.commandHotkeys[slot] || '').trim();
+                    if (!cmd) {
+                        // 空按钮短按也打开选择器
+                        commandPickerState.slot = slot;
+                        commandPickerState.custom = '';
+                        commandPickerState.show = true;
+                        return;
+                    }
+                    cocInput.value = cocInput.value ? `${cocInput.value.trimEnd()} ${cmd}` : cmd;
+                    nextTick(() => { cocInputRef.value && cocInputRef.value.focus(); });
+                };
+                const assignHotkey = (cmd) => {
+                    settings.commandHotkeys[commandPickerState.slot] = String(cmd || '').trim();
+                    saveData();
+                    commandPickerState.show = false;
+                };
                 const showMentionList = ref(false); const mentionQuery = ref('');
                 const mentionCandidates = Vue.computed(() => { if (!mentionQuery.value && mentionQuery.value !== '') return []; const q = mentionQuery.value.toLowerCase(); let candidates = []; if (cocState.mode === 'multi' || hasAiTeammates.value) { cocState.investigators.forEach((inv, idx) => { if (multiplayerState.assignments[idx] && multiplayerState.assignments[idx] !== (multiplayerState.myId || user.uuid)) candidates.push({ type: 'character', name: inv.name, id: `char_${idx}`, avatar: inv.avatar }); }); } return candidates.filter(c => c.name.toLowerCase().includes(q)); });
                 const handleInput = (e) => { const val = e.target.value; const cursor = e.target.selectionStart; const lastAt = val.lastIndexOf('@', cursor - 1); if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ' || val[lastAt - 1] === '\n')) { const query = val.substring(lastAt + 1, cursor); if (!query.includes(' ')) { mentionQuery.value = query; showMentionList.value = true; return; } } showMentionList.value = false; };
                 const selectMention = (candidate) => { const val = cocInput.value; const cursor = cocInputRef.value.selectionStart; const lastAt = val.lastIndexOf('@', cursor - 1); if (lastAt !== -1) { const before = val.substring(0, lastAt); const after = val.substring(cursor); cocInput.value = `${before}@${candidate.name} ${after}`; showMentionList.value = false; nextTick(() => { cocInputRef.value.focus(); const newCursorPos = lastAt + 1 + candidate.name.length + 1; cocInputRef.value.setSelectionRange(newCursorPos, newCursorPos); }); } };
 
-                const multiplayerState = reactive({ isConnected: false, inRoom: false, roomId: null, hostToken: '', myId: null, isHost: false, hostAuthorizationFailed: false, members: [], turnStatus: {}, skipStatus: {}, isReady: false, assignments: {}, turnIndex: 0, roundActionIds: [], cotAuthorizedUsers: [], syncReceived: false });
+                const multiplayerState = reactive({ isConnected: false, inRoom: false, roomId: null, hostToken: '', myId: null, isHost: false, hostAuthorizationFailed: false, members: [], turnStatus: {}, skipStatus: {}, isReady: false, assignments: {}, turnIndex: 0, roundActionIds: [], cotAuthorizedUsers: [], syncReceived: false, isSpectator: false, kickedMembers: [], memberMenuUserId: null });
                 let joinRetryInterval = null;
                 let joinRetryAttempts = 0;
                 let roomPollTimer = null;
                 let roomLastMessageId = 0;
                 let roomPollInFlight = false;
                 let lastRoomErrorAt = 0;
-                const friends = ref([]); const friendRequests = ref([]); const friendInput = ref(''); const showJoinInput = ref(false); const joinRoomId = ref(''); const savedGames = ref([]);
+                const friends = ref([]); const friendRequests = ref([]); const friendInput = ref(''); const showJoinInput = ref(false); const joinRoomId = ref(''); const joinAsSpectator = ref(false); const savedGames = ref([]);
                 const savesFilter = ref('all');
                 const isSavesEditing = ref(false);
                 const folderOrder = ref([]); // 记录手动排序顺序
@@ -6003,6 +6183,18 @@ const handleAuth = async () => {
                                 parsed.bgmAutoplayConfiguredV1 = true;
                             }
                             Object.assign(settings, parsed);
+                            // 老存档补充后续版本新增的默认 KP 规则（不覆盖用户已有/已改的规则）
+                            if (Array.isArray(settings.kpRules)) {
+                                DEFAULT_KP_RULES.forEach(rule => {
+                                    if (!settings.kpRules.some(r => r.id === rule.id)) settings.kpRules.push(JSON.parse(JSON.stringify(rule)));
+                                });
+                                // report 规则内容定向刷新（新增 relationships 字段要求，仅当内容为旧版时）
+                                const savedReportRule = settings.kpRules.find(r => r.id === 'report');
+                                const defaultReportRule = DEFAULT_KP_RULES.find(r => r.id === 'report');
+                                if (savedReportRule && defaultReportRule && !savedReportRule.content.includes('relationships')) {
+                                    savedReportRule.content = defaultReportRule.content;
+                                }
+                            }
                             if (!['list-loop', 'sequential', 'shuffle', 'single-loop'].includes(settings.bgmPlayMode)) settings.bgmPlayMode = 'list-loop';
                             if (typeof settings.bgmCurrentTrackId !== 'string') settings.bgmCurrentTrackId = '';
                             settings.qualityModel = parsed.qualityModel || parsed.customModel || '';
@@ -6131,15 +6323,124 @@ const handleAuth = async () => {
                     document.body.removeChild(textArea);
                 };
 
+                // 克苏鲁神话 → 理智上限联动（COC 7版：99 − 神话值），返回是否发生联动
+                const applyMythosSanLimit = (inv) => {
+                    if (!inv || !Array.isArray(inv.skills)) return false;
+                    const mythos = inv.skills.find(s => s.name === '克苏鲁神话');
+                    if (!mythos) return false;
+                    inv.maxSan = 99 - (parseInt(mythos.value) || 0);
+                    if (Number(inv.san) > inv.maxSan) inv.san = inv.maxSan;
+                    return true;
+                };
+
+                // 解析 .st 的数值/骰子表达式（如 -1、+5、1d6+1），失败返回 null
+                const evalStValue = (str) => {
+                    try {
+                        let total = 0;
+                        const parts = String(str).split('+');
+                        for (let p of parts) {
+                            p = p.trim();
+                            if (p.includes('d')) {
+                                const dParts = p.toLowerCase().split('d');
+                                const count = parseInt(dParts[0]) || 1;
+                                const sides = parseInt(dParts[1]) || 6;
+                                if (sides < 1 || count < 1 || count > 100) return null;
+                                for (let i = 0; i < count; i++) total += Math.floor(Math.random() * sides) + 1;
+                            } else {
+                                const n = parseFloat(p);
+                                if (isNaN(n)) return null;
+                                total += n;
+                            }
+                        }
+                        return total;
+                    } catch (e) { return null; }
+                };
+
+                // .st 的非属性分支：状态标签（±）、位置、技能增改（克苏鲁神话联动理智上限）
+                const executeStSpecialCommand = (inv, prop, valExpr) => {
+                    if (!inv || !prop || !valExpr) return null;
+                    const lowerProp = prop.toLowerCase();
+
+                    // 状态标签：.st 状态 +重伤 / -濒死
+                    if (prop === '状态' || lowerProp === 'status' || lowerProp === 'statuses') {
+                        if (!Array.isArray(inv.statuses)) inv.statuses = [];
+                        const remove = valExpr.startsWith('-');
+                        const tag = valExpr.replace(/^[+-]/, '').trim();
+                        if (!tag) return { success: false, msg: '空状态标签' };
+                        const before = inv.statuses.slice();
+                        if (remove) inv.statuses = inv.statuses.filter(t => t !== tag);
+                        else if (!inv.statuses.includes(tag)) inv.statuses.push(tag);
+                        if (before.length === inv.statuses.length && before.every((t, i) => t === inv.statuses[i])) return { success: false, msg: `状态未变化: ${tag}` };
+                        saveData();
+                        if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                        return {
+                            success: true,
+                            msg: `状态 ${remove ? '-' : '+'}${tag}`,
+                            log: `🏷️ **状态变更** ${inv.name} ${remove ? '移除' : '获得'}状态「${tag}」`,
+                            rollback: { invIndex: -1, kind: 'statuses', oldStatuses: before }
+                        };
+                    }
+
+                    // 位置：.st 位置 教堂地下室
+                    if (prop === '位置' || lowerProp === 'location' || prop === '所在地') {
+                        const before = String(inv.location || '');
+                        if (before === valExpr) return { success: false, msg: '位置未变化' };
+                        inv.location = valExpr;
+                        saveData();
+                        if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                        return {
+                            success: true,
+                            msg: `位置 => ${valExpr}`,
+                            log: `📍 **位置变更** ${inv.name} 移动至「${valExpr}」`,
+                            rollback: { invIndex: -1, kind: 'field', prop: 'location', oldVal: before }
+                        };
+                    }
+
+                    // 技能：.st 侦查 +10（不存在且为数值则新建；克苏鲁神话联动理智上限）
+                    if (!Array.isArray(inv.skills)) inv.skills = [];
+                    if (!/^[+-]?\d/.test(valExpr)) return null;
+                    const skill = inv.skills.find(s => s.name === prop);
+                    const oldVal = skill ? (Number(skill.value) || 0) : null;
+                    let newVal;
+                    if (valExpr.startsWith('+') || valExpr.startsWith('-')) {
+                        const delta = evalStValue(valExpr.substring(1));
+                        if (delta === null) return null;
+                        newVal = (oldVal || 0) + (valExpr.startsWith('-') ? -delta : delta);
+                    } else {
+                        newVal = evalStValue(valExpr);
+                        if (newVal === null) return null;
+                    }
+                    newVal = Math.max(0, Math.min(99, Math.round(newVal)));
+                    if (skill && newVal === oldVal) return { success: false, msg: `技能未变化: ${prop}` };
+                    if (skill) skill.value = newVal;
+                    else inv.skills.push({ name: prop, value: newVal });
+                    const prevSan = Number(inv.san);
+                    const prevMaxSan = Number(inv.maxSan || 99);
+                    const linked = applyMythosSanLimit(inv);
+                    saveData();
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                    const linkNote = linked ? `，理智上限联动为 ${inv.maxSan}` : '';
+                    return {
+                        success: true,
+                        msg: `${prop} => ${newVal}${linkNote}`,
+                        log: `📚 **技能变更** ${inv.name} 的 ${prop}: ${oldVal === null ? '无' : oldVal} ➔ ${newVal}${linkNote}`,
+                        rollback: linked
+                            ? { invIndex: -1, kind: 'mythos', name: prop, oldVal, oldSan: prevSan, oldMaxSan: prevMaxSan }
+                            : { invIndex: -1, kind: 'skill', name: prop, oldVal }
+                    };
+                };
                 const executeStCommand = (inv, prop, valExpr) => {
                     if (!inv || !prop || !valExpr) return null;
                     const lowerProp = prop.toLowerCase(); let targetKey = ''; let isStat = false;
                     const statMap = { '力量': 'STR', 'STR': 'STR', '体质': 'CON', 'CON': 'CON', '体型': 'SIZ', 'SIZ': 'SIZ', '敏捷': 'DEX', 'DEX': 'DEX', '外貌': 'APP', 'APP': 'APP', '智力': 'INT', 'INT': 'INT', '灵感': 'INT', '意志': 'POW', 'POW': 'POW', '教育': 'EDU', 'EDU': 'EDU', '知识': 'EDU', '幸运': 'LUCK', 'LUCK': 'LUCK', '理智': 'san', 'San': 'san', 'SAN': 'san', 'HP': 'hp', 'MP': 'mp' };
                     if (['hp', 'mp', 'san'].includes(lowerProp)) targetKey = lowerProp;
+                    else if (prop === '信用评级' || lowerProp === 'cr') targetKey = 'creditRating';
                     else { const key = statMap[prop] || statMap[prop.toUpperCase()]; if (key) { targetKey = key; isStat = true; } }
-                    
-                    // .st 仅处理角色属性，不匹配普通技能
-                    if (!targetKey) return { success: false, msg: `未找到属性: ${prop}` };
+
+                    if (!targetKey) {
+                        // 非属性指令：状态标签 / 位置 / 技能（含克苏鲁神话联动）
+                        return executeStSpecialCommand(inv, prop, String(valExpr).trim()) || { success: false, msg: `未找到属性: ${prop}` };
+                    }
                     
                     let currentVal = isStat ? inv.stats[targetKey] : inv[targetKey];
                     // 将缺失或无效的旧存档数值归零
@@ -6194,8 +6495,15 @@ const handleAuth = async () => {
                     }
                     
                     if (isStat) inv.stats[targetKey] = newVal; else inv[targetKey] = newVal;
-                    if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(99, inv[targetKey]));
-                    if (targetKey === 'hp') inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey]));
+                    if (targetKey === 'san') inv[targetKey] = Math.max(0, Math.min(inv.maxSan || 99, inv[targetKey]));
+                    if (targetKey === 'hp') {
+                        inv[targetKey] = Math.max(0, Math.min(inv.maxHp || 99, inv[targetKey]));
+                        // HP 归零自动附加"濒死"标签
+                        if (inv[targetKey] === 0) {
+                            if (!Array.isArray(inv.statuses)) inv.statuses = [];
+                            if (!inv.statuses.includes('濒死')) inv.statuses.push('濒死');
+                        }
+                    }
                     if (targetKey === 'mp') inv[targetKey] = Math.max(0, Math.min(inv.maxMp || 99, inv[targetKey]));
                     
                     const finalVal = isStat ? inv.stats[targetKey] : inv[targetKey];
@@ -6221,33 +6529,28 @@ const handleAuth = async () => {
 
                 const applyStCommands = (content, defaultInvIndex = -1) => {
                     if (!content) return { logs: [], rollbacks: [] };
-                    
+
                     // 先移除 COT 内容，避免执行思维链中的指令
                     let cleanContent = removeCot(content);
-                    
-                    // Regex to match .st commands: (@Name)? .st prop val
-                    // Updated to support Chinese names and better spacing
-                    // Matches:
-                    // 1. @OptionalName (lazy)
-                    // 2. .st or 。st
-                    // 3. property (e.g. hp)
-                    // 4. value (e.g. -3, +1d6, 10)
-                    const regex = /(?:@([^\s\.]+)\s+)?[\.。]st\s+(\w+)\s+([+-]?\d+(?:d\d+)?|[+-]?\d+)/gi;
+
                     const logs = [];
                     const rollbacks = [];
-                    
+
+                    // .st 指令：(@名字)? .st 属性/状态/位置/技能 值
+                    // 值放宽为文本（状态标签/位置需要），以下一个 .st/.know 或行尾为界
+                    const regex = /(?:@([^\s\.]+)\s+)?[\.。]st\s+(\S+)\s+([^\.。\n]+?)(?=[\s。]|$|[\.。](?:st|know)\s)/gi;
                     let match;
                     while ((match = regex.exec(cleanContent)) !== null) {
                         const targetName = match[1];
                         const prop = match[2];
-                        const valExpr = match[3];
-                        
+                        const valExpr = match[3].trim();
+
                         let invIndex = defaultInvIndex;
                         if (targetName) {
                             const foundIndex = findInvestigatorIndexByName(targetName);
                             if (foundIndex !== -1) invIndex = foundIndex;
                         }
-                        
+
                         if (invIndex !== -1 && cocState.investigators[invIndex]) {
                             const result = executeStCommand(cocState.investigators[invIndex], prop, valExpr);
                             if (result && result.success) {
@@ -6256,16 +6559,53 @@ const handleAuth = async () => {
                             }
                         }
                     }
+
+                    // .know 指令：(@名字)? .know 内容 —— 追加式写入"角色已知信息"，只增不覆盖
+                    const knowRegex = /(?:@([^\s\.]+)\s+)?[\.。]know\s+([^\.。\n]+)/gi;
+                    while ((match = knowRegex.exec(cleanContent)) !== null) {
+                        const targetName = match[1];
+                        const info = match[2].trim();
+                        if (!info) continue;
+
+                        let invIndex = defaultInvIndex;
+                        if (targetName) {
+                            const foundIndex = findInvestigatorIndexByName(targetName);
+                            if (foundIndex !== -1) invIndex = foundIndex;
+                        }
+
+                        if (invIndex !== -1 && cocState.investigators[invIndex]) {
+                            const inv = cocState.investigators[invIndex];
+                            const prev = String(inv.knownInfo || '');
+                            inv.knownInfo = prev ? `${prev}\n[${new Date().toLocaleDateString()}] ${info}` : `[${new Date().toLocaleDateString()}] ${info}`;
+                            logs.push(`📝 **已知信息** ${inv.name} 记录：「${info}」`);
+                            rollbacks.push({ invIndex, kind: 'field', prop: 'knownInfo', oldVal: prev });
+                            saveData();
+                        }
+                    }
                     return { logs, rollbacks };
                 };
 
                 const rollbackStChanges = (rollbacks) => {
                     if (!rollbacks || !Array.isArray(rollbacks)) return;
-                    rollbacks.reverse().forEach(rb => {
+                    rollbacks.slice().reverse().forEach(rb => {
                         const inv = cocState.investigators[rb.invIndex];
-                        if (inv) {
-                            if (rb.isStat) inv.stats[rb.prop] = rb.oldVal;
-                            else inv[rb.prop] = rb.oldVal;
+                        if (!inv) return;
+                        if (rb.kind === 'statuses') {
+                            inv.statuses = Array.isArray(rb.oldStatuses) ? rb.oldStatuses.slice() : [];
+                        } else if (rb.kind === 'field') {
+                            inv[rb.prop] = rb.oldVal;
+                        } else if (rb.kind === 'skill') {
+                            const skill = Array.isArray(inv.skills) ? inv.skills.find(s => s.name === rb.name) : null;
+                            if (skill) skill.value = rb.oldVal;
+                        } else if (rb.kind === 'mythos') {
+                            const skill = Array.isArray(inv.skills) ? inv.skills.find(s => s.name === rb.name) : null;
+                            if (skill) skill.value = rb.oldVal;
+                            inv.maxSan = rb.oldMaxSan;
+                            inv.san = rb.oldSan;
+                        } else if (rb.isStat) {
+                            inv.stats[rb.prop] = rb.oldVal;
+                        } else if (rb.prop) {
+                            inv[rb.prop] = rb.oldVal;
                         }
                     });
                     saveData();
@@ -6295,10 +6635,12 @@ const handleAuth = async () => {
 
                 const allPlayersReady = Vue.computed(() => {
                     if (cocState.mode !== 'multi') return true;
+                    // 旁观者不计入开局判定
+                    const realMembers = multiplayerState.members.filter(m => !m.isSpectator);
                     // 必须至少有 2 名真人玩家
-                    if (multiplayerState.members.length < 2) return false;
-                    // 所有在场成员必须已准备（房主除外）
-                    const membersReady = multiplayerState.members.every(m => m.isReady || m.isHost);
+                    if (realMembers.length < 2) return false;
+                    // 所有在场成员必须已准备（房主除外；离线成员同样需要满足，房主可先踢出）
+                    const membersReady = realMembers.every(m => m.isReady || m.isHost);
                     if (!membersReady) return false;
                     // 必须至少有一个角色被分配（给真人或AI）
                     const hasAssignments = Object.keys(multiplayerState.assignments).length > 0;
@@ -6376,7 +6718,7 @@ ${buildInvestigatorProfile(inv)}
                             if (content) {
                                 // 移除开头可能的多余符号（例如AI有时候会输出 "> .ra"）
                                 let cleanContent = content.replace(/^>\s*/, '');
-                                const { content: processedContent, diceResult } = processDiceCommand(cleanContent, inv);
+                                const { content: processedContent, diceResult } = processDiceCommand(cleanContent, inv, true);
                                 const msg = { role: 'user', name: inv.name, avatar: inv.avatar, content: processedContent, diceResult, isAiGenerated: true, aiIndex: idx };
                                 processAiMessageStCommands(msg); // Process .st commands for AI
                                 cocState.log.push(msg);
@@ -6414,10 +6756,12 @@ ${buildInvestigatorProfile(inv)}
                             if (uid.startsWith('ai_')) participants.push(uid);
                         });
                     } else {
-                        participants = [...new Set(Object.values(multiplayerState.assignments))];
+                        // 旁观者与离线成员不参与回合完成判定
+                        const excludedIds = multiplayerState.members.filter(m => m.isSpectator || m.isOffline).map(m => m.id);
+                        participants = [...new Set(Object.values(multiplayerState.assignments))].filter(uid => !excludedIds.includes(uid));
                         // 房主必须参与回合完成判定
                         const host = multiplayerState.members.find(m => m.isHost);
-                        if (host && !participants.includes(host.id)) {
+                        if (host && !host.isSpectator && !participants.includes(host.id)) {
                             participants.push(host.id);
                         }
                     }
@@ -6873,9 +7217,17 @@ ${buildInvestigatorProfile(inv)}
                         if (data.maxSan === undefined) data.maxSan = 99; 
                         if (data.maxHp === undefined) data.maxHp = Math.floor((data.stats.CON + data.stats.SIZ)/10); 
                         if (data.maxMp === undefined) data.maxMp = Math.floor(data.stats.POW/5); 
-                        if (!data.history) data.history = []; 
-                        if (!data.badges) data.badges = []; 
-                        if (!data.skills) data.skills = []; 
+                        if (!data.history) data.history = [];
+                        if (!data.badges) data.badges = [];
+                        if (!data.skills) data.skills = [];
+                        if (!data.statuses) data.statuses = [];
+                        if (data.mania === undefined) data.mania = '';
+                        if (data.phobia === undefined) data.phobia = '';
+                        if (!Array.isArray(data.relationships)) data.relationships = [];
+                        if (!data.mythos) data.mythos = { tomes: '', spells: '', encounters: '' };
+                        if (data.location === undefined) data.location = '';
+                        if (data.knownInfo === undefined) data.knownInfo = '';
+                        applyMythosSanLimit(data);
                         cocState.investigators.push(data); 
                         if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators }); 
                         if (cocState.activeInvestigatorIndex === -1) cocState.activeInvestigatorIndex = cocState.investigators.length - 1; 
@@ -6888,6 +7240,7 @@ ${buildInvestigatorProfile(inv)}
                 };
                 const deleteInvestigator = async (index) => { if(await showConfirm('删除此调查员？', '删除角色')) { cocState.investigators.splice(index, 1); if(cocState.activeInvestigatorIndex >= index) cocState.activeInvestigatorIndex = -1; if (cocState.mode === 'multi' && multiplayerState.isHost) { broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators }); multiplayerState.assignments = {}; broadcastMessage({ type: 'sync_assignments', assignments: {} }); } saveData(); } };
                 const toggleReady = () => {
+                    if (multiplayerState.isSpectator) return showToast('旁观模式中无需准备', 'warning');
                     if (!multiplayerState.isReady && cocState.gameState === 'preparing' && cocState.activeInvestigatorIndex === -1) return showToast('请先选择一名调查员', 'warning');
                     multiplayerState.isReady = !multiplayerState.isReady;
                     // 发送准备状态更新广播
@@ -6897,7 +7250,7 @@ ${buildInvestigatorProfile(inv)}
                         isReady: multiplayerState.isReady
                     });
                 };
-                const buildInvestigatorProfile = (inv) => { let profile = `姓名：${inv.name}\n职业：${inv.job} | 年龄：${inv.age} | 性别：${inv.gender} | 住地：${inv.residence}\n属性：STR:${inv.stats.STR} CON:${inv.stats.CON} SIZ:${inv.stats.SIZ} DEX:${inv.stats.DEX} APP:${inv.stats.APP} INT:${inv.stats.INT} POW:${inv.stats.POW} EDU:${inv.stats.EDU}\n状态：HP ${inv.hp}/${inv.maxHp} | MP ${inv.mp}/${inv.maxMp} | SAN ${inv.san}/${inv.maxSan}\n`; if (inv.skills && inv.skills.length) profile += `技能：${inv.skills.filter(s => s.value > 0).map(s => `${s.name}(${s.value})`).join(', ')}\n`; if (inv.backstory) { profile += `背景：\n`; for (const [k, v] of Object.entries(inv.backstory)) if (v) profile += `- ${k}: ${v}\n`; } if (inv.inventory) profile += `随身物品：${inv.inventory}\n`; return profile; };
+                const buildInvestigatorProfile = (inv) => { let profile = `姓名：${inv.name}\n职业：${inv.job} | 年龄：${inv.age} | 性别：${inv.gender} | 住地：${inv.residence}\n属性：STR:${inv.stats.STR} CON:${inv.stats.CON} SIZ:${inv.stats.SIZ} DEX:${inv.stats.DEX} APP:${inv.stats.APP} INT:${inv.stats.INT} POW:${inv.stats.POW} EDU:${inv.stats.EDU}\n状态：HP ${inv.hp}/${inv.maxHp} | MP ${inv.mp}/${inv.maxMp} | SAN ${inv.san}/${inv.maxSan}\n`; if (Array.isArray(inv.statuses) && inv.statuses.length) profile += `状态标签：${inv.statuses.join('、')}\n`; if (inv.location) profile += `当前位置：${inv.location}\n`; if (inv.mania || inv.phobia) profile += `疯狂状态：${inv.mania ? `躁狂症-${inv.mania}` : ''}${inv.mania && inv.phobia ? '；' : ''}${inv.phobia ? `恐惧症-${inv.phobia}` : ''}\n`; if (inv.mythos && inv.mythos.tomes) profile += `神话典籍：${inv.mythos.tomes}\n`; if (inv.mythos && inv.mythos.spells) profile += `习得法术：${inv.mythos.spells}\n`; if (Array.isArray(inv.relationships) && inv.relationships.length) profile += `人际关系：${inv.relationships.filter(r => r && (r.name || r.relation)).map(r => `${r.name || '?'}(${r.relation || '?'}${r.story ? '：' + r.story : ''})`).join('；')}\n`; if (inv.knownInfo) profile += `已知信息：\n${inv.knownInfo}\n`; if (inv.skills && inv.skills.length) profile += `技能：${inv.skills.filter(s => s.value > 0).map(s => `${s.name}(${s.value})`).join(', ')}\n`; if (inv.backstory) { profile += `背景：\n`; for (const [k, v] of Object.entries(inv.backstory)) if (v) profile += `- ${k}: ${v}\n`; } if (inv.inventory) profile += `随身物品：${inv.inventory}\n`; return profile; };
                 const openSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; if (!inv) return showToast('请选择一名调查员', 'warning'); settlementState.moduleName = cocState.module?.name || '未知模组'; settlementState.sanRewardExpr = '1d6'; settlementState.sanRewardVal = 0; settlementState.specialReward = ''; settlementState.badge = { name: '幸存者', desc: `在《${settlementState.moduleName}》中存活`, icon: '🏅' }; settlementState.historyLog = `完成模组《${settlementState.moduleName}》`; settlementState.step = 1; settlementState.selectedSkills = []; settlementState.skillGrowths = []; settlementState.show = true; };
                 const confirmEndGame = () => {
                     if (cocState.mode === 'multi' && !multiplayerState.isHost) return showToast('仅房主可以确认结团', 'warning');
@@ -6923,6 +7276,7 @@ ${buildInvestigatorProfile(inv)}
                                 { name: "聆听", value: Math.floor(Math.random() * 5) + 1 }
                             ],
                             newItems: ["测试物品 A", "神秘道具 B"],
+                            relationships: [{ name: "测试NPC", relation: "盟友", story: "并肩调查了教堂地窖" }],
                             badge: { name: "测试先锋", desc: "在开发者模式下完成测试", icon: "🛠️" },
                             summary: `[测试] ${inv.name} 完成了本次冒险测试。`
                         }));
@@ -6963,15 +7317,7 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
 
-                const canViewReport = (report) => {
-                    if (cocState.mode === 'single') return true;
-                    if (multiplayerState.isHost) return true; // Host sees all
-                    // Check if report belongs to user's character
-                    const myInvIndex = cocState.activeInvestigatorIndex;
-                    if (myInvIndex === -1) return false;
-                    const myInv = cocState.investigators[myInvIndex];
-                    return myInv && myInv.name === report.investigatorName;
-                };
+                const canViewReport = () => true; // 所有成员均可查看全部调查报告（查看其他结局）
                 const rollSanReward = () => { const expr = settlementState.sanRewardExpr; let val = 0; if (expr.includes('d')) { const [n, d] = expr.split('d').map(Number); for(let i=0; i<(n||1); i++) val += Math.floor(Math.random()*(d||6))+1; } else val = parseInt(expr) || 0; settlementState.sanRewardVal = val; };
                 const processSkillGrowth = async () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; settlementState.isRolling = true; settlementState.skillGrowths = []; for (const skillName of settlementState.selectedSkills) { const skill = inv.skills.find(s => s.name === skillName); if (!skill) continue; const checkVal = Math.floor(Math.random() * 100) + 1; const success = checkVal > skill.value || checkVal > 95; let growth = 0; if (success) growth = Math.floor(Math.random() * 10) + 1; settlementState.skillGrowths.push({ name: skill.name, oldVal: skill.value, checkVal, success, growth, newVal: skill.value + growth }); await new Promise(r => setTimeout(r, 300)); } settlementState.isRolling = false; settlementState.step = 3; };
                 const sanitizeFilename = (name, defaultName = 'character') => name ? name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim() : defaultName;
@@ -7029,10 +7375,52 @@ ${buildInvestigatorProfile(inv)}
                 };
 
                 const downloadReport = (report) => {
-                    const filename = `Report_${sanitizeFilename(report.moduleName)}_${new Date().toISOString().slice(0,10)}.json`;
+                    const filename = `Report_${sanitizeFilename(report.moduleName)}_${sanitizeFilename(report.investigatorName)}_${new Date().toISOString().slice(0,10)}.json`;
                     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
                     downloadFile(blob, filename);
                     showToast('凭证已下载，请前往调查员档案导入', 'success');
+                };
+                // 日谈：把调查报告应用回角色卡——状态变化/技能成长/物品/徽章/经历概括写入背景/人物关系合并（同名更新、不同名追加、绝不删减）
+                const applyReportToInvestigator = (report) => {
+                    const inv = cocState.investigators.find(i => i.name === report.investigatorName);
+                    if (!inv) return showToast(`未找到对应调查员：${report.investigatorName || '未知'}`, 'error');
+                    if (report.changes) {
+                        if (report.changes.san) inv.san = Math.min(inv.maxSan || 99, Math.max(0, Number(inv.san) + Number(report.changes.san)));
+                        if (report.changes.creditRating) inv.creditRating = Math.max(0, Math.min(99, (parseInt(inv.creditRating) || 0) + Number(report.changes.creditRating)));
+                    }
+                    (report.skillGrowths || []).forEach(g => {
+                        if (!g || !g.name) return;
+                        let skill = inv.skills.find(s => s.name === g.name);
+                        if (!skill) { skill = { name: g.name, value: 0 }; inv.skills.push(skill); }
+                        skill.value = Math.max(0, Math.min(99, (Number(skill.value) || 0) + (Number(g.value) || 0)));
+                    });
+                    if (Array.isArray(report.newItems) && report.newItems.length) {
+                        const itemsStr = report.newItems.join('、');
+                        inv.inventory = inv.inventory ? `${inv.inventory}\n[本局获得] ${itemsStr}` : `[本局获得] ${itemsStr}`;
+                    }
+                    if (report.badge && report.badge.name) {
+                        if (!Array.isArray(inv.badges)) inv.badges = [];
+                        inv.badges.push({ ...report.badge });
+                    }
+                    if (report.summary) {
+                        if (!Array.isArray(inv.history)) inv.history = [];
+                        inv.history.unshift(`[${new Date().toLocaleDateString()}] 完成模组《${report.moduleName || cocState.module?.name || '未知'}》：${report.summary}`);
+                    }
+                    if (Array.isArray(report.relationships) && report.relationships.length) {
+                        if (!Array.isArray(inv.relationships)) inv.relationships = [];
+                        report.relationships.filter(r => r && r.name).forEach(r => {
+                            const existing = inv.relationships.find(x => x.name === r.name);
+                            if (existing) {
+                                if (r.relation) existing.relation = r.relation;
+                                if (r.story) existing.story = existing.story ? `${existing.story}；${r.story}` : r.story;
+                            } else {
+                                inv.relationships.push({ name: r.name, relation: r.relation || '', story: r.story || '' });
+                            }
+                        });
+                    }
+                    saveData();
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                    showToast(`日谈已应用到 ${inv.name} 的角色卡`, 'success');
                 };
 
                 const exportCurrentInvestigatorPNG = async () => {
@@ -7126,7 +7514,7 @@ ${buildInvestigatorProfile(inv)}
                         showToast('导出失败: ' + e.message, 'error');
                     }
                 };
-                const confirmSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; inv.san = Math.min(inv.maxSan||99, inv.san + settlementState.sanRewardVal); settlementState.skillGrowths.forEach(g => { if(g.success) { const s = inv.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } }); if(!inv.history) inv.history=[]; inv.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`); if(settlementState.badge.name) { if(!inv.badges) inv.badges=[]; inv.badges.push({...settlementState.badge}); } saveData(); showToast('结算完成', 'success'); settlementState.show = false; };
+                const confirmSettlement = () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; inv.san = Math.min(inv.maxSan||99, inv.san + settlementState.sanRewardVal); settlementState.skillGrowths.forEach(g => { if(g.success) { const s = inv.skills.find(sk=>sk.name===g.name); if(s) s.value = g.newVal; } }); applyMythosSanLimit(inv); if(!inv.history) inv.history=[]; inv.history.unshift(`[${new Date().toLocaleDateString()}] ${settlementState.historyLog}`); if(settlementState.badge.name) { if(!inv.badges) inv.badges=[]; inv.badges.push({...settlementState.badge}); } saveData(); showToast('结算完成', 'success'); settlementState.show = false; };
 
                 const importTavernSave = (e) => {
                     const file = e.target.files[0];
@@ -7275,13 +7663,18 @@ ${chunkLogs}
                 const startCocGame = () => {
                     if (!cocState.module || cocState.investigators.length === 0) return showToast('请先导入模组和调查员', 'warning');
                     if (cocState.mode === 'multi') {
-                        if (multiplayerState.members.length < 2) return showToast('多人模式至少需要 2 名真人玩家。如果只有您一人，请切换至单人模式', 'warning');
-                        if (!multiplayerState.members.every(m => m.isReady || m.isHost)) return showToast('等待其他玩家准备就绪', 'warning');
+                        if (multiplayerState.isSpectator) return showToast('旁观者无法开始游戏', 'warning');
+                        const realMembers = multiplayerState.members.filter(m => !m.isSpectator);
+                        if (realMembers.length < 2) return showToast('多人模式至少需要 2 名真人玩家。如果只有您一人，请切换至单人模式', 'warning');
+                        if (!realMembers.every(m => m.isReady || m.isHost)) return showToast('等待其他玩家准备就绪', 'warning');
                         if (Object.keys(multiplayerState.assignments).length === 0) return showToast('请先为角色分配玩家', 'warning');
                     } else {
                         if (cocState.activeInvestigatorIndex === -1) cocState.activeInvestigatorIndex = 0;
                     }
-                    
+
+                    // 开局时统一执行克苏鲁神话 → 理智上限联动
+                    cocState.investigators.forEach(inv => applyMythosSanLimit(inv));
+
                     let systemPrompt = (() => {
                         let prompt = `<system_prompt>\n`;
                         const rulesByCat = {};
@@ -7356,13 +7749,21 @@ ${chunkLogs}
                         investigatorsProfiles = `\n\n【当前调查员资料】\n${buildInvestigatorProfile(inv)}`;
                     }
 
+                    // 模组上下文上限：>0 时截断并提醒；多人模式下 KP 请求仅由房主发起，以房主设置为准
+                    const moduleLimit = Math.max(0, parseInt(settings.moduleContextLimit) || 0);
+                    const moduleText = String(cocState.module.content || '');
+                    const moduleContentForPrompt = moduleLimit > 0 ? moduleText.slice(0, moduleLimit) : moduleText;
+                    if (moduleLimit > 0 && moduleText.length > moduleLimit && (cocState.mode !== 'multi' || multiplayerState.isHost)) {
+                        showToast(`模组内容较长，已按设置截断至 ${moduleLimit} 字符，超出部分 AI 不可见`, 'warning');
+                    }
+
                     systemPrompt += `
 <context>
     <investigator_profiles>
 ${investigatorsProfiles}
     </investigator_profiles>
     <module_background>
-${cocState.module.content.slice(0, 5000)}
+${moduleContentForPrompt}
     </module_background>
 </context>`;
 
@@ -7467,6 +7868,8 @@ ${buildInvestigatorProfile(inv)}
                 };
 
                 const handleInvestigatorClick = (index) => {
+                    // 旁观者不可选择角色
+                    if (cocState.mode === 'multi' && multiplayerState.isSpectator) return showToast('旁观模式中无法选择角色', 'warning');
                     // 如果正在游戏中，禁止切换角色（除非是房主在管理 AI）
                     if (cocState.gameState === 'playing') {
                         if (cocState.mode === 'multi') {
@@ -7538,64 +7941,106 @@ ${buildInvestigatorProfile(inv)}
                 };
                 const scrollToBottom = () => { /* 自动滚动已禁用 */ };
                 // 骰子处理函数
-                const processDiceCommand = (content, inv) => {
+                const processDiceCommand = (content, inv, fromAi = false) => {
                     if (!content) return { content, diceResult: null };
                     
                     // 预处理：移除开头可能存在的空白，兼容 .ra 心理学 和 .ra心理学
                     // 注意：AI有时会输出 "。ra 心理学" 或 " .ra 心理学"
                     const trimmedContent = content.trim();
                     
-                    // 1. 技能/属性检定 .ra / .rc
-                    // 正则优化：支持前面有空白，支持指令和参数之间无空格（如 .ra心理学）
-                    const raMatch = trimmedContent.match(/^[\.。](?:ra|rc)\s*([^\s\d]+)/i);
+                    // 0. NPC 检定 .rn NPC名 技能名 数值（"AI 代掷"开启时仅 AI 消息可用，关闭时玩家可用）
+                    const rnMatch = trimmedContent.match(/^[\.。]rn\s+(\S+)\s+(\S+)\s+(\d+)\s*$/i);
+                    if (rnMatch) {
+                        const aiMode = settings.npcCheckByAI !== false;
+                        if (aiMode === !fromAi) {
+                            if (!fromAi) showToast('已开启"AI 代掷 NPC 检定"，该指令由 KP 使用', 'warning');
+                            return { content, diceResult: null };
+                        }
+                        const npcName = rnMatch[1];
+                        const npcSkill = rnMatch[2];
+                        const npcTarget = Math.max(1, Math.min(99, parseInt(rnMatch[3]) || 1));
+                        const npcRoll = Math.floor(Math.random() * 100) + 1;
+                        let npcLevel = '失败'; let npcSuccess = false;
+                        if (npcRoll === 1) { npcLevel = '大成功'; npcSuccess = true; }
+                        else if (npcRoll === 100) { npcLevel = '大失败'; npcSuccess = false; }
+                        else if (npcRoll <= npcTarget / 5) { npcLevel = '极难成功'; npcSuccess = true; }
+                        else if (npcRoll <= npcTarget / 2) { npcLevel = '困难成功'; npcSuccess = true; }
+                        else if (npcRoll <= npcTarget) { npcLevel = '成功'; npcSuccess = true; }
+                        else if (npcRoll > 95) { npcLevel = '大失败'; npcSuccess = false; }
+                        return {
+                            content,
+                            diceResult: { label: `NPC · ${npcName} · ${npcSkill}`, roll: npcRoll, target: npcTarget, level: npcLevel, success: npcSuccess }
+                        };
+                    }
+
+                    // 1. 技能/属性检定 .ra / .rab(奖励骰) / .rap(惩罚骰)，支持 #N 多骰与 ±N 临时修正
+                    // 兼容无空格写法（.ra心理学）与修正后缀（.ra攀爬+20）
+                    const raMatch = trimmedContent.match(/^[\.。](rab|rap|ra|rc)(?:#(\d+))?\s*(.+?)([+-]\d+)?\s*$/i);
                     if (raMatch && inv) {
-                        const skillName = raMatch[1];
+                        const diceKind = raMatch[1].toLowerCase();
+                        const extraDice = Math.min(4, Math.max(1, parseInt(raMatch[2]) || 1)); // #N：N 个奖励/惩罚骰
+                        const skillName = (raMatch[3] || '').trim();
+                        const modVal = raMatch[4] ? parseInt(raMatch[4]) : 0;
                         // 查找技能或属性值
                         let skillVal = 0;
                         let skillLabel = skillName;
-                        
+
                         const statKeyMap = { '力量': 'STR', '体质': 'CON', '体型': 'SIZ', '敏捷': 'DEX', '外貌': 'APP', '智力': 'INT', '灵感': 'INT', '意志': 'POW', '教育': 'EDU', '知识': 'EDU', '幸运': 'LUCK' };
                         const statKey = statKeyMap[skillName] || (inv.stats[skillName.toUpperCase()] ? skillName.toUpperCase() : null);
-                        
+
                         if (statKey) {
                             skillVal = inv.stats[statKey];
                             skillLabel = statDisplayMap[statKey] || statKey;
+                        } else if (skillName === '信用评级' || skillName.toLowerCase() === 'cr') {
+                            skillVal = parseInt(inv.creditRating) || 0;
                         } else {
                             const skill = inv.skills.find(s => s.name === skillName);
                             if (skill) skillVal = skill.value;
                         }
-                        
-                        const roll = Math.floor(Math.random() * 100) + 1;
+
+                        // 修正后的目标值（临时加减，不改角色卡）
+                        const targetVal = Math.max(1, Math.min(99, skillVal + modVal));
+                        // 奖励骰取多次中的最低（更有利），惩罚骰取最高（更不利）
+                        let roll;
+                        if (diceKind === 'rab' || diceKind === 'rap') {
+                            const rolls = [];
+                            for (let i = 0; i <= extraDice; i++) rolls.push(Math.floor(Math.random() * 100) + 1);
+                            roll = diceKind === 'rab' ? Math.min(...rolls) : Math.max(...rolls);
+                        } else {
+                            roll = Math.floor(Math.random() * 100) + 1;
+                        }
+                        const diceTag = diceKind === 'rab' ? `（奖励骰${extraDice > 1 ? '×' + extraDice : ''}）` : diceKind === 'rap' ? `（惩罚骰${extraDice > 1 ? '×' + extraDice : ''}）` : '';
                         let diceResult = null;
-                        
+
                         if (skillVal > 0) {
                             let level = '';
                             let success = false;
-                            
+
                             if (roll === 1) { level = '大成功'; success = true; }
                             else if (roll === 100) { level = '大失败'; success = false; }
-                            else if (roll <= skillVal / 5) { level = '极难成功'; success = true; }
-                            else if (roll <= skillVal / 2) { level = '困难成功'; success = true; }
-                            else if (roll <= skillVal) { level = '成功'; success = true; }
+                            else if (roll <= targetVal / 5) { level = '极难成功'; success = true; }
+                            else if (roll <= targetVal / 2) { level = '困难成功'; success = true; }
+                            else if (roll <= targetVal) { level = '成功'; success = true; }
                             else if (roll > 95) { level = '大失败'; success = false; }
                             else { level = '失败'; success = false; }
-                            
+
                             diceResult = {
-                                label: `${skillLabel} 检定`,
+                                label: `${skillLabel} 检定${diceTag}`,
                                 roll: roll,
-                                target: skillVal,
+                                target: targetVal,
                                 level: level,
-                                success: success
+                                success: success,
+                                extra: modVal ? `修正 ${modVal > 0 ? '+' : ''}${modVal}（原值 ${skillVal}）` : ''
                             };
                         } else {
                             diceResult = {
-                                label: `${skillLabel} 检定`,
+                                label: `${skillLabel} 检定${diceTag}`,
                                 roll: roll,
                                 level: '未习得',
                                 success: null
                             };
                         }
-                        
+
                         return { content, diceResult };
                     }
                     
@@ -7687,6 +8132,12 @@ ${buildInvestigatorProfile(inv)}
                 const sendCocMessage = async (manualContent = null) => {
                     let rawContent = (typeof manualContent === 'string' && manualContent) ? manualContent : cocInput.value.trim();
                     if (!rawContent) return;
+
+                    // 旁观者不可进行任何互动
+                    if (cocState.mode === 'multi' && multiplayerState.isSpectator) {
+                        showToast('旁观模式中，无法发言或执行指令', 'warning');
+                        return;
+                    }
                     
                     // 开发者模式下，如果是以 /dev 开头的指令，直接作为系统指令发送给 AI
                     if (isDevMode.value && rawContent.startsWith('/dev ')) {
@@ -7701,6 +8152,12 @@ ${buildInvestigatorProfile(inv)}
                         cocInput.value = '';
                         scrollToBottom();
                         generateResponse(); // 直接触发生成，AI 会看到这条开发者指令
+                        return;
+                    }
+
+                    // 回合锁定期间仅放行投骰/检定等指令，叙事行动仍一轮一次
+                    if (isRoundLocked.value && !/^\s*[\.。]/.test(rawContent)) {
+                        showToast('本轮已行动，仍可发送 .ra/.sc/.st 等指令', 'warning');
                         return;
                     }
 
@@ -7781,6 +8238,39 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
                 
+                // 解析 KP 回复中的 .rn NPC 检定指令：系统真实掷骰并把结果追加进对话（AI 下一轮可见）
+                const resolveNpcChecks = (content) => {
+                    if (settings.npcCheckByAI === false) return; // 关闭"AI 代掷"时不执行 AI 消息中的 .rn（玩家模式）
+                    if (!content) return;
+                    const regex = /[\.。]rn\s+(\S+)\s+(\S+)\s+(\d+)/gi;
+                    const entries = [];
+                    let m;
+                    while ((m = regex.exec(content)) !== null) {
+                        const npcName = m[1];
+                        const skillName = m[2];
+                        const target = Math.max(1, Math.min(99, parseInt(m[3]) || 1));
+                        const roll = Math.floor(Math.random() * 100) + 1;
+                        let level = '失败'; let success = false;
+                        if (roll === 1) { level = '大成功'; success = true; }
+                        else if (roll === 100) { level = '大失败'; success = false; }
+                        else if (roll <= target / 5) { level = '极难成功'; success = true; }
+                        else if (roll <= target / 2) { level = '困难成功'; success = true; }
+                        else if (roll <= target) { level = '成功'; success = true; }
+                        else if (roll > 95) { level = '大失败'; success = false; }
+                        entries.push({ npcName, skillName, target, roll, level, success });
+                    }
+                    if (!entries.length) return;
+                    entries.forEach(e => {
+                        cocState.log.push({
+                            role: 'user', name: '🎲 NPC检定', avatar: '',
+                            content: `${e.npcName} 的 ${e.skillName}检定（系统代掷）`,
+                            diceResult: { label: `NPC · ${e.npcName} · ${e.skillName}`, roll: e.roll, target: e.target, level: e.level, success: e.success },
+                            timestamp: Date.now(),
+                            senderId: getRoomSessionId()
+                        });
+                    });
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastFullState();
+                };
                 const generateResponse = async () => {
                     isGenerating.value = true;
                     const assistantMsg = { role: 'assistant', name: '守密人', content: '', showCot: false };
@@ -7892,6 +8382,8 @@ ${buildInvestigatorProfile(inv)}
                                 broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
                             }
                         }
+                        // NPC 检定：系统代掷 KP 消息中的 .rn 指令，结果追加进对话
+                        resolveNpcChecks(assistantMsg.content);
 
                         isGenerating.value = false;
                         // 生成完成后，房主广播最终完整内容，并通知生成结束
@@ -8054,6 +8546,21 @@ ${buildInvestigatorProfile(inv)}
                             if (msg.sender_id === getRoomSessionId()) return;
                             if (msg.payload && msg.payload.type) handleBroadcastMessage(msg.payload);
                         });
+                        // 房主依据 presence 在线登记标记掉线成员（玩家每次轮询都会刷新 last_seen；180 秒无响应判定离线）
+                        if (multiplayerState.isHost && Array.isArray(data.presence)) {
+                            const serverNow = Number(data.now) || Math.floor(Date.now() / 1000);
+                            const freshIds = new Set(data.presence.filter(p => serverNow - p.seen_at < 180).map(p => p.user_id));
+                            let presenceChanged = false;
+                            multiplayerState.members.forEach(m => {
+                                if (m.isHost) {
+                                    if (m.isOffline) { m.isOffline = false; presenceChanged = true; }
+                                    return;
+                                }
+                                const offline = !freshIds.has(m.id);
+                                if (offline !== Boolean(m.isOffline)) { m.isOffline = offline; presenceChanged = true; }
+                            });
+                            if (presenceChanged) broadcastState();
+                        }
                         multiplayerState.isConnected = true;
                     } catch (e) {
                         console.error('Room polling failed:', e);
@@ -8114,7 +8621,8 @@ ${buildInvestigatorProfile(inv)}
                         assignmentDetails: multiplayerState.assignmentDetails,
                         turnIndex: multiplayerState.turnIndex,
                         roundActionIds: multiplayerState.roundActionIds,
-                        cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers
+                        cotAuthorizedUsers: multiplayerState.cotAuthorizedUsers,
+                        kickedMembers: multiplayerState.kickedMembers
                     };
                     if (includeLog) payload.log = getRoomLogSnapshot();
                     return payload;
@@ -8135,15 +8643,61 @@ ${buildInvestigatorProfile(inv)}
                         case 'player_joined':
                             if (multiplayerState.isHost) {
                                 const newMember = payload.user;
-                                if (!multiplayerState.members.some(m => m.id === newMember.id)) {
-                                    multiplayerState.members.push({ ...newMember, isHost: false, isReady: false });
-                                    showToast(`${newMember.name} 加入了房间`, 'success');
+                                // 被踢出者：拒绝进入房间（直到房主在踢出名单中取消踢出）
+                                if (multiplayerState.kickedMembers.some(k => k.id === newMember.id)) {
+                                    broadcastMessage({ type: 'kick_player', userId: newMember.id });
+                                    break;
+                                }
+                                const existing = multiplayerState.members.find(m => m.id === newMember.id);
+                                if (existing) {
+                                    // 掉线重连：保留原有身份（玩家恢复其角色；被移入旁观者仍在旁观席）
+                                    existing.isOffline = false;
+                                    showToast(`${newMember.name} 重新连接${existing.isSpectator ? '（旁观）' : ''}`, 'info');
                                 } else {
-                                    showToast(`${newMember.name} 重新连接`, 'info');
+                                    // 新成员：已开局强制旁观；未开局默认玩家（可自选旁观）
+                                    const asSpectator = cocState.gameState === 'playing' || payload.isSpectator === true;
+                                    multiplayerState.members.push({ ...newMember, isHost: false, isReady: false, isSpectator: asSpectator, isOffline: false });
+                                    showToast(`${newMember.name} ${asSpectator ? '以旁观者身份加入' : '加入了房间'}`, asSpectator ? 'info' : 'success');
                                 }
                                 broadcastFullState();
                             }
                             break;
+                        case 'player_left':
+                             {
+                                 // 退房/掉线：标记离线，角色分配保留等待重连；房主可稍后踢出
+                                 const leftId = payload.user && payload.user.id;
+                                 const leftMember = multiplayerState.members.find(m => m.id === leftId);
+                                 if (leftMember) {
+                                     leftMember.isOffline = true;
+                                     showToast(`${payload.user.name} 已离开房间`, 'info');
+                                 }
+                                 if (multiplayerState.isHost) broadcastState();
+                             }
+                             break;
+                        case 'kick_player':
+                             {
+                                 if (payload.userId === getRoomSessionId()) {
+                                     // 被踢者：立即离开房间（在线被踢、或被踢后尝试再次进入均触发）
+                                     showToast('你已被房主踢出，无法进入该房间', 'error');
+                                     leaveRoom(true);
+                                 } else {
+                                     multiplayerState.members = multiplayerState.members.filter(m => m.id !== payload.userId);
+                                 }
+                             }
+                             break;
+                        case 'move_to_spectator':
+                             {
+                                 if (payload.userId === getRoomSessionId()) {
+                                     multiplayerState.isSpectator = true;
+                                     const myIdx = Object.keys(multiplayerState.assignments).find(idx => multiplayerState.assignments[idx] === getRoomSessionId());
+                                     if (myIdx !== undefined) delete multiplayerState.assignments[myIdx];
+                                     showToast('房主已将你移入旁观席，角色已释放', 'warning');
+                                 } else {
+                                     const moved = multiplayerState.members.find(m => m.id === payload.userId);
+                                     if (moved) moved.isSpectator = true;
+                                 }
+                             }
+                             break;
                         case 'sync_state':
                             if (!multiplayerState.isHost) {
                                 if (payload.isCoj !== undefined) cocState.isCoj = payload.isCoj;
@@ -8153,7 +8707,13 @@ ${buildInvestigatorProfile(inv)}
                                     else if (cocState.gameState === 'preparing') currentView.value = 'preparing';
                                 }
                                 if (payload.module) cocState.module = payload.module;
-                                if (payload.members) multiplayerState.members = payload.members;
+                                if (payload.members) {
+                                    multiplayerState.members = payload.members;
+                                    // 从成员表同步自身旁观身份（被踢/开局重连由房主判定）
+                                    const selfMember = payload.members.find(m => m.id === getRoomSessionId());
+                                    multiplayerState.isSpectator = Boolean(selfMember && selfMember.isSpectator);
+                                }
+                                if (payload.kickedMembers) multiplayerState.kickedMembers = payload.kickedMembers;
                                 if (payload.investigators) cocState.investigators = payload.investigators;
                                 if (payload.assignments) multiplayerState.assignments = payload.assignments || {};
                                 if (payload.assignmentDetails) multiplayerState.assignmentDetails = payload.assignmentDetails || {};
@@ -8175,6 +8735,14 @@ ${buildInvestigatorProfile(inv)}
                             }
                             break;
                         case 'sync_log_append':
+                             // 接收端同步执行消息中的 .st 指令，防止随后的 sync_investigators 覆盖导致状态回滚
+                             {
+                                 const incoming = payload.message;
+                                 if (incoming && incoming.senderId && incoming.content) {
+                                     const invIdx = Object.keys(multiplayerState.assignments).find(idx => multiplayerState.assignments[idx] === incoming.senderId);
+                                     if (invIdx !== undefined) applyStCommands(incoming.content, parseInt(invIdx, 10));
+                                 }
+                             }
                              cocState.log.push(payload.message);
                              scrollToBottom();
                              break;
@@ -8388,7 +8956,8 @@ ${buildInvestigatorProfile(inv)}
                         
                         const joined = await broadcastMessage({
                             type: 'player_joined',
-                            user: { id: getRoomSessionId(), name: user.name, avatar: user.avatar }
+                            user: { id: getRoomSessionId(), name: user.name, avatar: user.avatar },
+                            isSpectator: multiplayerState.isSpectator
                         });
                         if (!joined) throw new Error('Unable to announce room membership');
 
@@ -8444,14 +9013,19 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
 
-                const joinRoom = async (id = null, asHost = false) => {
+                const joinRoom = async (id = null, asHost = false, asSpectator = false) => {
                     if (!id || isConnecting.value) return;
                     isConnecting.value = true;
                     id = String(id).trim().toUpperCase();
-                    
+
                     multiplayerState.roomId = id;
                     multiplayerState.isHost = asHost;
                     multiplayerState.myId = user.uuid;
+                    multiplayerState.isSpectator = asSpectator;
+                    multiplayerState.roundActionIds = [];
+                    multiplayerState.turnStatus = {};
+                    multiplayerState.skipStatus = {};
+                    multiplayerState.cotAuthorizedUsers = [];
                     multiplayerState.members = [{ id: user.uuid, name: user.name, avatar: user.avatar, isHost: asHost, isReady: false }];
                     
                     try {
@@ -8465,13 +9039,20 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
 
-                const leaveRoom = async () => {
+                const leaveRoom = async (silent = false) => {
                     if (joinRetryInterval) {
                         clearTimeout(joinRetryInterval);
                         joinRetryInterval = null;
                     }
                     joinRetryAttempts = 0;
                     const leavingRoomId = multiplayerState.roomId;
+                    // 退房广播：房主退出=解散房间（room_closed）；玩家退出=告知成员（player_left，房主标记离线并可选择操作）
+                    if (!silent && multiplayerState.inRoom && leavingRoomId) {
+                        try {
+                            if (multiplayerState.isHost) broadcastMessage({ type: 'room_closed' });
+                            else broadcastMessage({ type: 'player_left', user: { id: getRoomSessionId(), name: user.name } });
+                        } catch (e) { /* 退房广播失败不阻断本地清理 */ }
+                    }
                     stopRoomPolling();
                     roomLastMessageId = 0;
                     multiplayerState.inRoom = false;
@@ -8483,8 +9064,69 @@ ${buildInvestigatorProfile(inv)}
                     multiplayerState.members = [];
                     multiplayerState.assignments = {};
                     multiplayerState.syncReceived = false;
+                    multiplayerState.roundActionIds = [];
+                    multiplayerState.turnStatus = {};
+                    multiplayerState.skipStatus = {};
+                    multiplayerState.turnIndex = 0;
+                    multiplayerState.cotAuthorizedUsers = [];
+                    multiplayerState.isSpectator = false;
+                    multiplayerState.kickedMembers = [];
+                    multiplayerState.memberMenuUserId = null;
                     clearHostRoomSession(leavingRoomId);
                     showToast('已断开连接', 'info');
+                };
+                // 释放成员的角色分配（踢出/移入旁观/手动释放共用）
+                const releaseMemberAssignment = (targetId) => {
+                    Object.keys(multiplayerState.assignments).forEach(idx => {
+                        if (multiplayerState.assignments[idx] === targetId) delete multiplayerState.assignments[idx];
+                    });
+                    multiplayerState.roundActionIds = multiplayerState.roundActionIds.filter(id => id !== targetId);
+                };
+                // 房主操作：踢出房间（释放角色；被踢者禁止再次进入，直到取消踢出）
+                const kickPlayer = (targetId) => {
+                    if (!multiplayerState.isHost) return;
+                    const target = multiplayerState.members.find(m => m.id === targetId);
+                    if (!target) return;
+                    releaseMemberAssignment(targetId);
+                    multiplayerState.members = multiplayerState.members.filter(m => m.id !== targetId);
+                    if (!multiplayerState.kickedMembers.some(k => k.id === targetId)) multiplayerState.kickedMembers.push({ id: targetId, name: target.name });
+                    broadcastMessage({ type: 'kick_player', userId: targetId });
+                    broadcastFullState();
+                    showToast(`已踢出 ${target.name}（其无法再次进入，直到取消踢出）`, 'success');
+                };
+                // 房主操作：移入旁观（释放角色；重连后停留在旁观席）
+                const moveToSpectator = (targetId) => {
+                    if (!multiplayerState.isHost) return;
+                    const target = multiplayerState.members.find(m => m.id === targetId);
+                    if (!target) return;
+                    target.isSpectator = true;
+                    releaseMemberAssignment(targetId);
+                    broadcastMessage({ type: 'move_to_spectator', userId: targetId });
+                    broadcastFullState();
+                    showToast(`已将 ${target.name} 移入旁观席，其角色已释放`, 'success');
+                };
+                // 房主操作：恢复为玩家（仅准备间；旁观者转回玩家身份）
+                const restorePlayer = (targetId) => {
+                    if (!multiplayerState.isHost) return;
+                    const target = multiplayerState.members.find(m => m.id === targetId);
+                    if (!target) return;
+                    target.isSpectator = false;
+                    broadcastFullState();
+                    showToast(`已将 ${target.name} 恢复为玩家`, 'success');
+                };
+                // 房主操作：仅释放角色（不动身份）
+                const releaseCharacter = (targetId) => {
+                    if (!multiplayerState.isHost) return;
+                    releaseMemberAssignment(targetId);
+                    broadcastFullState();
+                    showToast('已释放该成员的角色', 'success');
+                };
+                // 房主操作：取消踢出（该玩家此后可正常进入房间）
+                const unkickMember = (targetId) => {
+                    if (!multiplayerState.isHost) return;
+                    multiplayerState.kickedMembers = multiplayerState.kickedMembers.filter(k => k.id !== targetId);
+                    broadcastFullState();
+                    showToast('已取消踢出，该玩家可重新进入房间', 'success');
                 };
                 const addFriend = () => { /* ... */ };
                 const acceptFriend = (req) => { /* ... */ };
@@ -8549,7 +9191,8 @@ ${buildInvestigatorProfile(inv)}
                     cocState, cocInput, cocInputRef, cocChatContainer, isGenerating, multiplayerState, showJoinInput, joinRoomId, friends, friendRequests, friendInput,
                     showMentionList, mentionCandidates, handleInput, selectMention, savedGames, savesFilter, groupedSaves, openFolders, toggleFolder, moveSaveToFolder, renameFolder, 
                     isSavesEditing, toggleSavesEditMode, moveFolder, deleteFolder, editFolderName, promptMoveToFolder, folderManagementState, closeFolderModal, confirmFolderAction, 
-                    deleteFolderState, openDeleteFolderModal, closeDeleteFolderModal, confirmDissolveFolder, confirmDeleteAllInFolder, isRoundLocked, hasAiTeammates,
+                    deleteFolderState, openDeleteFolderModal, closeDeleteFolderModal, confirmDissolveFolder, confirmDeleteAllInFolder, isRoundLocked, hasAiTeammates, visibleSkills, hasArchiveExtras, kickPlayer, joinAsSpectator, moveToSpectator, restorePlayer, releaseCharacter, unkickMember, applyReportToInvestigator,
+                    commandPickerState, commonCommands, hotkeyPressStart, hotkeyPressEnd, assignHotkey,
                     selectCocMode, toggleCojMode, exitCocMode, exitCocGame, startCocGame, sendCocMessage, saveGame, deleteSave, loadSave, exportSave, importSave,
                     importCocModule, importSupplementaryImages, saveManualModule, importInvestigator, deleteInvestigator,
                     initBackend, createRoom, joinRoom, leaveRoom, addFriend, acceptFriend, inviteFriend,
