@@ -1881,6 +1881,10 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                             下载凭证 (.json)
                         </button>
+                        <button @click="applyReportToInvestigator(report)" class="w-full py-2 bg-mystic-green/15 hover:bg-mystic-green/25 border border-mystic-green/40 rounded text-mystic-green text-xs font-bold transition-all flex items-center justify-center gap-2" title="应用状态变化/技能/物品/徽章，经历概括写入背景，人物关系合并不删减">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            应用日谈到角色卡
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2323,6 +2327,10 @@
                                                             <button @click="downloadReport(report)" class="w-full py-2 bg-mystic-gold/10 hover:bg-mystic-gold/20 border border-mystic-gold/30 rounded text-mystic-gold text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2">
                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                                                 下载调查凭证
+                                                            </button>
+                                                            <button @click="applyReportToInvestigator(report)" class="w-full py-2 bg-mystic-green/15 hover:bg-mystic-green/25 border border-mystic-green/40 rounded text-mystic-green text-xs font-bold transition-all flex items-center justify-center gap-2" title="应用状态变化/技能/物品/徽章，经历概括写入背景，人物关系合并不删减">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                                应用日谈到角色卡
                                                             </button>
                                                         </div>
                                                     </div>
@@ -4577,7 +4585,10 @@
                     { id: 'plot_prog', category: '流程管理', label: '剧情循序渐进', content: '不要一次性倾倒所有信息。线索应逐步获得。扮演 NPC 时要鲜活立体。', enabled: true },
                     { id: 'cot', category: '思维链', label: '思维链思考内容', content: '在每次输出正式剧情前，必须以 <cot>...思考内容...</cot> 的格式进行缜密的思考：检索角色卡、分析关系、反思节奏、检查自主权。', enabled: true },
                     { id: 'game_end', category: '流程管理', label: '结团判定指令', content: '当模组剧情彻底结束时，请在回复的最后一行必须输出指令：`.game_end`。', enabled: true },
-                    { id: 'report', category: '流程管理', label: '结团报告生成', content: '当房主发送“确认结团...”指令时，请为每一位参与的调查员分别生成一份对照模组内容的调查报告。输出格式为 JSON 数组：[{"type": "investigation_report", "moduleName": "...", "investigatorName": "...", "changes": {"san": 0, "creditRating": 0}, "skillGrowths": [{"name": "...", "value": 0}], "newItems": ["..."], "badge": {"name": "...", "desc": "...", "icon": "🏆"}, "summary": "..."}]。', enabled: true }
+                    { id: 'report', category: '流程管理', label: '结团报告生成', content: '当房主发送“确认结团...”指令时，请为每一位参与的调查员分别生成一份对照模组内容的调查报告。输出格式为 JSON 数组：[{"type": "investigation_report", "moduleName": "...", "investigatorName": "...", "changes": {"san": 0, "creditRating": 0}, "skillGrowths": [{"name": "...", "value": 0}], "newItems": ["..."], "relationships": [{"name": "人物名", "relation": "关系", "story": "本局共同经历"}], "badge": {"name": "...", "desc": "...", "icon": "🏆"}, "summary": "..."}]。其中 relationships 为本局中与该调查员建立或发展的重要人物关系（含旧关系的变化，输出变化后的完整信息），summary 为该调查员本局经历的概括。', enabled: true },
+                    { id: 'skill_updates', category: '机制处理', label: '技能与档案写入指令', content: '除 HP/MP/SAN/属性外，你还可以用指令写入：技能 `.st 技能名 +N`（如 .st 侦查 +10，技能不存在会自动新建；修改克苏鲁神话会联动降低理智上限）；当前位置 `.st 位置 地点`（剧情场景切换时必须更新）；状态标签见专门规则。', enabled: true },
+                    { id: 'status_tags', category: '机制处理', label: '状态标签指令', content: '用 `.st 状态 +标签` 附加、`.st 状态 -标签` 移除角色的持续状态标签。使用时机：重伤（HP 低于一半且遭受重大伤害）、濒死（HP 归 0，系统会自动附加，急救成功后你应输出 -濒死 并可附加 +已被急救）、临时疯狂/永久疯狂（San Check 失败后按剧情判定附加）、死亡。状态标签对剧情有持续约束力。', enabled: true },
+                    { id: 'npc_checks', category: '机制处理', label: 'NPC 检定指令', content: 'NPC 行动存在成功/失败的不确定性时，严禁自行虚构检定结果，必须输出指令 `.rn NPC名 技能名 技能值`（如 .rn 守门人 侦查 45）。系统会真实掷骰并将结果追加到对话中，你必须在结果出现后依据真实结果叙事。', enabled: true }
                 ];
 
                 const IMAGE_GEN_ARTIST_PRESETS = {
@@ -6963,15 +6974,7 @@ ${buildInvestigatorProfile(inv)}
                     }
                 };
 
-                const canViewReport = (report) => {
-                    if (cocState.mode === 'single') return true;
-                    if (multiplayerState.isHost) return true; // Host sees all
-                    // Check if report belongs to user's character
-                    const myInvIndex = cocState.activeInvestigatorIndex;
-                    if (myInvIndex === -1) return false;
-                    const myInv = cocState.investigators[myInvIndex];
-                    return myInv && myInv.name === report.investigatorName;
-                };
+                const canViewReport = () => true; // 所有成员均可查看全部调查报告（查看其他结局）
                 const rollSanReward = () => { const expr = settlementState.sanRewardExpr; let val = 0; if (expr.includes('d')) { const [n, d] = expr.split('d').map(Number); for(let i=0; i<(n||1); i++) val += Math.floor(Math.random()*(d||6))+1; } else val = parseInt(expr) || 0; settlementState.sanRewardVal = val; };
                 const processSkillGrowth = async () => { const inv = cocState.investigators[cocState.activeInvestigatorIndex]; settlementState.isRolling = true; settlementState.skillGrowths = []; for (const skillName of settlementState.selectedSkills) { const skill = inv.skills.find(s => s.name === skillName); if (!skill) continue; const checkVal = Math.floor(Math.random() * 100) + 1; const success = checkVal > skill.value || checkVal > 95; let growth = 0; if (success) growth = Math.floor(Math.random() * 10) + 1; settlementState.skillGrowths.push({ name: skill.name, oldVal: skill.value, checkVal, success, growth, newVal: skill.value + growth }); await new Promise(r => setTimeout(r, 300)); } settlementState.isRolling = false; settlementState.step = 3; };
                 const sanitizeFilename = (name, defaultName = 'character') => name ? name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim() : defaultName;
@@ -7029,10 +7032,52 @@ ${buildInvestigatorProfile(inv)}
                 };
 
                 const downloadReport = (report) => {
-                    const filename = `Report_${sanitizeFilename(report.moduleName)}_${new Date().toISOString().slice(0,10)}.json`;
+                    const filename = `Report_${sanitizeFilename(report.moduleName)}_${sanitizeFilename(report.investigatorName)}_${new Date().toISOString().slice(0,10)}.json`;
                     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
                     downloadFile(blob, filename);
                     showToast('凭证已下载，请前往调查员档案导入', 'success');
+                };
+                // 日谈：把调查报告应用回角色卡——状态变化/技能成长/物品/徽章/经历概括写入背景/人物关系合并（同名更新、不同名追加、绝不删减）
+                const applyReportToInvestigator = (report) => {
+                    const inv = cocState.investigators.find(i => i.name === report.investigatorName);
+                    if (!inv) return showToast(`未找到对应调查员：${report.investigatorName || '未知'}`, 'error');
+                    if (report.changes) {
+                        if (report.changes.san) inv.san = Math.min(inv.maxSan || 99, Math.max(0, Number(inv.san) + Number(report.changes.san)));
+                        if (report.changes.creditRating) inv.creditRating = Math.max(0, Math.min(99, (parseInt(inv.creditRating) || 0) + Number(report.changes.creditRating)));
+                    }
+                    (report.skillGrowths || []).forEach(g => {
+                        if (!g || !g.name) return;
+                        let skill = inv.skills.find(s => s.name === g.name);
+                        if (!skill) { skill = { name: g.name, value: 0 }; inv.skills.push(skill); }
+                        skill.value = Math.max(0, Math.min(99, (Number(skill.value) || 0) + (Number(g.value) || 0)));
+                    });
+                    if (Array.isArray(report.newItems) && report.newItems.length) {
+                        const itemsStr = report.newItems.join('、');
+                        inv.inventory = inv.inventory ? `${inv.inventory}\n[本局获得] ${itemsStr}` : `[本局获得] ${itemsStr}`;
+                    }
+                    if (report.badge && report.badge.name) {
+                        if (!Array.isArray(inv.badges)) inv.badges = [];
+                        inv.badges.push({ ...report.badge });
+                    }
+                    if (report.summary) {
+                        if (!Array.isArray(inv.history)) inv.history = [];
+                        inv.history.unshift(`[${new Date().toLocaleDateString()}] 完成模组《${report.moduleName || cocState.module?.name || '未知'}》：${report.summary}`);
+                    }
+                    if (Array.isArray(report.relationships) && report.relationships.length) {
+                        if (!Array.isArray(inv.relationships)) inv.relationships = [];
+                        report.relationships.filter(r => r && r.name).forEach(r => {
+                            const existing = inv.relationships.find(x => x.name === r.name);
+                            if (existing) {
+                                if (r.relation) existing.relation = r.relation;
+                                if (r.story) existing.story = existing.story ? `${existing.story}；${r.story}` : r.story;
+                            } else {
+                                inv.relationships.push({ name: r.name, relation: r.relation || '', story: r.story || '' });
+                            }
+                        });
+                    }
+                    saveData();
+                    if (cocState.mode === 'multi' && multiplayerState.isHost) broadcastMessage({ type: 'sync_investigators', investigators: cocState.investigators });
+                    showToast(`日谈已应用到 ${inv.name} 的角色卡`, 'success');
                 };
 
                 const exportCurrentInvestigatorPNG = async () => {
@@ -8549,7 +8594,8 @@ ${buildInvestigatorProfile(inv)}
                     cocState, cocInput, cocInputRef, cocChatContainer, isGenerating, multiplayerState, showJoinInput, joinRoomId, friends, friendRequests, friendInput,
                     showMentionList, mentionCandidates, handleInput, selectMention, savedGames, savesFilter, groupedSaves, openFolders, toggleFolder, moveSaveToFolder, renameFolder, 
                     isSavesEditing, toggleSavesEditMode, moveFolder, deleteFolder, editFolderName, promptMoveToFolder, folderManagementState, closeFolderModal, confirmFolderAction, 
-                    deleteFolderState, openDeleteFolderModal, closeDeleteFolderModal, confirmDissolveFolder, confirmDeleteAllInFolder, isRoundLocked, hasAiTeammates,
+                    deleteFolderState, openDeleteFolderModal, closeDeleteFolderModal, confirmDissolveFolder, confirmDeleteAllInFolder, isRoundLocked, hasAiTeammates, visibleSkills, hasArchiveExtras, kickPlayer, joinAsSpectator, moveToSpectator, restorePlayer, releaseCharacter, unkickMember, applyReportToInvestigator,
+                    commandPickerState, commonCommands, hotkeyPressStart, hotkeyPressEnd, assignHotkey,
                     selectCocMode, toggleCojMode, exitCocMode, exitCocGame, startCocGame, sendCocMessage, saveGame, deleteSave, loadSave, exportSave, importSave,
                     importCocModule, importSupplementaryImages, saveManualModule, importInvestigator, deleteInvestigator,
                     initBackend, createRoom, joinRoom, leaveRoom, addFriend, acceptFriend, inviteFriend,
